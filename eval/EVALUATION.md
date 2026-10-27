@@ -146,14 +146,31 @@ away. One entry per failed set:_
 
 ## Reproduce
 
+The runner is `eval/run_eval.py`. It builds the dataset itself
+(fixed seeds), runs all three configurations over the same sets with
+the reader the environment selects, and writes results incrementally
+— an interrupted run keeps every finished set, and `--resume` skips
+sets already completed in the output file.
+
 ```bash
-# Generate the evaluation sets (seed fixed) — command pending the
-# eval runner; expected to be a single entry point under eval/.
-python -m generator.generate --out eval/data/<set-id> --variant <variant> --seed 7
+# From the repo root. One-time setup: python -m venv .venv &&
+# .venv/bin/pip install -r backend/requirements.txt pillow pytest
+# Route A (hosted):    JUDGE_READER=meta    MODEL_API_KEY=<key>
+# Route B (open weights): JUDGE_READER=baseten BASETEN_API_KEY=<key>
+JUDGE_READER=meta MODEL_API_KEY=<key> .venv/bin/python -m eval.run_eval --seed-base 7 --workers 4 --out eval/results/results.json
 ```
 
-- Seed: 7 (generator default) for every generated set.
-- Expected output: one `ground_truth.json` per set, and a results
-  table written into this file replacing the placeholders above.
-- The runner command and its exact expected output file will be
-  pinned here when the runner lands, before the run — not after.
+- Seed: seed base 7; each set's generator seed is 7 + its index in
+  the fixed category order (clean, variation, discrepancy, degraded).
+- Dataset: 12 clean + 10 variation + 10 discrepancy (3 of them with
+  the stamp over the birth-certificate DOB) + 8 degraded = 40 sets,
+  rendered under `eval/data/<set-id>/`, each with its
+  `ground_truth.json`. Category counts are configurable
+  (`--clean/--variation/--discrepancy/--degraded`, `--scale`).
+- Expected output: `eval/results/results.json` (run metadata,
+  aggregate counts, and one record per set: per-configuration
+  verdict, flagged fields, read values, read count, latency, and
+  token/cost figures when the reader reports usage) plus
+  `eval/results/results.md`, the same summary rendered in this
+  file's table shapes. The numbers are then transcribed into the
+  Results tables above — by hand, after the run, never before it.
