@@ -54,6 +54,7 @@ from pathlib import Path
 
 from . import agent as agent_module
 from .comparator import _canonical
+from .gaps import build_evidence_gaps
 from .providers import BasetenReader, MetaReader, MockReader, Reader
 from .segmenter import (MetaSAMSegmenter, ModalSegmenter,
                         PillowFallbackSegmenter, Segmenter)
@@ -426,9 +427,13 @@ def process_job(job: Job, uploads: dict[str, bytes],
 
 def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
          segmenter: Segmenter, work_dir: Path) -> None:
+    present_doc_types = [d for d in DOC_TYPES if d in uploads]
+    received = ", ".join(
+        {"nid": "NID", "birth_certificate": "birth certificate",
+         "bank_form": "bank form"}.get(d, d) for d in present_doc_types)
     job.emit({"type": "job_started", "phase": "Intake",
-              "text": "Received 3 synthetic documents "
-                      "(NID, birth certificate, bank form). "
+              "text": f"Received {len(present_doc_types)} synthetic "
+                      f"document(s) ({received}). "
                       "Judge mode is for synthetic documents only."})
 
     # Save uploads into the job temp dir and build real perturbed views.
@@ -453,7 +458,7 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
             evidence.append({"doc_type": doc_type or "document",
                              "view": view, "data_url": url})
 
-    for doc_type in DOC_TYPES:
+    for doc_type in present_doc_types:
         raw = uploads[doc_type]
         suffix = ".jpg" if raw[:2] == b"\xff\xd8" else ".png"
         path = work_dir / f"{doc_type}{suffix}"
@@ -469,7 +474,7 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
     # Segmentation probe (no reader needed): does a stamp-like region
     # exist that the agent could mask during investigation?
     tracing_segmenter = _TracingSegmenter(segmenter, job, capture)
-    for doc_type in DOC_TYPES:
+    for doc_type in present_doc_types:
         try:
             result = segmenter.segment(paths[doc_type], "stamp")
         except Exception:
@@ -488,6 +493,10 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
             "job_id": job.id, "state": job.state, "verdict": None,
             "verdict_label": None, "message": job.message,
             "documents": {}, "findings": [], "evidence": evidence,
+            # No reads were attempted, so the only gaps that can be
+            # stated honestly are documents missing from the upload.
+            "evidence_gaps": build_evidence_gaps(present_doc_types,
+                                                 {}, []),
         }
         job.emit({"type": "reader_not_configured", "phase": "Reader",
                   "text": job.message})
@@ -502,7 +511,7 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
     job.emit({"type": "compare", "phase": "Cross-examine",
               "text": "Normalized every field (digits, dates, name "
                       "variants) and compared shared facts across the "
-                      "three documents."})
+                      "uploaded documents."})
 
     documents: dict[str, dict] = {}
     reads_by_key: dict[tuple[str, str], list[dict]] = {}
@@ -525,6 +534,9 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
         "verdict_label": verdict_label, "message": None,
         "documents": documents, "findings": outcome.findings,
         "evidence": evidence,
+        "evidence_gaps": build_evidence_gaps(present_doc_types,
+                                             documents,
+                                             outcome.findings),
     }
     job.state = "done"
     job.emit({"type": "verdict", "phase": "Verdict",

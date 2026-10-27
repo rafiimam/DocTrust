@@ -149,7 +149,7 @@ def get_review(job_id: str):
     return {"job_id": job.id, "state": job.state,
             "verdict": None, "verdict_label": None,
             "message": job.message, "documents": {}, "findings": [],
-            "evidence": []}
+            "evidence": [], "evidence_gaps": []}
 
 
 @app.get("/api/review/{job_id}/events")
