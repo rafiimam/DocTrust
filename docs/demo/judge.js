@@ -1,7 +1,7 @@
 /* DocTrust demo — Upload (judge mode).
  *
  * The judge downloads a synthetic case pack from the backend, uploads
- * the three images, and watches the agent's trace stream in live over
+ * the images (any subset — at least one), and watches the agent's trace stream in live over
  * Server-Sent Events. This mode is honest by construction:
  * - if the backend cannot be reached, it says so and points back to
  *   the cached cases — it never simulates a live run;
@@ -111,6 +111,7 @@
     input.addEventListener("change", function () {
       var f = input.files && input.files[0];
       files[doc] = f || null;
+      refreshRunBtn();
       if (f) {
         nameEl.textContent = f.name;
         preview.src = URL.createObjectURL(f);
@@ -136,6 +137,13 @@
   var gapsPanel = document.getElementById("gapsPanel");
   var gapsList = document.getElementById("gapsList");
   var eventSource = null;
+
+  // Every document is optional, but a review needs at least one: the
+  // Run button stays disabled until at least one file is chosen.
+  function refreshRunBtn() {
+    runBtn.disabled = !DOC_TYPES.some(function (d) { return files[d]; });
+  }
+  refreshRunBtn();
 
   // Run status and errors live in the trace panel itself, so the
   // panel is never left blankly empty when something goes wrong.
@@ -253,22 +261,28 @@
   }
 
   runBtn.addEventListener("click", function () {
-    var missing = DOC_TYPES.filter(function (d) { return !files[d]; });
-    if (missing.length) {
-      setTraceStatus("Choose all three documents first — missing: " +
-        missing.map(function (d) { return DOC_LABELS[d]; }).join(", ") +
-        ". Download a case pack above if you need synthetic documents.",
-        "tone-warn");
-      runStatus.textContent = "Missing files — see the trace panel.";
+    var chosen = DOC_TYPES.filter(function (d) { return files[d]; });
+    if (!chosen.length) {
+      setTraceStatus("Choose at least one document first — each one " +
+        "is optional, but a review needs at least one. Download a case " +
+        "pack above if you need synthetic documents.", "tone-warn");
+      runStatus.textContent = "No files chosen — see the trace panel.";
       return;
     }
+    var missing = DOC_TYPES.filter(function (d) { return !files[d]; });
     resetRun();
     runBtn.disabled = true;
     runStatus.textContent = "Uploading…";
     var base = backendUrl();
-    setTraceStatus("Uploading the three documents to " + base + " …");
+    setTraceStatus("Uploading " + chosen.length + " of the three " +
+      "documents to " + base + " …" + (missing.length
+        ? " Not uploaded: " + missing.map(function (d) {
+            return DOC_LABELS[d];
+          }).join(", ") + " — the result will report them as evidence " +
+          "gaps, not errors."
+        : ""));
     var form = new FormData();
-    DOC_TYPES.forEach(function (d) { form.append(d, files[d]); });
+    chosen.forEach(function (d) { form.append(d, files[d]); });
 
     fetch(base + "/api/review", { method: "POST", body: form })
       .then(function (r) {
@@ -294,7 +308,7 @@
           fetch(base + "/api/review/" + job.job_id)
             .then(function (r) { return r.json(); })
             .then(function (result) {
-              runBtn.disabled = false;
+              refreshRunBtn();
               if (done.state === "reader_not_configured" ||
                   result.state === "reader_not_configured") {
                 runStatus.textContent = "Finished — reader not configured.";
@@ -319,7 +333,7 @@
               }
             })
             .catch(function () {
-              runBtn.disabled = false;
+              refreshRunBtn();
               runStatus.textContent = "Could not fetch the result.";
               addTraceStatus("The run finished but its result could " +
                 "not be fetched from the backend.", "tone-warn");
@@ -336,7 +350,7 @@
         };
       })
       .catch(function (err) {
-        runBtn.disabled = false;
+        refreshRunBtn();
         runStatus.textContent = "Backend unreachable.";
         setTraceStatus("Could not run the review: " + err.message +
           ". No live run was simulated. Check the Backend URL above, or " +

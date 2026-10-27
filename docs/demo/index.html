@@ -54,7 +54,7 @@
   <div class="upload-column">
     <p class="synthetic-warning"><strong>Synthetic documents only — do not upload
     real ID documents.</strong> Download a case pack below, unzip it, and upload
-    the three images. Uploads go only to the backend shown below — the hosted
+    the images. Uploads go only to the backend shown below — the hosted
     DocTrust backend by default; nothing is stored there after the run.</p>
 
     <div class="backend-settings">
@@ -76,27 +76,31 @@
     <code>birth_certificate.png</code>, <code>bank_form.png</code> and the
     <code>ground_truth.json</code> the run should agree with.</p>
 
-    <h2 class="upload-h">2 · Upload the three documents</h2>
+    <h2 class="upload-h">2 · Upload the documents</h2>
     <div class="upload-grid">
       <label class="upload-slot">
-        <span class="upload-slot-title">National ID (nid)</span>
+        <span class="upload-slot-title">National ID (nid) <span class="optional-tag">optional</span></span>
         <input type="file" id="file-nid" accept="image/png,image/jpeg">
         <img class="upload-preview" id="preview-nid" alt="" hidden>
         <span class="upload-file-name" id="name-nid">No file chosen</span>
       </label>
       <label class="upload-slot">
-        <span class="upload-slot-title">Birth certificate</span>
+        <span class="upload-slot-title">Birth certificate <span class="optional-tag">optional</span></span>
         <input type="file" id="file-birth_certificate" accept="image/png,image/jpeg">
         <img class="upload-preview" id="preview-birth_certificate" alt="" hidden>
         <span class="upload-file-name" id="name-birth_certificate">No file chosen</span>
       </label>
       <label class="upload-slot">
-        <span class="upload-slot-title">Bank form</span>
+        <span class="upload-slot-title">Bank form <span class="optional-tag">optional</span></span>
         <input type="file" id="file-bank_form" accept="image/png,image/jpeg">
         <img class="upload-preview" id="preview-bank_form" alt="" hidden>
         <span class="upload-file-name" id="name-bank_form">No file chosen</span>
       </label>
     </div>
+    <p class="upload-hint">All three documents are expected, but each one is
+    optional — upload at least one. Any expected document you leave out is
+    reported in the result under <em>Evidence gaps &amp; next steps</em>,
+    not treated as an error.</p>
 
     <div class="controls">
       <button type="button" id="runBtn">Run live review</button>
