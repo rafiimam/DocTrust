@@ -67,7 +67,17 @@ DEFAULT_STAMP_STYLE = "purple"
 
 
 def _font(path: str, size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(path, size)
+    try:
+        return ImageFont.truetype(path, size)
+    except OSError as exc:
+        # PIL's own message ("cannot open resource") does not say which
+        # file was missing; name it and point at the fix (on Modal these
+        # packages are apt-installed in modal_backend/backend_app.py).
+        raise OSError(
+            f"font file not found: {path}. The generator needs the "
+            "DejaVu and Noto Bengali system fonts — install the "
+            "fonts-dejavu-core and fonts-noto-core packages."
+        ) from exc
 
 
 def _watermark(img: Image.Image) -> Image.Image:

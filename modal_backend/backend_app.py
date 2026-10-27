@@ -47,6 +47,11 @@ app = modal.App(APP_NAME)
 # same shape.
 image = (
     modal.Image.debian_slim(python_version="3.12")
+    # The synthetic generator renders text with PIL against system font
+    # paths (DejaVu + Noto Bengali under /usr/share/fonts/truetype),
+    # which debian_slim does not ship; without these packages the
+    # /api/case-pack endpoint fails with a font OSError.
+    .apt_install("fonts-dejavu-core", "fonts-noto-core")
     .pip_install_from_requirements("backend/requirements.txt")
     .add_local_dir("backend", remote_path="/root/repo/backend")
     .add_local_dir("generator", remote_path="/root/repo/generator")
