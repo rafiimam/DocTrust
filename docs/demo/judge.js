@@ -137,6 +137,20 @@
   var gapsPanel = document.getElementById("gapsPanel");
   var gapsList = document.getElementById("gapsList");
   var eventSource = null;
+  // Fallback polling state (see the onerror handler in the run flow):
+  // if the SSE stream drops before 'done', the client polls the job's
+  // result URL directly instead of declaring the run lost. fallbackTimer
+  // holds the pending poll; runSeq identifies the current run so a stale
+  // poll from a superseded run can never write into a newer run's UI.
+  var fallbackTimer = null;
+  var runSeq = 0;
+
+  function stopFallbackPolling() {
+    if (fallbackTimer !== null) {
+      clearTimeout(fallbackTimer);
+      fallbackTimer = null;
+    }
+  }
 
   // Every document is optional, but a review needs at least one: the
   // Run button stays disabled until at least one file is chosen.
@@ -164,6 +178,8 @@
     addTraceStatus(text, tone);
   }
   function resetRun() {
+    stopFallbackPolling();
+    runSeq += 1;
     traceEl.innerHTML = "";
     verdictEl.hidden = true;
     fieldsPanel.hidden = true;
@@ -260,6 +276,36 @@
     }
   }
 
+  // Render a finished job. Shared by the SSE 'done' path and the
+  // polling fallback, so both confirm the run in exactly the same way.
+  // `done` carries the terminal state (and message, when the SSE event
+  // or the polled result provided one).
+  function showFinalResult(result, done) {
+    refreshRunBtn();
+    if (done.state === "reader_not_configured" ||
+        result.state === "reader_not_configured") {
+      runStatus.textContent = "Finished — reader not configured.";
+      addTraceStatus("The backend ran preprocessing and " +
+        "segmentation but has NO vision reader configured, so " +
+        "no fields were read and no verdict was produced. " +
+        "Nothing here is faked: the backend needs its " +
+        "server-side reader key (see modal_backend/README.md) " +
+        "— or use the cached cases to see a full run.",
+        "tone-warn");
+      if (result.evidence && result.evidence.length) {
+        renderResult(result);
+      }
+    } else if (done.state === "failed") {
+      runStatus.textContent = "Run failed.";
+      addTraceStatus("The backend reported a failure: " +
+        (result.message || done.message || "unknown error"),
+        "tone-bad");
+    } else {
+      runStatus.textContent = "Done.";
+      renderResult(result);
+    }
+  }
+
   runBtn.addEventListener("click", function () {
     var chosen = DOC_TYPES.filter(function (d) { return files[d]; });
     if (!chosen.length) {
@@ -271,6 +317,7 @@
     }
     var missing = DOC_TYPES.filter(function (d) { return !files[d]; });
     resetRun();
+    var myRun = runSeq;
     runBtn.disabled = true;
     runStatus.textContent = "Uploading…";
     var base = backendUrl();
@@ -295,43 +342,23 @@
       })
       .then(function (job) {
         runStatus.textContent = "Running — trace streaming…";
+        var resultUrl = base + "/api/review/" + job.job_id;
+        var sawDone = false;
+        var fallbackStarted = false;
         if (eventSource) { eventSource.close(); }
-        eventSource = new EventSource(
-          base + "/api/review/" + job.job_id + "/events");
+        eventSource = new EventSource(resultUrl + "/events");
         eventSource.addEventListener("trace", function (ev) {
           try { addTrace(JSON.parse(ev.data)); } catch (e) { /* ignore */ }
         });
         eventSource.addEventListener("done", function (ev) {
+          sawDone = true;
+          stopFallbackPolling();
           eventSource.close();
           var done = {};
           try { done = JSON.parse(ev.data); } catch (e) { /* ignore */ }
-          fetch(base + "/api/review/" + job.job_id)
+          fetch(resultUrl)
             .then(function (r) { return r.json(); })
-            .then(function (result) {
-              refreshRunBtn();
-              if (done.state === "reader_not_configured" ||
-                  result.state === "reader_not_configured") {
-                runStatus.textContent = "Finished — reader not configured.";
-                addTraceStatus("The backend ran preprocessing and " +
-                  "segmentation but has NO vision reader configured, so " +
-                  "no fields were read and no verdict was produced. " +
-                  "Nothing here is faked: the backend needs its " +
-                  "server-side reader key (see modal_backend/README.md) " +
-                  "— or use the cached cases to see a full run.",
-                  "tone-warn");
-                if (result.evidence && result.evidence.length) {
-                  renderResult(result);
-                }
-              } else if (done.state === "failed") {
-                runStatus.textContent = "Run failed.";
-                addTraceStatus("The backend reported a failure: " +
-                  (result.message || done.message || "unknown error"),
-                  "tone-bad");
-              } else {
-                runStatus.textContent = "Done.";
-                renderResult(result);
-              }
-            })
+            .then(function (result) { showFinalResult(result, done); })
             .catch(function () {
               refreshRunBtn();
               runStatus.textContent = "Could not fetch the result.";
@@ -339,14 +366,64 @@
                 "not be fetched from the backend.", "tone-warn");
             });
         });
-        eventSource.onerror = function () {
-          // EventSource also fires this when the stream ends normally on
-          // some browsers; only complain if we never saw 'done'.
-          if (runBtn.disabled && runStatus.textContent.indexOf("Running") === 0) {
+        // If the stream drops before 'done', the run itself is usually
+        // still fine — only the stream was lost — so fall back to
+        // polling the result URL directly (~every 4 s, ~4 min max)
+        // before declaring the run interrupted.
+        var POLL_INTERVAL_MS = 4000;
+        var POLL_MAX_ATTEMPTS = 60;
+        function schedulePoll(attempt) {
+          if (myRun !== runSeq) { return; }
+          if (attempt >= POLL_MAX_ATTEMPTS) {
+            refreshRunBtn();
             runStatus.textContent = "Stream interrupted.";
             addTraceStatus("The live event stream was interrupted " +
-              "before the run finished.", "tone-warn");
+              "before the run finished, and the result could not be " +
+              "confirmed directly either.", "tone-warn");
+            return;
           }
+          fallbackTimer = setTimeout(function () {
+            fallbackTimer = null;
+            pollResult(attempt);
+          }, POLL_INTERVAL_MS);
+        }
+        function pollResult(attempt) {
+          if (myRun !== runSeq) { return; }
+          fetch(resultUrl)
+            .then(function (r) { return r.json(); })
+            .then(function (result) {
+              if (myRun !== runSeq) { return; }
+              var state = result && result.state;
+              if (state === "done" || state === "reader_not_configured" ||
+                  state === "failed" || state === "error") {
+                sawDone = true;
+                stopFallbackPolling();
+                if (eventSource) { eventSource.close(); }
+                showFinalResult(result, {
+                  state: state === "error" ? "failed" : state,
+                  message: result.message
+                });
+              } else {
+                schedulePoll(attempt + 1);
+              }
+            })
+            .catch(function () { schedulePoll(attempt + 1); });
+        }
+        eventSource.onerror = function () {
+          // EventSource also fires this when the stream ends normally on
+          // some browsers; only react if we never saw 'done', the
+          // fallback is not already running, and this stream still
+          // belongs to the current run.
+          if (myRun !== runSeq || sawDone || fallbackStarted ||
+              !runBtn.disabled) {
+            return;
+          }
+          fallbackStarted = true;
+          runStatus.textContent =
+            "Stream interrupted — checking result…";
+          addTraceStatus("The live event stream was interrupted — " +
+            "checking the run result directly…", "tone-warn");
+          pollResult(0);
         };
       })
       .catch(function (err) {
