@@ -158,6 +158,48 @@ def build_person(variant: str, rng: random.Random) -> tuple[dict, dict, dict]:
     return p, {"nid": nid, "birth_certificate": birth, "bank_form": form}, {}
 
 
+def generate_set(out_dir, variant: str = "clean", seed: int = 7) -> dict:
+    """Render one synthetic set into `out_dir`; return its ground truth.
+
+    Writes nid.png, birth_certificate.png, bank_form.png and
+    ground_truth.json — the same files the CLI produces — and returns
+    the parsed ground_truth.json content. Used by the CLI below and by
+    the backend's judge-mode case-pack endpoint.
+    """
+    rng = random.Random(seed)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    person, truth, _ = build_person(variant, rng)
+
+    render_person = dict(person)
+    if variant == "variation":
+        render_person["name_en"] = "Md. Abdul Rahman"
+    if variant == "discrepancy":
+        render_person["dob"] = "12/03/1990"  # NID + certificate stay true…
+
+    nid_img = render_nid(render_person)
+    birth_img = render_birth_certificate(render_person)
+    form_person = dict(render_person)
+    if variant == "discrepancy":
+        form_person["dob"] = "12/03/1991"     # …the form carries the swap
+    if variant == "variation":
+        form_person["name_en"] = "Mohammed Abdul Rahaman"
+    form_img = render_bank_form(form_person)
+
+    images = {"nid": nid_img, "birth_certificate": birth_img, "bank_form": form_img}
+    if variant == "degraded":
+        images["nid"] = apply_degradation(nid_img, "glare", rng)
+        images["bank_form"] = apply_degradation(form_img, "blur", rng)
+
+    for name, img in images.items():
+        img.save(out / f"{name}.png")
+
+    ground_truth = {"variant": variant, "documents": truth}
+    (out / "ground_truth.json").write_text(json.dumps(
+        ground_truth, indent=2, ensure_ascii=False))
+    return ground_truth
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
@@ -166,37 +208,8 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args()
 
-    rng = random.Random(args.seed)
-    out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
-    person, truth, _ = build_person(args.variant, rng)
-
-    render_person = dict(person)
-    if args.variant == "variation":
-        render_person["name_en"] = "Md. Abdul Rahman"
-    if args.variant == "discrepancy":
-        render_person["dob"] = "12/03/1990"  # NID + certificate stay true…
-
-    nid_img = render_nid(render_person)
-    birth_img = render_birth_certificate(render_person)
-    form_person = dict(render_person)
-    if args.variant == "discrepancy":
-        form_person["dob"] = "12/03/1991"     # …the form carries the swap
-    if args.variant == "variation":
-        form_person["name_en"] = "Mohammed Abdul Rahaman"
-    form_img = render_bank_form(form_person)
-
-    images = {"nid": nid_img, "birth_certificate": birth_img, "bank_form": form_img}
-    if args.variant == "degraded":
-        images["nid"] = apply_degradation(nid_img, "glare", rng)
-        images["bank_form"] = apply_degradation(form_img, "blur", rng)
-
-    for name, img in images.items():
-        img.save(out / f"{name}.png")
-
-    (out / "ground_truth.json").write_text(json.dumps(
-        {"variant": args.variant, "documents": truth}, indent=2, ensure_ascii=False))
-    print(f"wrote {out} ({args.variant})")
+    generate_set(args.out, args.variant, args.seed)
+    print(f"wrote {args.out} ({args.variant})")
 
 
 if __name__ == "__main__":
