@@ -1,0 +1,192 @@
+/* DocTrust demo — trace replay engine.
+ *
+ * Renders a cached case (cases.js) as styled document cards and replays
+ * the agent's trace step by step. Each trace step highlights the fields
+ * it talks about; the stamp step in Case A fades the stamp overlay the
+ * way the stamp_masked investigation view removes it. No network calls,
+ * no model — this is a replay, and the page says so.
+ */
+(function () {
+  "use strict";
+
+  var cases = window.DOCTRUST_CASES || [];
+  var state = { caseIndex: 0, step: -1, playing: false, timer: null, delay: 1500 };
+
+  var pickerEl = document.getElementById("casePicker");
+  var summaryEl = document.getElementById("caseSummary");
+  var docsEl = document.getElementById("docs");
+  var traceEl = document.getElementById("trace");
+  var verdictEl = document.getElementById("verdict");
+  var verdictTitleEl = document.getElementById("verdictTitle");
+  var verdictBodyEl = document.getElementById("verdictBody");
+  var playBtn = document.getElementById("playBtn");
+  var stepBtn = document.getElementById("stepBtn");
+  var resetBtn = document.getElementById("resetBtn");
+  var progressEl = document.getElementById("progress");
+
+  function currentCase() { return cases[state.caseIndex]; }
+
+  function fieldHTML(field) {
+    var cls = "fvalue" + (field.bn ? " bn" : "");
+    var inner = '<span class="' + cls + '">' + field.value + "</span>";
+    if (field.fxTag) {
+      inner += '<span class="degraded-tag">(' + field.fxTag + ")</span>";
+    }
+    if (field.fx === "glare") {
+      inner += '<span class="glare" aria-hidden="true"></span>';
+    }
+    var hostCls = "field" + (field.fx === "blur" ? " blurred" : "") +
+      (field.stamp ? " stamp-host" : "");
+    var stamp = field.stamp
+      ? '<span class="stamp" data-stamp>OFFICE STAMP</span>' +
+        '<span class="mask-note">masked by SAM 3.1</span>'
+      : "";
+    return '<div class="' + hostCls + '" data-field="' + field.id + '">' +
+      '<span class="flabel">' + field.label + "</span>" +
+      '<span class="fwrap">' + inner + stamp + "</span></div>";
+  }
+
+  function docHTML(doc) {
+    var fields = doc.fields.map(fieldHTML).join("");
+    var photo = doc.photo ? '<div class="photo-box">PHOTO</div>' : "";
+    return '<article class="doc-card tone-' + doc.tone + '" data-doc="' + doc.id + '">' +
+      '<div class="doc-head"><span class="doc-title">' + doc.type +
+      "<small>" + doc.bn + '</small></span><span class="specimen-chip">SPECIMEN</span></div>' +
+      '<div class="doc-body">' + photo + '<div class="fields">' + fields +
+      "</div></div></article>";
+  }
+
+  function renderCase() {
+    var c = currentCase();
+    summaryEl.textContent = c.summary;
+    docsEl.innerHTML = c.documents.map(docHTML).join("");
+    Array.prototype.forEach.call(pickerEl.children, function (btn, i) {
+      btn.setAttribute("aria-selected", i === state.caseIndex ? "true" : "false");
+    });
+    resetReplay();
+  }
+
+  function clearHighlights() {
+    Array.prototype.forEach.call(
+      docsEl.querySelectorAll(".hl-focus,.hl-warn,.hl-bad,.hl-good"),
+      function (el) {
+        el.classList.remove("hl-focus", "hl-warn", "hl-bad", "hl-good");
+      });
+  }
+
+  function highlight(ref, hl) {
+    var parts = ref.split(":");
+    var sel = parts.length === 2
+      ? '[data-doc="' + parts[0] + '"] [data-field="' + parts[1] + '"]'
+      : '[data-doc="' + parts[0] + '"]';
+    var el = docsEl.querySelector(sel);
+    if (el) { el.classList.add("hl-" + (hl || "focus")); }
+  }
+
+  function setStamp(masked) {
+    Array.prototype.forEach.call(docsEl.querySelectorAll("[data-stamp]"),
+      function (el) { el.classList.toggle("masked", masked); });
+    Array.prototype.forEach.call(docsEl.querySelectorAll(".stamp-host"),
+      function (el) { el.classList.toggle("masked", masked); });
+  }
+
+  function updateProgress() {
+    var total = currentCase().steps.length;
+    var shown = Math.max(state.step + 1, 0);
+    progressEl.textContent = "Step " + shown + " / " + total;
+    stepBtn.disabled = state.step >= total - 1;
+  }
+
+  function applyStep(i) {
+    var c = currentCase();
+    var step = c.steps[i];
+    if (!step) { return; }
+    state.step = i;
+    clearHighlights();
+    (step.highlights || []).forEach(function (ref) { highlight(ref, step.hl); });
+    if (step.stamp === "hide") { setStamp(true); }
+    if (step.stamp === "show") { setStamp(false); }
+
+    var li = document.createElement("li");
+    if (step.tone) { li.className = "tone-" + step.tone; }
+    var phase = document.createElement("span");
+    phase.className = "phase";
+    phase.textContent = step.phase;
+    var p = document.createElement("p");
+    p.innerHTML = step.text;
+    li.appendChild(phase);
+    li.appendChild(p);
+    traceEl.appendChild(li);
+
+    if (step.verdict) {
+      verdictTitleEl.textContent = step.verdict.title;
+      verdictBodyEl.textContent = step.verdict.body;
+      verdictEl.className = "verdict verdict-" + step.verdict.kind;
+      verdictEl.hidden = false;
+    }
+    updateProgress();
+  }
+
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    playBtn.textContent = "▶ Play";
+  }
+
+  function startPlaying() {
+    if (state.step >= currentCase().steps.length - 1) { resetReplay(); }
+    state.playing = true;
+    playBtn.textContent = "⏸ Pause";
+    state.timer = setInterval(function () {
+      if (state.step >= currentCase().steps.length - 1) { stopPlaying(); return; }
+      applyStep(state.step + 1);
+      if (state.step >= currentCase().steps.length - 1) { stopPlaying(); }
+    }, state.delay);
+  }
+
+  function resetReplay() {
+    stopPlaying();
+    state.step = -1;
+    traceEl.innerHTML = '<li class="trace-empty" style="border:none;background:none;">' +
+      "Press Play (or Step) to replay the agent's cross-examination of this set.</li>";
+    verdictEl.hidden = true;
+    clearHighlights();
+    setStamp(false);
+    updateProgress();
+  }
+
+  // Case picker tabs
+  cases.forEach(function (c, i) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "case-tab";
+    btn.textContent = c.tab;
+    btn.setAttribute("aria-selected", i === 0 ? "true" : "false");
+    btn.addEventListener("click", function () {
+      state.caseIndex = i;
+      renderCase();
+    });
+    pickerEl.appendChild(btn);
+  });
+
+  playBtn.addEventListener("click", function () {
+    if (state.playing) { stopPlaying(); } else { startPlaying(); }
+  });
+  stepBtn.addEventListener("click", function () {
+    stopPlaying();
+    var empty = traceEl.querySelector(".trace-empty");
+    if (empty && state.step === -1) { traceEl.innerHTML = ""; }
+    if (state.step < currentCase().steps.length - 1) {
+      applyStep(state.step + 1);
+    }
+  });
+  resetBtn.addEventListener("click", resetReplay);
+
+  // The Step handler removes the placeholder on first use; Play must too.
+  playBtn.addEventListener("click", function () {
+    var empty = traceEl.querySelector(".trace-empty");
+    if (empty && state.playing) { traceEl.innerHTML = ""; }
+  });
+
+  renderCase();
+})();

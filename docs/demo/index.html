@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocTrust — live demo (cached agent run)</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div>
+      <h1>DocTrust</h1>
+      <p class="one-liner">An open-weight reviewer agent that cross-examines a person's
+      whole document set, re-reads anything it is unsure about, and shows the human
+      reviewer the exact regions that agree or disagree. It never auto-rejects.</p>
+    </div>
+    <span class="badge badge-demo">Demo mode</span>
+  </div>
+  <p class="demo-note"><strong>Demo mode — cached agent run on synthetic data.</strong>
+  Live mode connects to Muse Spark Open via Baseten and SAM 3.1 on Modal
+  (API keys required). Every document below is synthetic and marked SPECIMEN;
+  nothing here is a real document or a real person.</p>
+</header>
+
+<main class="layout">
+  <section class="docs-column">
+    <nav class="case-picker" id="casePicker" aria-label="Demo cases"></nav>
+    <p class="case-summary" id="caseSummary"></p>
+    <div id="docs" class="docs"></div>
+  </section>
+
+  <aside class="trace-column">
+    <div class="controls">
+      <button id="playBtn" type="button">▶ Play</button>
+      <button id="stepBtn" type="button">Step →</button>
+      <button id="resetBtn" type="button">Reset</button>
+      <span class="progress" id="progress"></span>
+    </div>
+    <h2>Agent trace</h2>
+    <ol class="trace" id="trace"></ol>
+    <div class="verdict" id="verdict" hidden>
+      <h3 id="verdictTitle"></h3>
+      <p id="verdictBody"></p>
+    </div>
+  </aside>
+</main>
+
+<footer class="site-footer">
+  <p>DocTrust is decision support for a human reviewer — it never auto-approves or
+  auto-rejects. Uncertainty comes from disagreement between reads under perturbation,
+  not from a model's self-reported confidence. Normalization and cross-examination are
+  deterministic code, so every flag is traceable to a rule.</p>
+  <p>Source and plan:
+  <a href="https://github.com/rafiimam/DocTrust">github.com/rafiimam/DocTrust</a> ·
+  Built for the Meta Global AI Developer Hackathon 2026 (Indie Developer track).</p>
+</footer>
+
+<script src="cases.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
