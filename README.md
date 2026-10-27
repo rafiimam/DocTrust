@@ -25,11 +25,22 @@ Because it runs on open-weight models (Muse Spark Open via Baseten, SAM 3.1 self
 
 ## Status
 
-Day 1 (27 Oct 2026): repository scaffold and plan. See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
+Day 1 (27 Oct 2026): repository scaffold and plan; deterministic normalization and comparator with tests; synthetic SPECIMEN generator v1; agent loop with perturbation-based uncertainty and investigation reads. See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
+
+## SAM 3.1 segmentation (on Modal)
+
+SAM 3.1 is wired into the agent as a tool, not a preprocessing step:
+
+- `backend/app/segmenter.py` defines the `Segmenter` interface the agent loop uses. When a field's perturbation reads disagree, the `stamp_masked` investigation view re-reads the field from a copy of the image with the stamp region masked by the injected segmenter. If no segmenter is configured — or segmentation fails — the view is read from the original image and the review proceeds unchanged.
+- `ModalSegmenter` calls the self-hosted SAM 3.1 endpoint (`modal_sam/sam_app.py`: one scale-to-zero L4 GPU function on Modal, weights from the gated `facebook/sam3.1` Hugging Face repo, cached in a Modal Volume). Set `SAM_MODAL_ENDPOINT` to enable it.
+- `PillowFallbackSegmenter` is the deterministic offline path: a colour heuristic finds stamp-like (saturated blue/purple ink) regions and Pillow masks them. It needs no GPU, network or credits, and is what the test suite exercises.
+
+**Status: implemented and covered by offline tests; the live Modal smoke test is pending** — it needs the project owner's Hugging Face read token and Modal login, plus the endpoint's first (slow) weights download. Exact steps are in [modal_sam/README.md](modal_sam/README.md). No accuracy claim is made for segmentation at this stage; all development documents are synthetic and watermarked SPECIMEN.
 
 ## Layout
 
 - `backend/` — FastAPI service: agent loop, tools, deterministic comparator
+- `modal_sam/` — SAM 3.1 image segmentation as a Modal app (deployment + smoke-test steps inside)
 - `frontend/` — reviewer UI (documents left, live agent trace with evidence links right)
 - `generator/` — synthetic document set generator (SPECIMEN-watermarked)
 - `eval/` — synthetic evaluation sets and baseline/agent comparisons
