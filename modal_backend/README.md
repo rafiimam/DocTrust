@@ -89,9 +89,14 @@ error.
 
 ## 5. Point the demo at it
 
-Open https://rafiimam.github.io/DocTrust/demo/, switch to **Upload
-(judge mode)**, paste the endpoint URL into **Backend URL**, and it is
-remembered (localStorage) on that browser.
+No step needed for this deployment: the demo's default **Backend URL**
+(`DEFAULT_BACKEND_URL` in `docs/demo/judge.js`) is this backend's
+endpoint, so https://rafiimam.github.io/DocTrust/demo/ → **Upload
+(judge mode)** works out of the box. If the app is ever redeployed
+under a different URL, update that constant. To use a different
+backend instead — e.g. a local one (`uvicorn app.main:app` in
+`backend/`, for development) — paste its URL into **Backend URL** on
+the page; it is remembered (localStorage) on that browser.
 
 ## Optional: SAM 3.1 segmenter
 

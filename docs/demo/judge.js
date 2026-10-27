@@ -13,10 +13,12 @@
 (function () {
   "use strict";
 
-  // Backend base URL. Default is a local backend; the deployed Modal
-  // URL (see modal_backend/README.md) can be pasted into the Backend
-  // URL field on the page and is persisted to localStorage.
-  var DEFAULT_BACKEND_URL = "http://localhost:8000";
+  // Backend base URL. Default is the hosted backend on Modal, so
+  // judge mode works out of the box. A different backend — e.g. a local
+  // one for development — can be pasted into the Backend URL field on
+  // the page and is persisted to localStorage.
+  var DEFAULT_BACKEND_URL =
+    "https://rafiimam96--doctrust-backend-fastapi-app.us-east.modal.run";
   var STORAGE_KEY = "doctrustBackendUrl";
   var DOC_TYPES = ["nid", "birth_certificate", "bank_form"];
   var DOC_LABELS = {
@@ -87,9 +89,11 @@
       statusEl.textContent = "Backend reachable at " + base + ".";
     }).catch(function () {
       statusEl.textContent = "Backend not reachable at " + base +
-        ". Start it locally (uvicorn app.main:app in backend/) or deploy " +
-        "it (modal_backend/README.md) — the cached cases keep working " +
-        "either way.";
+        ". The hosted backend scales to zero when idle, so it may just " +
+        "be waking up — wait a few seconds and reopen Upload mode. Or " +
+        "check the Backend URL above (developers can run a local " +
+        "backend instead: uvicorn app.main:app in backend/). The " +
+        "cached cases keep working either way.";
     });
   }
 
@@ -273,9 +277,9 @@
                 addTraceStatus("The backend ran preprocessing and " +
                   "segmentation but has NO vision reader configured, so " +
                   "no fields were read and no verdict was produced. " +
-                  "Nothing here is faked: configure BASETEN_API_KEY on " +
-                  "the backend (see modal_backend/README.md) and run " +
-                  "again — or use the cached cases to see a full run.",
+                  "Nothing here is faked: the backend needs its " +
+                  "server-side reader key (see modal_backend/README.md) " +
+                  "— or use the cached cases to see a full run.",
                   "tone-warn");
                 if (result.evidence && result.evidence.length) {
                   renderResult(result);
