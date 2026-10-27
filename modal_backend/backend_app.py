@@ -11,11 +11,18 @@ backend a judge can run against:
     GET  /api/case-pack/{variant}         downloadable synthetic set (ZIP)
 
 Configuration (all server-side; nothing secret lives in this repo):
-- The Baseten API key comes from the Modal secret named
-  "baseten-secret" (key BASETEN_API_KEY), attached below. Without that
-  secret the app still deploys and serves, but review jobs end in the
-  honest "reader_not_configured" state — see backend/app/judge.py.
-- JUDGE_READER is set to "baseten" here (env only; flip in one place).
+- The reader API key comes from a Modal secret attached below. The
+  default is the Meta Model API: secret "meta-secret" (key
+  MODEL_API_KEY), with JUDGE_READER defaulting to "meta" (model from
+  META_MODEL, default muse-spark-1.3 — see backend/app/providers.py).
+- IMPORTANT: Modal fails the deploy/function if a listed secret does
+  not exist, so exactly ONE secret is listed here. Create the secret
+  before deploying (see README), or remove the `secrets=[...]` line to
+  deploy without a reader — the app still serves, but review jobs end
+  in the honest "reader_not_configured" state (backend/app/judge.py).
+- Baseten instead of Meta: two one-line changes — point the secrets
+  line at "baseten-secret" (key BASETEN_API_KEY) and change the
+  JUDGE_READER default below to "baseten".
 - To also use SAM 3.1 on Modal for the masked investigation view, set
   SAM_MODAL_ENDPOINT to the doctrust-sam31 endpoint URL (see
   modal_sam/). Until then the deterministic Pillow fallback segmenter
@@ -48,7 +55,7 @@ image = (
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("baseten-secret")],
+    secrets=[modal.Secret.from_name("meta-secret")],
     scaledown_window=300,   # scale to zero after ~5 idle minutes
     timeout=900,            # a review job may run several minutes
 )
@@ -57,7 +64,7 @@ def fastapi_app():
     # Env must be set before the app resolves its reader (resolution is
     # per request in backend/app/judge.py, but set defaults up front so
     # the intent is in exactly one place).
-    os.environ.setdefault("JUDGE_READER", "baseten")
+    os.environ.setdefault("JUDGE_READER", "meta")
     os.environ.setdefault("PYTHONPATH", "/root/repo:/root/repo/backend")
 
     import sys
