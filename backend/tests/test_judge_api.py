@@ -204,15 +204,46 @@ def test_upload_rejects_oversize(generated, monkeypatch):
     assert resp.status_code == 413
 
 
-def test_upload_rejects_missing_document(generated):
+# --- Optional uploads (contract changed by owner decision, 2026-10-27) ----
+#
+# The original contract required all three documents (a missing one was
+# a 422). The owner replaced it: each document is individually optional
+# so a partial upload runs and the absent document is reported as a
+# missing_document evidence gap — an absent document is a gap in the
+# evidence, not a malformed request. Only a completely empty upload is
+# still rejected (422): an empty review is meaningless.
+
+def test_upload_partial_set_reports_missing_document_gap(generated):
     doc_dir = generated("clean")
-    with _client(MockReader(_script_for("clean"))) as client:
+    reader = MockReader(_script_for("clean"))
+    with _client(reader) as client:
         files = {
             "nid": ("nid.png", (doc_dir / "nid.png").read_bytes(),
                     "image/png"),
+            "birth_certificate": (
+                "birth_certificate.png",
+                (doc_dir / "birth_certificate.png").read_bytes(),
+                "image/png"),
         }
         resp = client.post("/api/review", files=files)
+        assert resp.status_code == 202
+        result = _wait_result(client, resp.json()["job_id"])
+    assert result["state"] == "done"
+    # The two uploaded documents agree; the absent one is not an error
+    # and never becomes a discrepancy — it is exactly one gap.
+    assert result["verdict"] == "CONSISTENT"
+    gaps = result["evidence_gaps"]
+    assert len(gaps) == 1
+    assert gaps[0]["kind"] == "missing_document"
+    assert gaps[0]["doc_type"] == "bank_form"
+    assert gaps[0]["field"] is None
+
+
+def test_upload_no_documents_rejected(generated):
+    with _client(MockReader(_script_for("clean"))) as client:
+        resp = client.post("/api/review")
     assert resp.status_code == 422
+    assert "at least one" in resp.json()["detail"]
 
 
 def test_unknown_job_404():

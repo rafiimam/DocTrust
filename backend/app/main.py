@@ -2,9 +2,10 @@
 
 Routes:
 - GET  /health                          service health
-- POST /api/review                      judge mode: upload 3 synthetic
-                                        document images, run the agent
-                                        loop as a background job
+- POST /api/review                      judge mode: upload the synthetic
+                                        document images (any subset, at
+                                        least one), run the agent loop as
+                                        a background job
 - GET  /api/review/{job_id}/events      SSE stream of the job's trace
 - GET  /api/review/{job_id}             job state / final result JSON
 - GET  /api/case-pack/{variant}         freshly generated synthetic set
@@ -105,19 +106,30 @@ async def _read_upload(upload: UploadFile, doc_type: str) -> bytes:
 @app.post("/api/review", status_code=202)
 async def create_review(
     background: BackgroundTasks,
-    nid: UploadFile = File(...),
-    birth_certificate: UploadFile = File(...),
-    bank_form: UploadFile = File(...),
+    nid: UploadFile | None = File(None),
+    birth_certificate: UploadFile | None = File(None),
+    bank_form: UploadFile | None = File(None),
     reader=Depends(get_reader),
     segmenter=Depends(get_segmenter),
 ):
-    """Accept three synthetic document images and start a review job."""
-    uploads = {
-        "nid": await _read_upload(nid, "nid"),
-        "birth_certificate": await _read_upload(
-            birth_certificate, "birth_certificate"),
-        "bank_form": await _read_upload(bank_form, "bank_form"),
-    }
+    """Accept synthetic document images and start a review job.
+
+    Each document is individually optional: the case profile expects
+    all three, and whichever were left out are reported in the result
+    as missing_document evidence gaps (see app/gaps.py). At least one
+    document is required — an empty review is meaningless.
+    """
+    provided = {"nid": nid, "birth_certificate": birth_certificate,
+                "bank_form": bank_form}
+    if all(upload is None for upload in provided.values()):
+        raise HTTPException(
+            status_code=422,
+            detail="No documents were uploaded: provide at least one of "
+                   "nid, birth_certificate, bank_form.")
+    uploads = {}
+    for doc_type, upload in provided.items():
+        if upload is not None:
+            uploads[doc_type] = await _read_upload(upload, doc_type)
     try:
         job = judge_module.STORE.create(
             live=judge_module.is_live_reader(reader))
