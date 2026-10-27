@@ -6,6 +6,12 @@ Written 27 Oct 2026 by Rafi. Supersedes the earlier plan (DocTrust-Updated-Plan-
 ## One line
 DocTrust is an open-weight reviewer agent that cross-examines a person's whole document set (NID, birth certificate, bank form), re-reads anything it is unsure about, and shows the human reviewer the exact regions that agree or disagree. It never auto-rejects.
 
+## Status note (27 Oct 2026) — what is verified, what is pending
+- **Verified live:** the reader running on the hosted Meta Model API (`muse-spark-1.3`) — the Bangla gate test passed 4/4 and a full judge-mode run completed end-to-end with live reads. Billing resolved via the $150 credit.
+- **Implemented, verification pending:** the open-weight route — Muse Spark Open (`meta-models/muse-spark-open-1026`) via Baseten. The reader is implemented and selectable by environment variable, but no result in this repo comes from it yet; verification waits on a Baseten key. Below, "Muse Spark Open" names that route; where the current build's live behaviour is described, it is the Meta Model API route.
+- **Pending:** SAM 3.1 live smoke test on Modal (needs the owner's Modal login and Hugging Face token) and the evaluation run (protocol in `eval/EVALUATION.md`, stamp comparison in `eval/SAM_TEST.md`).
+- The open-weights point throughout this plan is a **design property** — a deployment *can* run entirely inside the institution — not a claim about which route the current demo runs.
+
 ## What changed from v1, and why
 - Re-reads are triggered by perturbation disagreement, not model self-confidence — principled uncertainty, and it puts the noise-robustness research at the core.
 - SAM 3.1 becomes a tool the agent calls (e.g. mask a stamp, then re-read) — rubric asks for use of Meta tooling beyond a basic integration.
@@ -26,7 +32,7 @@ Framing for judges: this is a pattern shared by many markets; Bangladesh is wher
 
 ## How it works (the agent loop)
 1. Segment. SAM 3.1 finds each document and field region using text concept prompts ("stamp", "signature", "handwritten date", "photo").
-2. Read. Muse Spark Open reads each region (print, handwriting, Bangla, English, both digit systems).
+2. Read. Muse Spark reads each region (print, handwriting, Bangla, English, both digit systems).
 3. Estimate uncertainty. Each field is read several times under perturbations (zoom, contrast, stamp masked out). Disagreement across reads marks the field uncertain.
 4. Investigate. For uncertain fields the agent acts: zoom, mask an occluding stamp via SAM, re-read, and record what changed.
 5. Normalize. Deterministic code converts digits, dates and name variants to canonical forms (transliteration-aware matching, not string equality).
@@ -40,7 +46,7 @@ Framing for judges: this is a pattern shared by many markets; Bangladesh is wher
 
 ## Rubric mapping
 - Impact (30%): genuine customer falsely rejected by exact match; recapture verdict for bad photos; open weights so documents need not leave the institution.
-- Meta AI tooling (25%): SAM 3.1 as an in-loop tool with open-vocabulary prompts and masks as evidence; Muse Spark Open reading mixed Bangla/English and both digit systems.
+- Meta AI tooling (25%): SAM 3.1 as an in-loop tool with open-vocabulary prompts and masks as evidence; Muse Spark reading mixed Bangla/English and both digit systems (verified live via the Meta Model API; the open-weight Baseten route is implemented, verification pending its key).
 - Technical depth (20%): perturbation-based uncertainty, deterministic comparator with tests, ablation results.
 - Demo (25%): live agent trace, evidence overlays across documents, pre-warmed endpoints, recorded fallback.
 
@@ -62,8 +68,8 @@ Metrics: false-flag rate on genuine sets, detection rate on injected discrepanci
 Report as a small synthetic-set result. Do not claim real-world accuracy.
 
 ## Stack
-- Reasoning and reading: Muse Spark Open (meta-models/muse-spark-open-1026) via Baseten. If Meta Model API billing resolves, swap the reading step via an environment variable.
-- Segmentation: SAM 3.1 self-hosted on Modal. The weights on Hugging Face are gated and access requests can be refused, so request access today. Fallback: Meta Model API if billing works.
+- Reasoning and reading: Muse Spark, provider chosen by environment variable. Verified live: Meta Model API (`muse-spark-1.3`, hosted). Implemented, verification pending a Baseten key: Muse Spark Open (meta-models/muse-spark-open-1026) via Baseten — the open-weight route a deployment inside an institution would use.
+- Segmentation: SAM 3.1 self-hosted on Modal (Hugging Face access granted 27 Oct). Fallbacks: the deterministic Pillow heuristic segmenter (offline), or Meta's hosted `sam-3.1` on the Meta Model API.
 - Backend: FastAPI. Frontend: purpose-built reviewer UI (documents on the left, live agent trace with evidence links on the right), using whatever you can build fastest. No dashboard-as-product.
 - Repo: fresh public repo with clean history from 27 Oct. README states exactly what was built during the hackathon.
 
@@ -80,7 +86,7 @@ Out: face or photo matching, real NID formats, any real data, auth, database, an
 
 ## Risks and mitigations
 - SAM 3.1 access refused or Modal credits missed → request all access tonight; ask in #questions; fall back to Meta Model API if billing works.
-- Baseten credits not granted (reviewed, not guaranteed) → request today; get one working call tonight; check other partner credits.
+- Baseten credits/key not granted (reviewed, not guaranteed) → no longer on the critical path: the Meta Model API route is verified live and carries the demo and evaluation. The open-weight route's verification, and any open-weight-bonus claim, wait on the key; do not claim Baseten results before it lands.
 - Tool calling flaky on Muse Spark Open → fixed step sequence with model decisions.
 - Cold starts break the live demo → pre-warm endpoints; cache a full run; keep a recorded fallback.
 - Scope creep → feature freeze Monday noon.

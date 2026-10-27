@@ -13,7 +13,7 @@ KYC and onboarding systems built around Latin names and clean scans fail people 
 DocTrust reviews a document set (national ID, birth certificate, bank form) the way a careful senior reviewer would:
 
 1. **Segments** each document and field region with SAM 3.1, called as a tool by the agent.
-2. **Reads** each region with Muse Spark Open — print, handwriting, Bangla and English, both digit systems.
+2. **Reads** each region with Muse Spark — print, handwriting, Bangla and English, both digit systems.
 3. **Estimates uncertainty by perturbation** — each field is read several times under changes (zoom, contrast, an occluding stamp masked out). Disagreement between reads marks a field as uncertain.
 4. **Investigates** uncertain fields: zooms in, masks the stamp, re-reads, and records what changed.
 5. **Normalizes and cross-examines** with deterministic code — digits, dates and name variants are canonicalized, then every shared fact is compared across documents.
@@ -25,7 +25,7 @@ DocTrust never auto-approves or auto-rejects. It is decision support for a human
 
 **https://rafiimam.github.io/DocTrust/demo/** — a self-contained replay of cached agent runs on synthetic document sets (a discrepancy hidden under a stamp, a genuine name/digit variation, a degraded capture), served from [`docs/demo/`](docs/demo/) by GitHub Pages. It calls no model and needs no API keys; live mode is the backend described below. Pages is enabled once by the repository owner: **Settings → Pages → Deploy from a branch → `main` → `/docs`**.
 
-Because it runs on open-weight models (Muse Spark Open via Baseten, SAM 3.1 self-hosted on Modal), sensitive documents can stay inside the institution's own infrastructure.
+DocTrust is designed so sensitive documents never have to leave the institution: the reader can run on open weights (Muse Spark Open) and the segmenter is a self-hosted SAM 3.1, so a deployment can run entirely inside the institution's own infrastructure. What is verified live so far is the hosted Meta Model API route (`muse-spark-1.3`); the open-weight Baseten route is implemented and selectable by environment variable, with its verification pending a Baseten key — see "Reader provider" under Judge mode.
 
 ## Judge mode — run it yourself, live
 
@@ -47,13 +47,17 @@ Then open the demo, switch to Upload mode — the default backend URL is `http:/
 
 **Honest limits.** Live field reading needs a reader API key configured **server-side**. Without one, the backend still accepts uploads and runs preprocessing and stamp segmentation — then ends the job in a plainly labelled `reader_not_configured` state. It never fakes a read or a verdict. Judge mode is for **synthetic documents only** — please do not upload real identity documents.
 
-**Reader provider is configuration, not code.** The vision reader can be the **Meta Model API** (`MODEL_API_KEY`, model `muse-spark-1.3` by default) or **Baseten** hosting Muse Spark Open (`BASETEN_API_KEY`). Which one is used is chosen purely by environment — `JUDGE_READER=meta` or `JUDGE_READER=baseten` — and the Modal deployment stores the key as a secret (`meta-secret` or `baseten-secret`); see [`modal_backend/README.md`](modal_backend/README.md).
+**Reader provider is configuration, not code.** The vision reader can be the **Meta Model API** (`MODEL_API_KEY`, model `muse-spark-1.3` by default) or **Baseten** hosting Muse Spark Open (`BASETEN_API_KEY`). Which one is used is chosen purely by environment — `JUDGE_READER=meta` or `JUDGE_READER=baseten` — and the Modal deployment stores the key as a secret (`meta-secret` or `baseten-secret`); see [`modal_backend/README.md`](modal_backend/README.md). Verification status, stated plainly: the **Meta Model API route is the one verified live** (Bangla gate test and a full judge-mode run, 27 Oct 2026). The **Baseten / Muse Spark Open route is implemented but not yet verified** — it awaits a Baseten API key, and nothing in this README claims results for it. A public backend also has a daily cap on live runs (`JUDGE_DAILY_RUN_CAP`, default 100) so the endpoint cannot spend the reader budget unbounded.
 
 ## Status
 
 Day 1 (27 Oct 2026): repository scaffold and plan; deterministic normalization and comparator with tests; synthetic SPECIMEN generator v1; agent loop with perturbation-based uncertainty and investigation reads; SAM 3.1 segmenter layer (Modal + Pillow fallback); GitHub Pages demo with cached cases; judge mode — live upload API with SSE trace, on-the-fly case packs, a Modal deployment wrapper, and an Upload tab in the demo. See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
 
-The **Bangla gate test has passed** on the Meta Model API route: `muse-spark-1.3` read all four fields of a clean synthetic NID exactly (4/4) — including the Bangla-digit ID number, preserved digit-for-digit. One calibration mattered: Muse Spark is a reasoning model, so the reader needs completion headroom (`max_tokens` 1024, `reasoning_effort` "minimal"); at a 128-token budget every call returned null content, the budget entirely consumed by reasoning.
+The **Bangla gate test has passed** on the Meta Model API route: `muse-spark-1.3` read all four fields of a clean synthetic NID exactly (4/4) — including the Bangla-digit ID number, preserved digit-for-digit. One calibration mattered: Muse Spark is a reasoning model, so the reader needs completion headroom (`max_tokens` 1024, `reasoning_effort` "minimal"); at a 128-token budget every call returned null content, the budget entirely consumed by reasoning. A full judge-mode run with live reads has also completed end-to-end on this route (discrepancy set, correct verdict). The Baseten (Muse Spark Open) route remains implemented-but-unverified pending its key.
+
+## Results
+
+**Evaluation pending — no numbers are claimed yet.** The evaluation protocol and report template are in [`eval/EVALUATION.md`](eval/EVALUATION.md): about 40 synthetic sets (clean, genuine variation, injected discrepancy, degraded, plus physically captured specimen sets), three configurations (exact-match baseline, single-pass + normalization, full agent), all results reported as counts (x/n), never bare percentages. The fixed SAM-vs-heuristic stamp comparison protocol is in [`eval/SAM_TEST.md`](eval/SAM_TEST.md).
 
 ## SAM 3.1 segmentation (on Modal)
 
