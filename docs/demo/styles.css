@@ -17,6 +17,9 @@
   --page: #f7f8f7;
 }
 * { box-sizing: border-box; }
+/* The hidden attribute must always win over layout display rules
+   (e.g. .layout's display:grid), so mode sections truly hide. */
+[hidden] { display: none !important; }
 body {
   margin: 0; color: var(--ink); background: var(--page);
   font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -195,18 +198,18 @@ h1 { margin: 0; font-size: 30px; letter-spacing: -.5px; }
 }
 .pack-btn:hover { background: var(--accent-soft); }
 .upload-hint { color: var(--muted); font-size: 13px; }
-.upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.upload-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 700px) { .upload-grid { grid-template-columns: 1fr; } }
 .upload-slot {
   background: var(--card); border: 1.5px dashed var(--line); border-radius: 10px;
   padding: 12px; display: flex; flex-direction: column; gap: 8px; cursor: pointer;
 }
 .upload-slot-title { font-weight: 700; font-size: 14px; }
-.upload-preview { max-width: 100%; border-radius: 6px; border: 1px solid var(--line); }
-.upload-file-name { color: var(--muted); font-size: 12.5px; word-break: break-all; }
-.upload-notice {
-  background: var(--warn-soft); border: 1.5px solid var(--warn); color: #7c2d12;
-  border-radius: 9px; padding: 11px 14px; font-size: 14px; margin-top: 14px;
+.upload-preview {
+  width: 100%; height: 300px; object-fit: contain; object-position: center;
+  background: #eceff0; border: 1px solid var(--line); border-radius: 6px;
 }
+.upload-file-name { color: var(--muted); font-size: 12.5px; word-break: break-all; }
 .fields-doc { font-size: 14.5px; margin: 12px 0 5px; }
 .fields-table { border-collapse: collapse; width: 100%; font-size: 13.5px; background: var(--card); }
 .fields-table th, .fields-table td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }

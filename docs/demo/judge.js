@@ -117,7 +117,6 @@
   var runBtn = document.getElementById("runBtn");
   var runStatus = document.getElementById("runStatus");
   var traceEl = document.getElementById("liveTrace");
-  var noticeEl = document.getElementById("uploadNotice");
   var verdictEl = document.getElementById("liveVerdict");
   var verdictTitle = document.getElementById("liveVerdictTitle");
   var verdictBody = document.getElementById("liveVerdictBody");
@@ -127,14 +126,27 @@
   var evidenceGrid = document.getElementById("evidenceGrid");
   var eventSource = null;
 
-  function showNotice(text) {
-    noticeEl.textContent = text;
-    noticeEl.hidden = false;
+  // Run status and errors live in the trace panel itself, so the
+  // panel is never left blankly empty when something goes wrong.
+  function addTraceStatus(text, tone) {
+    var li = document.createElement("li");
+    if (tone) { li.className = tone; }
+    var phase = document.createElement("span");
+    phase.className = "phase";
+    phase.textContent = "Status";
+    var p = document.createElement("p");
+    p.textContent = text;
+    li.appendChild(phase);
+    li.appendChild(p);
+    traceEl.appendChild(li);
+  }
+  function setTraceStatus(text, tone) {
+    traceEl.innerHTML = "";
+    addTraceStatus(text, tone);
   }
   function resetRun() {
     traceEl.innerHTML = "";
     verdictEl.hidden = true;
-    noticeEl.hidden = true;
     fieldsPanel.hidden = true;
     evidencePanel.hidden = true;
     fieldsTable.innerHTML = "";
@@ -215,15 +227,18 @@
   runBtn.addEventListener("click", function () {
     var missing = DOC_TYPES.filter(function (d) { return !files[d]; });
     if (missing.length) {
-      showNotice("Choose all three documents first — missing: " +
+      setTraceStatus("Choose all three documents first — missing: " +
         missing.map(function (d) { return DOC_LABELS[d]; }).join(", ") +
-        ". Download a case pack above if you need synthetic documents.");
+        ". Download a case pack above if you need synthetic documents.",
+        "tone-warn");
+      runStatus.textContent = "Missing files — see the trace panel.";
       return;
     }
     resetRun();
     runBtn.disabled = true;
     runStatus.textContent = "Uploading…";
     var base = backendUrl();
+    setTraceStatus("Uploading the three documents to " + base + " …");
     var form = new FormData();
     DOC_TYPES.forEach(function (d) { form.append(d, files[d]); });
 
@@ -255,19 +270,21 @@
               if (done.state === "reader_not_configured" ||
                   result.state === "reader_not_configured") {
                 runStatus.textContent = "Finished — reader not configured.";
-                showNotice("The backend ran preprocessing and segmentation " +
-                  "but has NO vision reader configured, so no fields were " +
-                  "read and no verdict was produced. Nothing here is faked: " +
-                  "configure BASETEN_API_KEY on the backend (see " +
-                  "modal_backend/README.md) and run again — or use the " +
-                  "cached cases to see a full run.");
+                addTraceStatus("The backend ran preprocessing and " +
+                  "segmentation but has NO vision reader configured, so " +
+                  "no fields were read and no verdict was produced. " +
+                  "Nothing here is faked: configure BASETEN_API_KEY on " +
+                  "the backend (see modal_backend/README.md) and run " +
+                  "again — or use the cached cases to see a full run.",
+                  "tone-warn");
                 if (result.evidence && result.evidence.length) {
                   renderResult(result);
                 }
               } else if (done.state === "failed") {
                 runStatus.textContent = "Run failed.";
-                showNotice("The backend reported a failure: " +
-                  (result.message || done.message || "unknown error"));
+                addTraceStatus("The backend reported a failure: " +
+                  (result.message || done.message || "unknown error"),
+                  "tone-bad");
               } else {
                 runStatus.textContent = "Done.";
                 renderResult(result);
@@ -276,6 +293,8 @@
             .catch(function () {
               runBtn.disabled = false;
               runStatus.textContent = "Could not fetch the result.";
+              addTraceStatus("The run finished but its result could " +
+                "not be fetched from the backend.", "tone-warn");
             });
         });
         eventSource.onerror = function () {
@@ -283,15 +302,17 @@
           // some browsers; only complain if we never saw 'done'.
           if (runBtn.disabled && runStatus.textContent.indexOf("Running") === 0) {
             runStatus.textContent = "Stream interrupted.";
+            addTraceStatus("The live event stream was interrupted " +
+              "before the run finished.", "tone-warn");
           }
         };
       })
       .catch(function (err) {
         runBtn.disabled = false;
         runStatus.textContent = "Backend unreachable.";
-        showNotice("Could not run the review: " + err.message +
+        setTraceStatus("Could not run the review: " + err.message +
           ". No live run was simulated. Check the Backend URL above, or " +
-          "switch back to the cached cases.");
+          "switch back to the cached cases.", "tone-warn");
       });
   });
 })();
