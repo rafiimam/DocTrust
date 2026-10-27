@@ -107,6 +107,15 @@ columns below remain _pending_.
 | C | Pillow heuristic | — | _ | _ | _ |
 | C | SAM 3.1 | (all three prompts) | _pending_ | _pending_ | _pending_ |
 
+Generator support for the recovered-read stage now exists: the
+generator accepts `stamp_position="over_dob"` (CLI
+`--stamp-position over_dob`), which centres the same stamp graphic
+on the birth certificate's Born-row value — ground-truth
+`stamp_box` `[298, 223, 448, 373]` — instead of the bottom margin,
+so the date of birth sits under the stamp and masking it is what
+makes the field readable again. Sets for this stage can be
+generated today; the stage itself has not been run yet.
+
 For the demo video: one side-by-side overlay — heuristic mask vs.
 SAM mask — on Case A or Case C, whichever shows the clearer
 difference, including if the difference favours the heuristic.
