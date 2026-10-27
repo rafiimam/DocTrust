@@ -27,9 +27,29 @@ DocTrust never auto-approves or auto-rejects. It is decision support for a human
 
 Because it runs on open-weight models (Muse Spark Open via Baseten, SAM 3.1 self-hosted on Modal), sensitive documents can stay inside the institution's own infrastructure.
 
+## Judge mode — run it yourself, live
+
+The demo page has an **Upload (judge mode)** tab. Instead of watching a replay, a judge runs the real pipeline on a fresh synthetic set:
+
+1. **Download a case pack** from the backend (Clean / Variation / Discrepancy / Degraded) — a ZIP with `nid.png`, `birth_certificate.png`, `bank_form.png` and the `ground_truth.json` the run should agree with. Packs are generated on the fly; no binaries live in this repo.
+2. **Upload the three images.** The backend runs the agent loop as a job: reads under real perturbed views (zoom, contrast, tight zoom), investigation re-reads with the stamp masked when reads disagree, then the deterministic cross-examination.
+3. **Watch it happen.** The agent trace streams live (Server-Sent Events), and the result shows every field's read value, canonical form and per-view readings, the comparator findings, the evidence views the agent actually read, and the verdict — *Consistent* / *Discrepancy, needs human review* / *Unreadable, request recapture*.
+
+API: `POST /api/review` (multipart: `nid`, `birth_certificate`, `bank_form`; PNG/JPG, 8 MB per file) → `GET /api/review/{job_id}/events` (SSE) → `GET /api/review/{job_id}` (result JSON). Plus `GET /api/case-pack/{variant}` and `GET /health`. Jobs are in-memory only (capped, TTL-evicted); uploaded files are deleted with the job's temp directory.
+
+**Run it locally:**
+
+```bash
+cd backend && uvicorn app.main:app --port 8000   # after: pip install -r requirements.txt
+```
+
+Then open the demo, switch to Upload mode — the default backend URL is `http://localhost:8000` (editable on the page, remembered per browser). **Deploy it:** [`modal_backend/README.md`](modal_backend/README.md) (scale-to-zero Modal app; paste its URL into the demo's Backend URL field).
+
+**Honest limits.** Live field reading needs the Baseten API key configured **server-side** (`BASETEN_API_KEY`, e.g. as the Modal secret `baseten-secret`). Without it, the backend still accepts uploads and runs preprocessing and stamp segmentation — then ends the job in a plainly labelled `reader_not_configured` state. It never fakes a read or a verdict. Judge mode is for **synthetic documents only** — please do not upload real identity documents.
+
 ## Status
 
-Day 1 (27 Oct 2026): repository scaffold and plan; deterministic normalization and comparator with tests; synthetic SPECIMEN generator v1; agent loop with perturbation-based uncertainty and investigation reads. See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
+Day 1 (27 Oct 2026): repository scaffold and plan; deterministic normalization and comparator with tests; synthetic SPECIMEN generator v1; agent loop with perturbation-based uncertainty and investigation reads; SAM 3.1 segmenter layer (Modal + Pillow fallback); GitHub Pages demo with cached cases; judge mode — live upload API with SSE trace, on-the-fly case packs, a Modal deployment wrapper, and an Upload tab in the demo. See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
 
 ## SAM 3.1 segmentation (on Modal)
 
@@ -45,6 +65,7 @@ SAM 3.1 is wired into the agent as a tool, not a preprocessing step:
 
 - `backend/` — FastAPI service: agent loop, tools, deterministic comparator
 - `modal_sam/` — SAM 3.1 image segmentation as a Modal app (deployment + smoke-test steps inside)
+- `modal_backend/` — the judge-mode backend as a scale-to-zero Modal app (deployment + smoke-test steps inside)
 - `frontend/` — reviewer UI (documents left, live agent trace with evidence links right)
 - `generator/` — synthetic document set generator (SPECIMEN-watermarked)
 - `eval/` — synthetic evaluation sets and baseline/agent comparisons
