@@ -3,7 +3,10 @@
 For every field of every document in a set:
   1. Read the field under several perturbations.
   2. If the reads disagree, the field is *uncertain* — investigate with
-     additional views. For the "stamp_masked" investigation view, if a
+     additional views. Disagreement includes a view failing to read the
+     field at all (UNREADABLE/empty): partial unreadability is not
+     agreement, so a single surviving value never settles a field on
+     its own. For the "stamp_masked" investigation view, if a
      Segmenter is injected (SAM 3.1 on Modal in production, the Pillow
      fallback offline), the stamp region is masked on a working copy
      and the field is re-read from that copy; with no segmenter — or if
@@ -63,11 +66,22 @@ def read_field_with_uncertainty(reader: Reader, image_path: str,
                                 doc_type: str, field: str,
                                 segmenter: Segmenter | None = None
                                 ) -> FieldRead:
+    """Read one field under the first-pass views, investigating if unsettled.
+
+    The field is *uncertain* — and the investigation views fire — when
+    the first-pass views disagree. Disagreement means either two views
+    returned different readable values, or any view failed to read the
+    field at all (UNREADABLE/empty): a view that cannot read is not
+    agreement with the views that could, so one surviving value never
+    settles the field on its own. A field no view could read is
+    uncertain by the same rule; the investigation still runs, and if it
+    recovers nothing the value stays None (recapture, never a guess).
+    """
     reads = [reader.read_field(image_path, doc_type, field, view)
              for view in FIRST_PASS_VIEWS]
-    readable = {v for v in reads if v and v != "UNREADABLE"}
-    uncertain = len(readable) > 1
-    if uncertain or not readable:
+    readable = [v for v in reads if v and v != "UNREADABLE"]
+    uncertain = len(set(readable)) > 1 or len(readable) < len(reads)
+    if uncertain:
         for view in INVESTIGATION_VIEWS:
             view_image = _investigation_image(segmenter, image_path, view)
             reads.append(reader.read_field(view_image, doc_type, field, view))
