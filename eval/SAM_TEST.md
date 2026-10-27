@@ -120,6 +120,39 @@ For the demo video: one side-by-side overlay — heuristic mask vs.
 SAM mask — on Case A or Case C, whichever shows the clearer
 difference, including if the difference favours the heuristic.
 
+### Recovered-read probe log (2026-10-27)
+
+Single-set live probes on one genuine set with a black stamp over
+the birth certificate's DOB (`stamp_position="over_dob"`), run
+through the full agent loop with the production reader. These are
+probes, not the multi-set comparison above — n = 1 per segmenter,
+and the verdict column of the full protocol is still pending the
+evaluation run.
+
+1. **Pre-trigger-fix probe.** The birth-certificate DOB's first-pass
+   reads were [UNREADABLE, value, UNREADABLE]. Partial unreadability
+   did not count as disagreement then, so the investigation never
+   fired, the segmenter was never exercised, and the outcome was
+   decided by read variance alone.
+2. **Post-trigger-fix probe** (same set, one run per segmenter).
+   The investigation fired in both runs. The `zoom_tight` view
+   recovered the true DOB (১২/০৩/১৯৯০) in both runs' evidence trails.
+   The `stamp_masked` view read UNREADABLE in both runs: the
+   heuristic found no mask on the black stamp, and SAM's masked
+   copy covers the stamp box — which for an over-field stamp also
+   covers the digits underneath, a recorded design limit of
+   cover-masking for over-field stamps. The field's five reads
+   therefore ended scattered — the true value once, a wrong value
+   (১২/০৯/১৯৯০) once, the rest UNREADABLE — and the majority vote
+   broke the tie to the wrong value in both runs: a false
+   DISCREPANCY verdict on a genuine set, n = 1 per segmenter.
+3. **Tie fix (same day).** `_majority` now returns a value only
+   when it is the unique plurality winner; any tie for the top
+   count returns no value, so read scatter of this shape ends in
+   the recapture verdict rather than a coin-flip flag. The full
+   multi-set verdict comparison (heuristic vs. SAM, recovered-read
+   and verdict columns above) is still pending the evaluation run.
+
 ## Results — box IoU stage (2026-10-27)
 
 This stage covers only the detection half of the protocol. Each
