@@ -1,14 +1,18 @@
 # SAM 3.1 vs. Pillow heuristic — stamp-masking comparison protocol
 
-> **Status: PROTOCOL FIXED IN ADVANCE; comparison results pending.**
+> **Status: PROTOCOL FIXED IN ADVANCE; box-IoU stage run
+> 2026-10-27, remaining stages pending.**
 > The cases, prompts and scoring below are specified before the
 > comparison run, so they cannot be tuned after seeing results. The
 > heuristic side can run offline today; the SAM side runs against
 > SAM 3.1 hosted on the Meta Model API (`MetaSAMSegmenter`) — the
 > self-hosted Modal app remains implemented but is not deployed,
 > because the owner's Modal workspace cannot add the payment method
-> its GPU functions require. Until the comparison is run, every SAM
-> cell reads _pending_ and no claim is made either way.
+> its GPU functions require. The first stage of the comparison —
+> bounding-box IoU against the ground-truth stamp box — was run on
+> 2026-10-27 and is recorded below. The recovered-read and
+> final-verdict stages have not been run yet; those cells still read
+> _pending_ and no claim is made from them either way.
 
 ## Question
 
@@ -86,7 +90,11 @@ against the stamp box.
 > generator cannot place one yet, the case is recorded as *blocked
 > on generator support* rather than quietly dropped.
 
-## Results (pending)
+## Results — full protocol (pending)
+
+The bounding-box IoU stage of this scoring was run separately on
+2026-10-27 — see the next section. The read-recovery and verdict
+columns below remain _pending_.
 
 | Case | Segmenter | Prompt | Mask IoU | Occluded field read correctly | Verdict |
 |---|---|---|---|---|---|
@@ -102,6 +110,53 @@ against the stamp box.
 For the demo video: one side-by-side overlay — heuristic mask vs.
 SAM mask — on Case A or Case C, whichever shows the clearer
 difference, including if the difference favours the heuristic.
+
+## Results — box IoU stage (2026-10-27)
+
+This stage covers only the detection half of the protocol. Each
+segmenter was run on `birth_certificate.png` from the generator's
+clean sets — one set per stamp style — and the box it returned was
+compared with the ground-truth `stamp_box`, `[750, 440, 900, 590]`
+(the same box for all four styles). The metric is **bounding-box
+IoU** — intersection over union of the predicted box and the
+ground-truth box; mask IoU has not been measured yet. SAM ran on
+Meta-hosted SAM 3.1 through the Meta Model API
+(`MetaSAMSegmenter`); the heuristic ran locally
+(`PillowFallbackSegmenter`, no prompt). Where a SAM prompt returned
+one box, that box's IoU is reported; where it returned no boxes,
+the IoU is 0.00.
+
+| Stamp style | Heuristic box | Heuristic IoU | SAM "stamp" | SAM "circular ink stamp" | SAM "rubber stamp" |
+|---|---|---|---|---|---|
+| purple | [750, 440, 900, 587.5] | 0.98 | 0.99 (1 box) | 0.99 (1 box) | 0 boxes (0.00) |
+| black | none | 0.00 | 0.99 (1 box) | 0.99 (1 box) | 0 boxes (0.00) |
+| red_orange | none | 0.00 | 0.99 (1 box) | 0.99 (1 box) | 0 boxes (0.00) |
+| faded_grey | none | 0.00 | 0.99 (1 box) | 0.99 (1 box) | 0 boxes (0.00) |
+
+The colour heuristic is exactly as brittle as predicted: near
+perfect (0.98) on the purple ink it was built for, and blind to
+every other ink — black, red-orange and faded grey all returned no
+box at all. Hosted SAM found the stamp at 0.99 box IoU in all four
+styles under two of the three pre-registered prompts. The third
+prompt, "rubber stamp", returned no boxes in all four styles:
+prompt wording matters, and that negative is reported here as the
+protocol requires, not tuned away.
+
+Caveats, stated plainly:
+
+- **Box IoU only.** Mask IoU — the overlap of the actual masks —
+  has not been measured yet.
+- **n = 1 clean set per style.** These are single samples, not a
+  distribution; a different seed could move any of these numbers.
+- **Synthetic documents only**, rendered by the same generator that
+  supplies the ground truth.
+- **The recovered-read and final-verdict columns of the protocol
+  are still pending.** They run through the full agent loop, so
+  this stage alone does not complete the protocol — and by the
+  protocol's own definition, higher IoU without a recovered read
+  is not yet a win.
+- **Case C (the false-positive trap) remains blocked** on
+  generator support for a handwriting-style field near the stamp.
 
 ## Reporting rule
 
