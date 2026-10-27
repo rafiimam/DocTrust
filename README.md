@@ -43,7 +43,7 @@ API: `POST /api/review` (multipart: `nid`, `birth_certificate`, `bank_form`; PNG
 cd backend && uvicorn app.main:app --port 8000   # after: pip install -r requirements.txt
 ```
 
-Then open the demo, switch to Upload mode — the default backend URL is `http://localhost:8000` (editable on the page, remembered per browser). **Deploy it:** [`modal_backend/README.md`](modal_backend/README.md) (scale-to-zero Modal app; paste its URL into the demo's Backend URL field).
+Then open the demo, switch to Upload mode — the demo's default backend URL is the hosted Modal backend (`https://rafiimam96--doctrust-backend-fastapi-app.us-east.modal.run`, editable on the page, remembered per browser); use `http://localhost:8000` instead when running this backend locally. **Deploy it:** [`modal_backend/README.md`](modal_backend/README.md) (scale-to-zero Modal app; paste its URL into the demo's Backend URL field).
 
 **Honest limits.** Live field reading needs a reader API key configured **server-side**. Without one, the backend still accepts uploads and runs preprocessing and stamp segmentation — then ends the job in a plainly labelled `reader_not_configured` state. It never fakes a read or a verdict. Judge mode is for **synthetic documents only** — please do not upload real identity documents.
 
