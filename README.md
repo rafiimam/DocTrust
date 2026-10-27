@@ -53,6 +53,8 @@ Then open the demo, switch to Upload mode — the default backend URL is `http:/
 
 Day 1 (27 Oct 2026): repository scaffold and plan; deterministic normalization and comparator with tests; synthetic SPECIMEN generator v1; agent loop with perturbation-based uncertainty and investigation reads; SAM 3.1 segmenter layer (Modal + Pillow fallback); GitHub Pages demo with cached cases; judge mode — live upload API with SSE trace, on-the-fly case packs, a Modal deployment wrapper, and an Upload tab in the demo. See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
 
+The **Bangla gate test has passed** on the Meta Model API route: `muse-spark-1.3` read all four fields of a clean synthetic NID exactly (4/4) — including the Bangla-digit ID number, preserved digit-for-digit. One calibration mattered: Muse Spark is a reasoning model, so the reader needs completion headroom (`max_tokens` 1024, `reasoning_effort` "minimal"); at a 128-token budget every call returned null content, the budget entirely consumed by reasoning.
+
 ## SAM 3.1 segmentation (on Modal)
 
 SAM 3.1 is wired into the agent as a tool, not a preprocessing step:

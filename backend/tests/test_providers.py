@@ -37,6 +37,11 @@ class _FakeResponse:
     def json(self):
         return self._payload
 
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise AssertionError(
+                f"fake response has HTTP {self.status_code}")
+
 
 def _chat_payload(content: str) -> dict:
     return {"choices": [{"message": {"content": content}}]}
@@ -73,6 +78,10 @@ def test_meta_reader_posts_to_meta_url_with_bearer_auth(
     assert call["url"] == "https://api.meta.ai/v1/chat/completions"
     assert call["headers"]["Authorization"] == "Bearer test-key-123"
     assert call["json"]["model"] == "muse-spark-1.3"  # default model
+    # Reasoning-model calibration: the budget must leave room for the
+    # reasoning *and* the answer (see MetaReader docstring).
+    assert call["json"]["max_tokens"] == 1024
+    assert call["json"]["reasoning_effort"] == "minimal"
 
 
 def test_meta_reader_image_payload_shape(monkeypatch, image_path):
@@ -108,6 +117,61 @@ def test_meta_reader_model_env_override_and_constructor_arg(
 
     # An explicit constructor model beats the environment.
     assert MetaReader(model="muse-spark-1.3").model == "muse-spark-1.3"
+
+
+def test_meta_reader_reasoning_config_env_and_constructor(
+        monkeypatch, image_path):
+    monkeypatch.setenv("META_MAX_TOKENS", "2048")
+    monkeypatch.setenv("META_REASONING_EFFORT", "low")
+    reader = MetaReader(api_key="k")
+    assert reader.max_tokens == 2048
+    assert reader.reasoning_effort == "low"
+
+    # Constructor arguments beat the environment.
+    reader = MetaReader(api_key="k", max_tokens=512,
+                        reasoning_effort="minimal")
+    assert reader.max_tokens == 512
+    assert reader.reasoning_effort == "minimal"
+
+    # ...and the values land in the payload actually sent.
+    calls = _install_fake_post(
+        monkeypatch, _FakeResponse(200, _chat_payload("x")))
+    reader.read_field(image_path, "nid", "name", "original")
+    assert calls[0]["json"]["max_tokens"] == 512
+    assert calls[0]["json"]["reasoning_effort"] == "minimal"
+
+
+def test_meta_reader_null_content_raises_with_finish_reason(
+        monkeypatch, image_path):
+    # What the API returns when the budget is eaten by reasoning:
+    # finish_reason "length", content null. Must not crash with an
+    # AttributeError on None.strip() or leak the key.
+    payload = {"choices": [{"message": {"content": None},
+                            "finish_reason": "length"}]}
+    _install_fake_post(monkeypatch, _FakeResponse(200, payload))
+    reader = MetaReader(api_key="super-secret-key")
+    with pytest.raises(RuntimeError) as excinfo:
+        reader.read_field(image_path, "nid", "dob", "original")
+    message = str(excinfo.value)
+    assert "length" in message
+    assert "super-secret-key" not in message
+
+
+# --- BasetenReader: behaviour intentionally frozen in this change --------------
+
+def test_baseten_reader_payload_unchanged(monkeypatch, image_path):
+    from app.providers import BASETEN_URL
+
+    calls = _install_fake_post(
+        monkeypatch, _FakeResponse(200, _chat_payload("12/03/1990")))
+    got = BasetenReader(api_key="bk").read_field(
+        image_path, "nid", "dob", "original")
+    assert got == "12/03/1990"
+    call = calls[0]
+    assert call["url"] == BASETEN_URL
+    assert call["headers"]["Authorization"] == "Api-Key bk"
+    assert call["json"]["max_tokens"] == 128
+    assert "reasoning_effort" not in call["json"]
 
 
 # --- MetaReader error handling -------------------------------------------------
