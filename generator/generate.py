@@ -13,6 +13,12 @@ Design constraints from the plan:
 Usage:
     python -m generator.generate --out ../data/sample_clean --variant clean
 Variants: clean | variation | discrepancy | degraded
+
+The birth certificate carries an office stamp. Its style is selectable
+(--stamp-style; default "purple", the original rendering) so the
+SAM-vs-heuristic comparison in eval/SAM_TEST.md can use stamps the
+colour heuristic was not built for. The stamp's bounding box and style
+are recorded in ground_truth.json either way.
 """
 
 from __future__ import annotations
@@ -42,6 +48,22 @@ BASE_PERSON = {
     "id_bn_digits": "১২৩৪৫৬৭৮৯০",
     "address_en": "House 12, Rajshahi, Bangladesh",
 }
+
+# The birth-certificate office stamp: fixed position, selectable ink.
+# "purple" is the original rendering and stays the default, so existing
+# sets are unchanged. The other styles exist for the SAM-vs-heuristic
+# comparison (eval/SAM_TEST.md): the Pillow fallback detector keys on
+# saturated blue/purple ink, so black, red-orange and faded-grey stamps
+# are exactly the cases it is expected to struggle with.
+STAMP_BOX = [700, 470, 950, 560]
+STAMP_TEXT_XY = (742, 500)
+STAMP_STYLES = {
+    "purple": ((40, 40, 160), 255),
+    "black": ((20, 20, 20), 255),
+    "red_orange": ((198, 66, 20), 255),
+    "faded_grey": ((140, 140, 140), 110),
+}
+DEFAULT_STAMP_STYLE = "purple"
 
 
 def _font(path: str, size: int) -> ImageFont.FreeTypeFont:
@@ -90,7 +112,34 @@ def render_nid(p: dict) -> Image.Image:
     return _watermark(img)
 
 
-def render_birth_certificate(p: dict) -> Image.Image:
+def _draw_stamp(img: Image.Image, style: str) -> Image.Image:
+    """Draw the office stamp in the given style; returns the image.
+
+    Full-alpha styles draw exactly as the original purple stamp did.
+    The faded style is composited at low alpha for a low-contrast look.
+    """
+    if style not in STAMP_STYLES:
+        raise ValueError(
+            f"unknown stamp style {style!r}; choose one of "
+            f"{', '.join(sorted(STAMP_STYLES))}")
+    (r, g, b), alpha = STAMP_STYLES[style]
+    if alpha >= 255:
+        d = ImageDraw.Draw(img)
+        d.rectangle(STAMP_BOX, outline=(r, g, b), width=3)
+        d.text(STAMP_TEXT_XY, "OFFICE STAMP",
+               font=_font(FONT_LATIN, 20), fill=(r, g, b))
+        return img
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    od = ImageDraw.Draw(overlay)
+    od.rectangle(STAMP_BOX, outline=(r, g, b, alpha), width=3)
+    od.text(STAMP_TEXT_XY, "OFFICE STAMP",
+            font=_font(FONT_LATIN, 20), fill=(r, g, b, alpha))
+    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+
+def render_birth_certificate(p: dict,
+                             stamp_style: str = DEFAULT_STAMP_STYLE
+                             ) -> Image.Image:
     img = Image.new("RGB", (W, H), (250, 248, 238))
     d = ImageDraw.Draw(img)
     _header(d, "Birth Certificate (sample)", "জন্ম সনদ")
@@ -100,8 +149,7 @@ def render_birth_certificate(p: dict) -> Image.Image:
     y = _row(d, y, "Father", p["father_bn"], bangla_value=True)
     y = _row(d, y, "Born", p["dob_bn_digits"], bangla_value=True)
     y = _row(d, y, "Address", p["address_en"])
-    d.rectangle([700, 470, 950, 560], outline=(40, 40, 160), width=3)
-    d.text((742, 500), "OFFICE STAMP", font=_font(FONT_LATIN, 20), fill=(40, 40, 160))
+    img = _draw_stamp(img, stamp_style)
     return _watermark(img)
 
 
@@ -158,14 +206,24 @@ def build_person(variant: str, rng: random.Random) -> tuple[dict, dict, dict]:
     return p, {"nid": nid, "birth_certificate": birth, "bank_form": form}, {}
 
 
-def generate_set(out_dir, variant: str = "clean", seed: int = 7) -> dict:
+def generate_set(out_dir, variant: str = "clean", seed: int = 7,
+                 stamp_style: str = DEFAULT_STAMP_STYLE) -> dict:
     """Render one synthetic set into `out_dir`; return its ground truth.
 
     Writes nid.png, birth_certificate.png, bank_form.png and
     ground_truth.json — the same files the CLI produces — and returns
     the parsed ground_truth.json content. Used by the CLI below and by
     the backend's judge-mode case-pack endpoint.
+
+    The ground truth also records the birth certificate's stamp:
+    "stamp_box" ([x0, y0, x1, y1] in image pixels), "stamp_document"
+    and "stamp_style", so the SAM-vs-heuristic comparison can score
+    masks against the exact region that was drawn.
     """
+    if stamp_style not in STAMP_STYLES:
+        raise ValueError(
+            f"unknown stamp style {stamp_style!r}; choose one of "
+            f"{', '.join(sorted(STAMP_STYLES))}")
     rng = random.Random(seed)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -178,7 +236,8 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7) -> dict:
         render_person["dob"] = "12/03/1990"  # NID + certificate stay true…
 
     nid_img = render_nid(render_person)
-    birth_img = render_birth_certificate(render_person)
+    birth_img = render_birth_certificate(render_person,
+                                         stamp_style=stamp_style)
     form_person = dict(render_person)
     if variant == "discrepancy":
         form_person["dob"] = "12/03/1991"     # …the form carries the swap
@@ -194,7 +253,15 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7) -> dict:
     for name, img in images.items():
         img.save(out / f"{name}.png")
 
-    ground_truth = {"variant": variant, "documents": truth}
+    ground_truth = {
+        "variant": variant,
+        "documents": truth,
+        # The stamp lives on the birth certificate; the other two
+        # documents carry no stamp (no stamp_box is recorded for them).
+        "stamp_box": list(STAMP_BOX),
+        "stamp_document": "birth_certificate",
+        "stamp_style": stamp_style,
+    }
     (out / "ground_truth.json").write_text(json.dumps(
         ground_truth, indent=2, ensure_ascii=False))
     return ground_truth
@@ -206,9 +273,13 @@ def main() -> None:
     ap.add_argument("--variant", default="clean",
                     choices=["clean", "variation", "discrepancy", "degraded"])
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--stamp-style", default=DEFAULT_STAMP_STYLE,
+                    choices=sorted(STAMP_STYLES),
+                    help="birth-certificate stamp ink (default: purple)")
     args = ap.parse_args()
 
-    generate_set(args.out, args.variant, args.seed)
+    generate_set(args.out, args.variant, args.seed,
+                 stamp_style=args.stamp_style)
     print(f"wrote {args.out} ({args.variant})")
 
 
