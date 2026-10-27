@@ -27,6 +27,11 @@ only change needed once a key exists:
   development/tests only. Script JSON maps "doc_type|field" -> [values].
 - Segmenter: ModalSegmenter when SAM_MODAL_ENDPOINT is set, else the
   deterministic PillowFallbackSegmenter.
+- JUDGE_DAILY_RUN_CAP (default 100; 0 or negative disables): a global
+  daily cap on live runs, so a public endpoint cannot burn the reader
+  API budget unbounded. Jobs created with a real reader count against
+  it; mock-reader and no-reader jobs do not. The count is in-memory
+  (per process, lost on restart) — a spend guardrail, not accounting.
 """
 
 from __future__ import annotations
@@ -66,6 +71,36 @@ VERDICT_LABELS = {
     "DISCREPANCY": "Discrepancy, needs human review",
     "UNREADABLE": "Unreadable, request recapture",
 }
+
+DAILY_CAP_MESSAGE = (
+    "Daily live-run limit reached on this backend: the cap on live "
+    "reviews (JUDGE_DAILY_RUN_CAP) exists so a public endpoint cannot "
+    "spend the reader API budget unbounded. Live reviews resume "
+    "tomorrow (UTC); the cached demo cases still work, or run the "
+    "backend locally with your own key."
+)
+
+
+def daily_run_cap() -> int:
+    """Live runs allowed per UTC day; <= 0 disables the cap."""
+    try:
+        return int(os.environ.get("JUDGE_DAILY_RUN_CAP", "100"))
+    except ValueError:
+        return 100
+
+
+def is_live_reader(reader: Reader | None) -> bool:
+    """True when a job with this reader would spend real API budget.
+
+    MockReader is scripted and free; None means no reads happen at all.
+    Neither consumes the daily cap.
+    """
+    return reader is not None and not isinstance(reader, MockReader)
+
+
+class DailyCapReached(Exception):
+    """STORE.create(live=True) raises this when the day's cap is spent."""
+
 
 READER_NOT_CONFIGURED_MESSAGE = (
     "No vision reader is configured on this backend, so no field reads "
@@ -149,6 +184,11 @@ class JobStore:
         self._jobs: dict[str, Job] = {}
         self._lock = threading.Lock()
         self._slots = threading.Semaphore(MAX_CONCURRENT_JOBS)
+        # Daily live-run counts, keyed by UTC date ("2026-10-27").
+        # Limitation: in-memory and per-process — a restart resets the
+        # count, and multiple processes each keep their own. That is
+        # acceptable for a spend guardrail; it is not billing data.
+        self._daily_live_counts: dict[str, int] = {}
 
     def _evict_locked(self) -> None:
         now = time.time()
@@ -162,12 +202,39 @@ class JobStore:
                 if job.finished:
                     del self._jobs[job.id]
 
-    def create(self) -> Job | None:
+    @staticmethod
+    def _utc_today() -> str:
+        return time.strftime("%Y-%m-%d", time.gmtime())
+
+    def live_runs_today(self) -> int:
+        with self._lock:
+            return self._daily_live_counts.get(self._utc_today(), 0)
+
+    def create(self, live: bool = False) -> Job | None:
+        """Create a job; None means the active-jobs cap is hit.
+
+        With live=True (a job that will spend reader API budget), the
+        daily cap is checked first and DailyCapReached is raised when
+        the day's allowance is spent; the job counts against the cap
+        from creation, whatever its outcome.
+        """
         with self._lock:
             self._evict_locked()
+            if live:
+                cap = daily_run_cap()
+                today = self._utc_today()
+                # Keep only today's count; yesterday's is spent history.
+                self._daily_live_counts = {
+                    today: self._daily_live_counts.get(today, 0)}
+                if cap > 0 and self._daily_live_counts[today] >= cap:
+                    raise DailyCapReached(DAILY_CAP_MESSAGE)
             active = sum(1 for j in self._jobs.values() if not j.finished)
             if active >= MAX_ACTIVE_JOBS:
                 return None
+            if live:
+                today = self._utc_today()
+                self._daily_live_counts[today] = \
+                    self._daily_live_counts.get(today, 0) + 1
             job = Job(id=uuid.uuid4().hex[:12])
             self._jobs[job.id] = job
             return job

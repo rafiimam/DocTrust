@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app import judge as judge_module
 from app import main as main_module
 from app.main import app
 from app.providers import MockReader
@@ -243,3 +244,77 @@ def test_reader_not_configured_is_honest(generated):
         with client.stream("GET", f"/api/review/{job_id}/events") as sse:
             body = "".join(sse.iter_text())
         assert "reader_not_configured" in body
+
+
+# --- Daily live-run cap (JUDGE_DAILY_RUN_CAP) ---------------------------------
+#
+# Order matters in this section: the cap counts live jobs on the global
+# STORE for the whole test process, so the cap=1 rejection test runs
+# before the other live-reader tests below. Mock-reader and no-reader
+# jobs never consume the cap (see judge.is_live_reader).
+
+class _LiveReader:
+    """A non-mock reader: stands in for a configured live reader.
+
+    Delegates to a MockReader for values, but is NOT a MockReader, so
+    jobs using it count against the daily live-run cap exactly like a
+    MetaReader/BasetenReader job would.
+    """
+
+    def __init__(self, script):
+        self._inner = MockReader(script)
+
+    def read_field(self, image_path, doc_type, field, perturbation):
+        return self._inner.read_field(image_path, doc_type, field,
+                                      perturbation)
+
+
+def test_daily_cap_rejects_second_live_job(generated, monkeypatch):
+    monkeypatch.setenv("JUDGE_DAILY_RUN_CAP", "1")
+    doc_dir = generated("clean")
+    with _client(_LiveReader(_script_for("clean"))) as client:
+        first = _upload(client, doc_dir)
+        assert first.status_code == 202
+        _wait_result(client, first.json()["job_id"])
+        second = _upload(client, doc_dir)
+    assert second.status_code == 429
+    assert "Daily live-run limit reached" in second.json()["detail"]
+
+
+def test_daily_cap_ignores_mock_and_no_reader_jobs(generated, monkeypatch):
+    monkeypatch.setenv("JUDGE_DAILY_RUN_CAP", "1")
+    doc_dir = generated("clean")
+    # Mock-reader jobs are scripted and free: never capped.
+    with _client(MockReader(_script_for("clean"))) as client:
+        for _ in range(2):
+            resp = _upload(client, doc_dir)
+            assert resp.status_code == 202
+            _wait_result(client, resp.json()["job_id"])
+    # No-reader jobs spend nothing either: never capped.
+    with _client(None) as client:
+        for _ in range(2):
+            resp = _upload(client, doc_dir)
+            assert resp.status_code == 202
+            _wait_result(client, resp.json()["job_id"])
+
+
+def test_daily_cap_disabled_by_zero(generated, monkeypatch):
+    monkeypatch.setenv("JUDGE_DAILY_RUN_CAP", "0")
+    doc_dir = generated("clean")
+    with _client(_LiveReader(_script_for("clean"))) as client:
+        for _ in range(2):
+            resp = _upload(client, doc_dir)
+            assert resp.status_code == 202
+            _wait_result(client, resp.json()["job_id"])
+
+
+def test_jobstore_daily_cap_unit(monkeypatch):
+    monkeypatch.setenv("JUDGE_DAILY_RUN_CAP", "2")
+    store = judge_module.JobStore()
+    assert store.create(live=True) is not None
+    assert store.create(live=True) is not None
+    with pytest.raises(judge_module.DailyCapReached):
+        store.create(live=True)
+    assert store.live_runs_today() == 2
+    # Non-live creation is never blocked by the cap.
+    assert store.create(live=False) is not None

@@ -118,7 +118,12 @@ async def create_review(
             birth_certificate, "birth_certificate"),
         "bank_form": await _read_upload(bank_form, "bank_form"),
     }
-    job = judge_module.STORE.create()
+    try:
+        job = judge_module.STORE.create(
+            live=judge_module.is_live_reader(reader))
+    except judge_module.DailyCapReached:
+        raise HTTPException(status_code=429,
+                            detail=judge_module.DAILY_CAP_MESSAGE)
     if job is None:
         raise HTTPException(
             status_code=429,
