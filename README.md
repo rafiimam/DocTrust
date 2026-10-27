@@ -45,7 +45,9 @@ cd backend && uvicorn app.main:app --port 8000   # after: pip install -r require
 
 Then open the demo, switch to Upload mode — the default backend URL is `http://localhost:8000` (editable on the page, remembered per browser). **Deploy it:** [`modal_backend/README.md`](modal_backend/README.md) (scale-to-zero Modal app; paste its URL into the demo's Backend URL field).
 
-**Honest limits.** Live field reading needs the Baseten API key configured **server-side** (`BASETEN_API_KEY`, e.g. as the Modal secret `baseten-secret`). Without it, the backend still accepts uploads and runs preprocessing and stamp segmentation — then ends the job in a plainly labelled `reader_not_configured` state. It never fakes a read or a verdict. Judge mode is for **synthetic documents only** — please do not upload real identity documents.
+**Honest limits.** Live field reading needs a reader API key configured **server-side**. Without one, the backend still accepts uploads and runs preprocessing and stamp segmentation — then ends the job in a plainly labelled `reader_not_configured` state. It never fakes a read or a verdict. Judge mode is for **synthetic documents only** — please do not upload real identity documents.
+
+**Reader provider is configuration, not code.** The vision reader can be the **Meta Model API** (`MODEL_API_KEY`, model `muse-spark-1.3` by default) or **Baseten** hosting Muse Spark Open (`BASETEN_API_KEY`). Which one is used is chosen purely by environment — `JUDGE_READER=meta` or `JUDGE_READER=baseten` — and the Modal deployment stores the key as a secret (`meta-secret` or `baseten-secret`); see [`modal_backend/README.md`](modal_backend/README.md).
 
 ## Status
 
