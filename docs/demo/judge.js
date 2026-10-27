@@ -31,6 +31,11 @@
     DISCREPANCY: "discrepancy",
     UNREADABLE: "unreadable"
   };
+  var GAP_KIND_LABELS = {
+    missing_document: "Missing document",
+    unresolved_field: "Unresolved field",
+    unresolved_discrepancy: "Unresolved discrepancy"
+  };
 
   function backendUrl() {
     var v = (localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL)
@@ -128,6 +133,8 @@
   var fieldsTable = document.getElementById("fieldsTable");
   var evidencePanel = document.getElementById("evidencePanel");
   var evidenceGrid = document.getElementById("evidenceGrid");
+  var gapsPanel = document.getElementById("gapsPanel");
+  var gapsList = document.getElementById("gapsList");
   var eventSource = null;
 
   // Run status and errors live in the trace panel itself, so the
@@ -153,8 +160,10 @@
     verdictEl.hidden = true;
     fieldsPanel.hidden = true;
     evidencePanel.hidden = true;
+    gapsPanel.hidden = true;
     fieldsTable.innerHTML = "";
     evidenceGrid.innerHTML = "";
+    gapsList.innerHTML = "";
   }
   function addTrace(event) {
     if (event.type === "queued") { return; }
@@ -213,6 +222,21 @@
           "</figcaption></figure>";
       }).join("");
       evidencePanel.hidden = false;
+    }
+    // Evidence gaps & next steps. Only live judge results carry this
+    // list; a result without the key (or with an empty list) renders
+    // no section at all.
+    var gaps = result.evidence_gaps || [];
+    if (gaps.length) {
+      gapsList.innerHTML = gaps.map(function (g) {
+        return "<div class='gap-item gap-" + g.kind + "'>" +
+          "<span class='gap-kind'>" +
+          (GAP_KIND_LABELS[g.kind] || g.kind) + "</span>" +
+          "<p class='gap-detail'>" + g.detail + "</p>" +
+          "<p class='gap-next'><strong>Next step:</strong> " +
+          g.next_step + "</p></div>";
+      }).join("");
+      gapsPanel.hidden = false;
     }
     // Verdict
     if (result.verdict) {
