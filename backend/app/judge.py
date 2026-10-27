@@ -25,8 +25,12 @@ only change needed once a key exists:
 - JUDGE_READER=baseten (default when BASETEN_API_KEY is set) -> BasetenReader
 - JUDGE_READER=mock with JUDGE_MOCK_SCRIPT_JSON -> MockReader, for local
   development/tests only. Script JSON maps "doc_type|field" -> [values].
-- Segmenter: ModalSegmenter when SAM_MODAL_ENDPOINT is set, else the
-  deterministic PillowFallbackSegmenter.
+- Segmenter: selected by SEGMENTER. "meta" uses MetaSAMSegmenter
+  (SAM 3.1 hosted on the Meta Model API) when MODEL_API_KEY is set;
+  "modal" uses ModalSegmenter when SAM_MODAL_ENDPOINT is set. With
+  SEGMENTER unset, the default is MetaSAMSegmenter when MODEL_API_KEY
+  is present, else ModalSegmenter when SAM_MODAL_ENDPOINT is set, else
+  the deterministic PillowFallbackSegmenter.
 - JUDGE_DAILY_RUN_CAP (default 100; 0 or negative disables): a global
   daily cap on live runs, so a public endpoint cannot burn the reader
   API budget unbounded. Jobs created with a real reader count against
@@ -51,8 +55,8 @@ from pathlib import Path
 from . import agent as agent_module
 from .comparator import _canonical
 from .providers import BasetenReader, MetaReader, MockReader, Reader
-from .segmenter import (ModalSegmenter, PillowFallbackSegmenter,
-                        Segmenter)
+from .segmenter import (MetaSAMSegmenter, ModalSegmenter,
+                        PillowFallbackSegmenter, Segmenter)
 
 DOC_TYPES = ("nid", "birth_certificate", "bank_form")
 CASE_VARIANTS = ("clean", "variation", "discrepancy", "degraded")
@@ -142,7 +146,27 @@ def resolve_reader() -> Reader | None:
 
 
 def resolve_segmenter() -> Segmenter:
-    if os.environ.get("SAM_MODAL_ENDPOINT"):
+    """The configured segmenter, following the SEGMENTER selection.
+
+    Explicit SEGMENTER=meta / SEGMENTER=modal wins when its provider
+    is actually configured. Otherwise (including SEGMENTER unset) the
+    default chain is: hosted Meta SAM when MODEL_API_KEY is present,
+    self-hosted Modal SAM when SAM_MODAL_ENDPOINT is set, and finally
+    the deterministic Pillow fallback.
+    """
+    mode = os.environ.get("SEGMENTER", "").strip().lower()
+    has_meta_key = bool(os.environ.get("MODEL_API_KEY"))
+    has_modal_endpoint = bool(os.environ.get("SAM_MODAL_ENDPOINT"))
+    if mode == "meta":
+        return MetaSAMSegmenter() if has_meta_key \
+            else PillowFallbackSegmenter()
+    if mode == "modal":
+        return ModalSegmenter() if has_modal_endpoint \
+            else PillowFallbackSegmenter()
+    # Unset (the normal case) or an unrecognised value: default chain.
+    if has_meta_key:
+        return MetaSAMSegmenter()
+    if has_modal_endpoint:
         return ModalSegmenter()
     return PillowFallbackSegmenter()
 

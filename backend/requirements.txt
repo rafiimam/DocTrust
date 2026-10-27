@@ -4,3 +4,4 @@ httpx
 pydantic
 pillow
 python-multipart
+meta-sam-parser>=0.1.0

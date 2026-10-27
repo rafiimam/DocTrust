@@ -23,10 +23,12 @@ Configuration (all server-side; nothing secret lives in this repo):
 - Baseten instead of Meta: two one-line changes — point the secrets
   line at "baseten-secret" (key BASETEN_API_KEY) and change the
   JUDGE_READER default below to "baseten".
-- To also use SAM 3.1 on Modal for the masked investigation view, set
-  SAM_MODAL_ENDPOINT to the doctrust-sam31 endpoint URL (see
-  modal_sam/). Until then the deterministic Pillow fallback segmenter
-  is used, exactly as in local runs.
+- Segmentation uses SAM 3.1 hosted on the Meta Model API: this app
+  sets SEGMENTER=meta, and MetaSAMSegmenter uses the same MODEL_API_KEY
+  from "meta-secret" — no separate SAM secret or endpoint is needed.
+  The self-hosted SAM app in modal_sam/ remains provided for
+  deployments that can run GPUs; to use it instead, set SEGMENTER=modal
+  and SAM_MODAL_ENDPOINT to that app's endpoint URL.
 
 Deploy and smoke-test steps: modal_backend/README.md.
 """
@@ -70,6 +72,7 @@ def fastapi_app():
     # per request in backend/app/judge.py, but set defaults up front so
     # the intent is in exactly one place).
     os.environ.setdefault("JUDGE_READER", "meta")
+    os.environ.setdefault("SEGMENTER", "meta")
     os.environ.setdefault("PYTHONPATH", "/root/repo:/root/repo/backend")
 
     import sys

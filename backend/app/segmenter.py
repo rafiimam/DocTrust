@@ -14,6 +14,11 @@ configuration:
 - ModalSegmenter — SAM 3.1 self-hosted on Modal (see modal_sam/). Needs
   SAM_MODAL_ENDPOINT. Fails soft: every failure returns None so the
   agent falls back to reading the original image.
+- MetaSAMSegmenter — SAM 3.1 hosted on the Meta Model API, using the
+  Responses API and the same MODEL_API_KEY as MetaReader. This is the
+  segmenter the deployed backend uses. Masks are decoded through the
+  optional meta-sam-parser package when it is installed; without it,
+  the returned boxes still let the agent mask by box.
 - MockSegmenter — scripted stand-in for tests. Returns fixed boxes and
   produces a real masked image with the Pillow masker.
 
@@ -26,6 +31,7 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 import tempfile
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
@@ -270,3 +276,209 @@ class ModalSegmenter:
         except Exception:
             return None
         return None
+
+
+META_SAM_URL = "https://api.meta.ai/v1/responses"
+META_SAM_MODEL_ID = "sam-3.1"
+_BOX_TOKEN_RE = re.compile(r"<\|box;([^|]*)\|>")
+_BOX_FIELD_RE = re.compile(
+    r"\b(x1|y1|x2|y2)=(-?\d+(?:\.\d+)?)")
+
+
+def _meta_sam_lane(response_data: dict) -> str | None:
+    """Extract the SAM special-token lane from a Responses API payload.
+
+    Returns None when the response has no output-text lane at all. A
+    present but empty lane is returned as an empty string: SAM ran and
+    found nothing, which callers represent as an empty SegmentResult.
+    """
+    output = response_data.get("output")
+    if not isinstance(output, list):
+        return None
+    lanes: list[str] = []
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        content = item.get("content")
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if (isinstance(part, dict)
+                    and part.get("type") == "output_text"
+                    and isinstance(part.get("text"), str)):
+                lanes.append(part["text"])
+    if not lanes:
+        return None
+    return "\n".join(lanes)
+
+
+def _parse_meta_sam_boxes(lane: str, prompt: str) -> list[Box]:
+    """Parse every box record in a SAM lane, preserving source pixels.
+
+    The wire format carries no confidence score, so Box.score stays
+    None. Malformed individual records are skipped rather than making
+    the whole segmentation fail.
+    """
+    boxes: list[Box] = []
+    for match in _BOX_TOKEN_RE.finditer(lane):
+        fields = {name: float(value) for name, value in
+                  _BOX_FIELD_RE.findall(match.group(1))}
+        if not all(name in fields for name in ("x1", "y1", "x2", "y2")):
+            continue
+        if fields["x2"] < fields["x1"] or fields["y2"] < fields["y1"]:
+            continue
+        boxes.append(Box(
+            x_min=fields["x1"], y_min=fields["y1"],
+            x_max=fields["x2"], y_max=fields["y2"],
+            score=None, label=prompt))
+    return boxes
+
+
+def _decode_meta_sam_mask(lane: str, image_path: str) -> str | None:
+    """Best-effort union-mask PNG from a SAM lane, via meta-sam-parser.
+
+    The parser package is optional. Import or decoding failure returns
+    None and the caller falls back to masking the first returned box —
+    exactly how a SegmentResult without a mask is consumed elsewhere.
+    The package validates each mask payload; this function only places
+    the decoded box-local rasters at their recorded bounds on a
+    full-frame mask.
+    """
+    try:
+        from meta_sam_parser import (CompletedOutcome,
+                                      decode_mask_to_raster,
+                                      image_segmentation_format)
+        from PIL import Image, ImageChops
+
+        parser = image_segmentation_format().create_parser()
+        parser.push(lane)
+        finished = parser.finish(CompletedOutcome())
+        mask_records = [record for record in finished.result.records
+                        if getattr(record, "kind", None) == "mask"]
+        if not mask_records:
+            return None
+
+        with Image.open(image_path) as source:
+            frame_size = source.size
+        union = Image.new("L", frame_size, 0)
+        decoded_any = False
+        for record in mask_records:
+            mask = record.mask
+            raster = decode_mask_to_raster(mask)
+            if len(raster) != mask.width * mask.height:
+                continue
+            local = Image.frombytes(
+                "L", (mask.width, mask.height),
+                bytes(255 if value else 0 for value in raster))
+            left = int(record.bounds.left)
+            top = int(record.bounds.top)
+            if left >= frame_size[0] or top >= frame_size[1]:
+                continue
+            if left < 0 or top < 0:
+                local = local.crop((max(0, -left), max(0, -top),
+                                    local.width, local.height))
+                left, top = max(0, left), max(0, top)
+            local = local.crop((0, 0,
+                                min(local.width, frame_size[0] - left),
+                                min(local.height, frame_size[1] - top)))
+            if local.width <= 0 or local.height <= 0:
+                continue
+            region = union.crop((left, top, left + local.width,
+                                 top + local.height))
+            union.paste(ImageChops.lighter(region, local), (left, top))
+            decoded_any = True
+        if not decoded_any or union.getbbox() is None:
+            return None
+        fd, mask_path = tempfile.mkstemp(prefix="doctrust_meta_sam_mask_",
+                                         suffix=".png")
+        with os.fdopen(fd, "wb") as fh:
+            union.save(fh, format="PNG")
+        return mask_path
+    except Exception:
+        return None
+
+
+class MetaSAMSegmenter:
+    """SAM 3.1 hosted on the Meta Model API (Responses API).
+
+    The request carries the image as a data URL and the concept prompt
+    as input text. SAM answers with a special-token output-text lane:
+    one or more box records in source-image pixels, each optionally
+    paired with an encoded mask. The wire format has no confidence
+    score, so returned boxes keep score=None.
+
+    Configuration is MODEL_API_KEY (the same key MetaReader uses);
+    SAM_META_MODEL overrides the model id (default "sam-3.1"). Like
+    ModalSegmenter, every failure — unconfigured, HTTP, transport,
+    malformed response — fails soft so segmentation never fails a
+    review. A successful response whose lane contains no records is a
+    successful no-detection: segment() returns an empty SegmentResult
+    and masked_image() returns None.
+    """
+
+    provider = "meta_sam3.1"
+
+    def __init__(self, api_key: str | None = None,
+                 model: str | None = None, timeout: float = 180):
+        self.api_key = api_key or os.environ.get("MODEL_API_KEY", "")
+        self.model = model or os.environ.get("SAM_META_MODEL",
+                                             META_SAM_MODEL_ID)
+        self.timeout = timeout
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.api_key)
+
+    def segment(self, image_path: str, prompt: str) -> SegmentResult | None:
+        if not self.configured:
+            return None
+        try:
+            return self._segment_remote(image_path, prompt)
+        except Exception:
+            return None  # fail soft: segmentation is an aid, not a gate
+
+    def _segment_remote(self, image_path: str,
+                        prompt: str) -> SegmentResult | None:
+        import httpx  # deferred so tests never need the network stack
+
+        suffix = Path(image_path).suffix.lower()
+        media_type = "image/jpeg" if suffix in (".jpg", ".jpeg") \
+            else "image/png"
+        image_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
+        payload = {
+            "model": self.model,
+            "input": [{
+                "role": "user",
+                "content": [
+                    {"type": "input_image",
+                     "image_url": f"data:{media_type};base64,{image_b64}"},
+                    {"type": "input_text", "text": prompt},
+                ],
+            }],
+        }
+        resp = httpx.post(
+            META_SAM_URL,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            json=payload, timeout=self.timeout)
+        resp.raise_for_status()
+        lane = _meta_sam_lane(resp.json())
+        if lane is None:
+            return None
+        boxes = _parse_meta_sam_boxes(lane, prompt)
+        mask_path = _decode_meta_sam_mask(lane, image_path) if boxes \
+            else None
+        return SegmentResult(prompt=prompt, boxes=boxes,
+                             mask_path=mask_path, provider=self.provider)
+
+    def masked_image(self, image_path: str, prompt: str,
+                     out_path: str | None = None) -> str | None:
+        result = self.segment(image_path, prompt)
+        if not result or not result.boxes:
+            return None
+        try:
+            if result.mask_path:
+                mask_png = Path(result.mask_path).read_bytes()
+                return apply_mask_png(image_path, mask_png, out_path)
+            return mask_region(image_path, result.boxes[0], out_path)
+        except Exception:
+            return None

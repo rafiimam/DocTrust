@@ -5,9 +5,10 @@ the Modal deployment itself is smoke-tested separately (modal_sam/).
 
 from PIL import Image, ImageDraw
 
-from app import agent
+from app import agent, judge as judge_module
 from app.providers import MockReader
-from app.segmenter import (Box, MockSegmenter, ModalSegmenter,
+from app.segmenter import (META_SAM_URL, Box, MetaSAMSegmenter,
+                           MockSegmenter, ModalSegmenter,
                            PillowFallbackSegmenter, detect_stamp_box,
                            mask_region)
 
@@ -192,3 +193,215 @@ def test_agent_broken_segmenter_still_reviews(tmp_path):
     outcome = agent.run_review(reader, {"nid": src, "bank_form": src},
                                segmenter=BrokenSegmenter())
     assert outcome.verdict == "CONSISTENT"
+
+
+# --- Meta-hosted SAM segmenter (offline behavior only) ---
+
+def _image_file(tmp_path, name="sam_doc.png", size=(800, 600)):
+    path = tmp_path / name
+    Image.new("RGB", size, (255, 255, 255)).save(path)
+    return str(path)
+
+
+def _sam_payload(lane: str) -> dict:
+    return {"output": [{"content": [
+        {"type": "output_text", "text": lane}]}]}
+
+
+def _install_sam_post(monkeypatch, response):
+    import httpx
+
+    calls = []
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        calls.append({"url": url, "headers": headers or {},
+                      "json": json, "timeout": timeout})
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    return calls
+
+
+def _sam_response(lane: str, status: int = 200):
+    import httpx
+
+    request = httpx.Request("POST", META_SAM_URL)
+    return httpx.Response(status, request=request,
+                          json=_sam_payload(lane))
+
+
+_SINGLE_LANE = (
+    "<0f>0<|box;x1=251;y1=151;x2=550;y2=449;w=800;h=600|>"
+    "<|mask;x=0;y=0;data=299,300,~|>"
+)
+_MULTI_LANE = (
+    _SINGLE_LANE
+    + ",1<|box;x1=10;y1=20;x2=110;y2=90;w=800;h=600|>"
+    "<|mask;x=0;y=0;data=70,100,~|>"
+)
+# A complete valid mask payload (the meta-sam-parser package's own
+# documented example), used to exercise the optional mask decoder.
+_VALID_MASK_LANE = (
+    "<0f>0<|box;x1=211;y1=228;x2=270;y2=254;w=320;h=334|>"
+    "<|mask;x=0;y=0;data=27,60,"
+    "~!!!!M!0c[0o91w?q1!pIH4pPRVp2B3'7`e.ioeAf6-k/#Xd8%dX9x(|>"
+)
+
+
+def test_meta_sam_unconfigured_fails_soft(tmp_path, monkeypatch):
+    monkeypatch.delenv("MODEL_API_KEY", raising=False)
+    seg = MetaSAMSegmenter()
+    assert seg.configured is False
+    assert seg.segment(_image_file(tmp_path), "stamp") is None
+    assert seg.masked_image(_image_file(tmp_path), "stamp") is None
+
+
+def test_meta_sam_request_shape_and_single_box(tmp_path, monkeypatch):
+    calls = _install_sam_post(monkeypatch, _sam_response(_SINGLE_LANE))
+    seg = MetaSAMSegmenter(api_key="test-key-123")
+    src = _image_file(tmp_path)
+    result = seg.segment(src, "stamp")
+
+    assert result is not None and result.provider == "meta_sam3.1"
+    assert [box.as_list() for box in result.boxes] == [
+        [251, 151, 550, 449]]
+    # The SAM wire format carries no confidence score.
+    assert result.boxes[0].score is None
+    assert result.boxes[0].label == "stamp"
+
+    assert len(calls) == 1
+    call = calls[0]
+    assert call["url"] == META_SAM_URL
+    assert call["url"] == "https://api.meta.ai/v1/responses"
+    assert call["headers"]["Authorization"] == "Bearer test-key-123"
+    assert call["json"]["model"] == "sam-3.1"  # default model
+    content = call["json"]["input"][0]["content"]
+    assert content[0]["type"] == "input_image"
+    image_url = content[0]["image_url"]
+    assert image_url.startswith("data:image/png;base64,")
+    import base64
+    assert base64.b64decode(image_url.split(",", 1)[1]) == \
+        (tmp_path / "sam_doc.png").read_bytes()
+    assert content[1] == {"type": "input_text", "text": "stamp"}
+
+
+def test_meta_sam_parses_multiple_records(tmp_path, monkeypatch):
+    _install_sam_post(monkeypatch, _sam_response(_MULTI_LANE))
+    seg = MetaSAMSegmenter(api_key="k")
+    result = seg.segment(_image_file(tmp_path), "stamp")
+    assert result is not None
+    assert [box.as_list() for box in result.boxes] == [
+        [251, 151, 550, 449], [10, 20, 110, 90]]
+    assert all(box.score is None for box in result.boxes)
+
+
+def test_meta_sam_model_env_override(tmp_path, monkeypatch):
+    monkeypatch.setenv("SAM_META_MODEL", "sam-3.1-custom")
+    monkeypatch.setenv("MODEL_API_KEY", "env-key")
+    calls = _install_sam_post(monkeypatch, _sam_response(_SINGLE_LANE))
+    seg = MetaSAMSegmenter()  # key + model both from env
+    assert seg.api_key == "env-key"
+    assert seg.model == "sam-3.1-custom"
+    seg.segment(_image_file(tmp_path), "stamp")
+    assert calls[0]["json"]["model"] == "sam-3.1-custom"
+    # A constructor model beats the environment.
+    assert MetaSAMSegmenter(model="sam-3.1").model == "sam-3.1"
+
+
+def test_meta_sam_empty_lane_is_empty_result(tmp_path, monkeypatch):
+    _install_sam_post(monkeypatch, _sam_response(""))
+    seg = MetaSAMSegmenter(api_key="k")
+    src = _image_file(tmp_path)
+    result = seg.segment(src, "stamp")
+    assert result is not None and result.boxes == []
+    assert seg.masked_image(src, "stamp") is None
+
+
+def test_meta_sam_http_and_transport_errors_fail_soft(
+        tmp_path, monkeypatch):
+    import httpx
+
+    _install_sam_post(monkeypatch, _sam_response("nope", status=500))
+    seg = MetaSAMSegmenter(api_key="super-secret-key")
+    assert seg.segment(_image_file(tmp_path), "stamp") is None
+
+    _install_sam_post(
+        monkeypatch,
+        httpx.ConnectError("no network",
+                           request=httpx.Request("POST", META_SAM_URL)))
+    assert seg.segment(_image_file(tmp_path), "stamp") is None
+    assert seg.masked_image(_image_file(tmp_path), "stamp") is None
+
+
+def test_meta_sam_masked_image_masks_first_box(tmp_path, monkeypatch):
+    _install_sam_post(monkeypatch, _sam_response(_SINGLE_LANE))
+    seg = MetaSAMSegmenter(api_key="k")
+    src = _image_file(tmp_path)
+    out = seg.masked_image(src, "stamp")
+    assert out is not None
+    masked = Image.open(out).convert("RGB")
+    assert masked.getpixel((400, 300)) == (255, 255, 255)
+    # A coloured pixel inside the box proves the mask was applied.
+    img = Image.open(src).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([251, 151, 550, 449], fill=(40, 40, 200))
+    img.save(src)
+    out = seg.masked_image(src, "stamp")
+    assert Image.open(out).convert("RGB").getpixel((400, 300)) == \
+        (255, 255, 255)
+    assert Image.open(src).convert("RGB").getpixel((400, 300)) == \
+        (40, 40, 200)  # source unmodified
+
+
+def test_meta_sam_decodes_mask_when_parser_available(
+        tmp_path, monkeypatch):
+    _install_sam_post(monkeypatch, _sam_response(_VALID_MASK_LANE))
+    seg = MetaSAMSegmenter(api_key="k")
+    src = _image_file(tmp_path, name="small.png", size=(320, 334))
+    result = seg.segment(src, "stamp")
+    assert result is not None
+    assert [box.as_list() for box in result.boxes] == [
+        [211, 228, 270, 254]]
+    assert result.mask_path is not None
+    with Image.open(result.mask_path) as mask:
+        assert mask.size == (320, 334)
+        assert mask.convert("L").getbbox() is not None
+
+
+# --- resolve_segmenter selection ---
+
+def _clear_segmenter_env(monkeypatch):
+    for name in ("SEGMENTER", "MODEL_API_KEY", "SAM_MODAL_ENDPOINT"):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_resolve_segmenter_defaults_to_meta_when_key_present(
+        monkeypatch):
+    _clear_segmenter_env(monkeypatch)
+    monkeypatch.setenv("MODEL_API_KEY", "k")
+    monkeypatch.setenv("SAM_MODAL_ENDPOINT", "https://example.invalid/sam")
+    # Meta wins over Modal in the default chain.
+    assert isinstance(judge_module.resolve_segmenter(),
+                      MetaSAMSegmenter)
+
+
+def test_resolve_segmenter_explicit_modes(monkeypatch):
+    _clear_segmenter_env(monkeypatch)
+    monkeypatch.setenv("MODEL_API_KEY", "k")
+    monkeypatch.setenv("SAM_MODAL_ENDPOINT", "https://example.invalid/sam")
+    monkeypatch.setenv("SEGMENTER", "modal")
+    assert isinstance(judge_module.resolve_segmenter(), ModalSegmenter)
+    monkeypatch.setenv("SEGMENTER", "meta")
+    assert isinstance(judge_module.resolve_segmenter(),
+                      MetaSAMSegmenter)
+
+
+def test_resolve_segmenter_modal_then_fallback_defaults(monkeypatch):
+    _clear_segmenter_env(monkeypatch)
+    monkeypatch.setenv("SAM_MODAL_ENDPOINT", "https://example.invalid/sam")
+    assert isinstance(judge_module.resolve_segmenter(), ModalSegmenter)
+    monkeypatch.delenv("SAM_MODAL_ENDPOINT")
+    assert isinstance(judge_module.resolve_segmenter(),
+                      PillowFallbackSegmenter)
