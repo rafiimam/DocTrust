@@ -2,6 +2,8 @@
 
 **An open-weight reviewer agent that cross-examines a person's whole document set — and shows the human reviewer the evidence.**
 
+*Do these documents tell a coherent story, and what evidence is missing before you can trust it?*
+
 Built for the **Meta Global AI Developer Hackathon 2026** (Indie Developer track, "Build for Your World"). All code in this repository was written during the hackathon building period, 27 Oct – 4 Nov 2026.
 
 ## The problem
@@ -33,7 +35,7 @@ The demo page has an **Upload (judge mode)** tab. Instead of watching a replay, 
 
 1. **Download a case pack** from the backend (Clean / Variation / Discrepancy / Degraded) — a ZIP with `nid.png`, `birth_certificate.png`, `bank_form.png` and the `ground_truth.json` the run should agree with. Packs are generated on the fly; no binaries live in this repo.
 2. **Upload the three images.** The backend runs the agent loop as a job: reads under real perturbed views (zoom, contrast, tight zoom), investigation re-reads with the stamp masked when reads disagree, then the deterministic cross-examination.
-3. **Watch it happen.** The agent trace streams live (Server-Sent Events), and the result shows every field's read value, canonical form and per-view readings, the comparator findings, the evidence views the agent actually read, and the verdict — *Consistent* / *Discrepancy, needs human review* / *Unreadable, request recapture*.
+3. **Watch it happen.** The agent trace streams live (Server-Sent Events), and the result shows every field's read value, canonical form and per-view readings, the comparator findings, the evidence views the agent actually read, and the verdict — *Consistent* / *Discrepancy, needs human review* / *Unreadable, request recapture*. The result also carries an **Evidence gaps & next steps** section (`evidence_gaps` in the JSON), derived deterministically from the recorded run: a document the case profile expects but that was not uploaded, a field that stayed unreadable after investigation, or a field the readable documents disagree on — each with the next step it calls for. The three states are kept distinct: a missing document is not a contradiction, and an unreadable field is not a mismatch.
 
 API: `POST /api/review` (multipart: `nid`, `birth_certificate`, `bank_form`; PNG/JPG, 8 MB per file) → `GET /api/review/{job_id}/events` (SSE) → `GET /api/review/{job_id}` (result JSON). Plus `GET /api/case-pack/{variant}` and `GET /health`. Jobs are in-memory only (capped, TTL-evicted); uploaded files are deleted with the job's temp directory.
 
@@ -75,6 +77,13 @@ SAM 3.1 is wired into the agent as a tool, not a preprocessing step:
 - **Still unproven:** whether SAM's localization improves recovered field readings and final verdicts across a broader test set. The recovered-read stage of the SAM protocol and the full three-configuration evaluation ([eval/EVALUATION.md](eval/EVALUATION.md)) are pending, scheduled during the build window.
 
 All development documents are synthetic and watermarked SPECIMEN.
+
+## Future work — directions, not capabilities
+
+Two directions are recorded here as future research to build on the investigation engine above. **Neither is implemented, and nothing in this submission claims them.**
+
+- **PaperTrail** — missing-link reasoning across property and inheritance records: rather than only checking whether fields agree, evaluate the relationships among claims, events and supporting evidence — what a packet asserts, what each assertion depends on, and which supporting evidence is absent.
+- **WorkerShield** — cross-document employment-term verification for migrant workers: compare the terms across a job offer, an employment contract, a work permit and payment receipts, and surface where the documents a worker was shown and the documents they are asked to sign tell different stories.
 
 ## Layout
 
