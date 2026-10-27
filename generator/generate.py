@@ -49,14 +49,21 @@ BASE_PERSON = {
     "address_en": "House 12, Rajshahi, Bangladesh",
 }
 
-# The birth-certificate office stamp: fixed position, selectable ink.
-# "purple" is the original rendering and stays the default, so existing
-# sets are unchanged. The other styles exist for the SAM-vs-heuristic
-# comparison (eval/SAM_TEST.md): the Pillow fallback detector keys on
-# saturated blue/purple ink, so black, red-orange and faded-grey stamps
-# are exactly the cases it is expected to struggle with.
-STAMP_BOX = [700, 470, 950, 560]
-STAMP_TEXT_XY = (742, 500)
+# The birth-certificate office stamp: a circular graphic at a fixed
+# position, with selectable ink. "purple" stays the default style.
+# The other styles exist for the SAM-vs-heuristic comparison
+# (eval/SAM_TEST.md): the Pillow fallback detector keys on saturated
+# blue/purple ink, so black, red-orange and faded-grey stamps are
+# exactly the cases it is expected to struggle with.
+STAMP_CENTER = (825, 515)
+STAMP_RADIUS = 75
+# Axis-aligned bounding box of the circular stamp graphic. Rotation
+# about the stamp's own centre does not change a circle's AABB, and
+# all text/ring strokes are drawn inside that circle.
+STAMP_BOX = [STAMP_CENTER[0] - STAMP_RADIUS,
+             STAMP_CENTER[1] - STAMP_RADIUS,
+             STAMP_CENTER[0] + STAMP_RADIUS,
+             STAMP_CENTER[1] + STAMP_RADIUS]
 STAMP_STYLES = {
     "purple": ((40, 40, 160), 255),
     "black": ((20, 20, 20), 255),
@@ -123,27 +130,45 @@ def render_nid(p: dict) -> Image.Image:
 
 
 def _draw_stamp(img: Image.Image, style: str) -> Image.Image:
-    """Draw the office stamp in the given style; returns the image.
+    """Draw the office stamp as a rotated circular graphic.
 
-    Full-alpha styles draw exactly as the original purple stamp did.
-    The faded style is composited at low alpha for a low-contrast look.
+    The stamp is a double-ring circle with OFFICE / STAMP lettering
+    inside, centred where the original flat stamp sat and rotated by
+    about -12 degrees (Pillow's positive rotation angle is
+    counter-clockwise on screen, so the layer is rotated by +12).
+    It is drawn on a transparent overlay so every style, including
+    the low-alpha faded style, is composited the same way.
     """
     if style not in STAMP_STYLES:
         raise ValueError(
             f"unknown stamp style {style!r}; choose one of "
             f"{', '.join(sorted(STAMP_STYLES))}")
     (r, g, b), alpha = STAMP_STYLES[style]
-    if alpha >= 255:
-        d = ImageDraw.Draw(img)
-        d.rectangle(STAMP_BOX, outline=(r, g, b), width=3)
-        d.text(STAMP_TEXT_XY, "OFFICE STAMP",
-               font=_font(FONT_LATIN, 20), fill=(r, g, b))
-        return img
+    ink = (r, g, b, alpha)
+    cx, cy = STAMP_CENTER
+    radius = STAMP_RADIUS
+
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
-    od.rectangle(STAMP_BOX, outline=(r, g, b, alpha), width=3)
-    od.text(STAMP_TEXT_XY, "OFFICE STAMP",
-            font=_font(FONT_LATIN, 20), fill=(r, g, b, alpha))
+    od.ellipse([cx - radius, cy - radius, cx + radius, cy + radius],
+               outline=ink, width=5)
+    inner = radius - 11
+    od.ellipse([cx - inner, cy - inner, cx + inner, cy + inner],
+               outline=ink, width=2)
+
+    font = _font(FONT_LATIN_BOLD, 20)
+    for text, dy in (("OFFICE", -24), ("STAMP", 4)):
+        bbox = od.textbbox((0, 0), text, font=font)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+        od.text((cx - text_w / 2 - bbox[0], cy + dy - bbox[1]),
+                text, font=font, fill=ink)
+    # A short rule between the two words, like the line/date slot on a
+    # real office stamp.
+    od.line([cx - 34, cy - 2, cx + 34, cy - 2], fill=ink, width=2)
+
+    overlay = overlay.rotate(12, resample=Image.Resampling.BICUBIC,
+                             center=STAMP_CENTER)
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
 

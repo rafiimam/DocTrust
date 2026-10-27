@@ -12,7 +12,9 @@ rendered certificate.
 import pytest
 from PIL import Image
 
-from generator.generate import (STAMP_BOX, STAMP_STYLES, generate_set)
+from app.segmenter import detect_stamp_box
+from generator.generate import (STAMP_BOX, STAMP_CENTER, STAMP_RADIUS,
+                                STAMP_STYLES, generate_set)
 
 
 @pytest.mark.parametrize("style", sorted(STAMP_STYLES))
@@ -37,6 +39,10 @@ def test_stamp_box_recorded_for_every_variant(tmp_path, variant):
     assert 0 <= x0 < x1 <= 1000
     assert 0 <= y0 < y1 <= 640
     assert (x1 - x0) >= 100 and (y1 - y0) >= 40
+    # The stamp is a circle: its AABB is square, centred on the
+    # stamp centre with side 2 * radius.
+    assert (x1 - x0) == (y1 - y0) == 2 * STAMP_RADIUS
+    assert ((x0 + x1) / 2, (y0 + y1) / 2) == STAMP_CENTER
 
 
 def test_default_stamp_style_is_purple(tmp_path):
@@ -68,3 +74,18 @@ def test_stamp_styles_change_the_certificate(tmp_path):
 def test_unknown_stamp_style_rejected(tmp_path):
     with pytest.raises(ValueError):
         generate_set(tmp_path / "bogus", "clean", stamp_style="green")
+
+
+def test_generated_purple_stamp_detected_close_to_truth(tmp_path):
+    # The Pillow colour heuristic must still find the (now circular)
+    # purple stamp, at close to the recorded ground-truth box. The
+    # detector works on a downscaled copy, so a few pixels of slack.
+    out = tmp_path / "detect"
+    truth = generate_set(out, "clean", stamp_style="purple")
+    box = detect_stamp_box(str(out / "birth_certificate.png"))
+    assert box is not None
+    x0, y0, x1, y1 = truth["stamp_box"]
+    assert abs(box.x_min - x0) <= 4
+    assert abs(box.y_min - y0) <= 4
+    assert abs(box.x_max - x1) <= 4
+    assert abs(box.y_max - y1) <= 6
