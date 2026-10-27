@@ -21,6 +21,10 @@ DocTrust reviews a document set (national ID, birth certificate, bank form) the 
 
 DocTrust never auto-approves or auto-rejects. It is decision support for a human reviewer. All documents used in development and evaluation are synthetic and watermarked SPECIMEN.
 
+## Live demo
+
+**https://rafiimam.github.io/DocTrust/demo/** — a self-contained replay of cached agent runs on synthetic document sets (a discrepancy hidden under a stamp, a genuine name/digit variation, a degraded capture), served from [`docs/demo/`](docs/demo/) by GitHub Pages. It calls no model and needs no API keys; live mode is the backend described below. Pages is enabled once by the repository owner: **Settings → Pages → Deploy from a branch → `main` → `/docs`**.
+
 Because it runs on open-weight models (Muse Spark Open via Baseten, SAM 3.1 self-hosted on Modal), sensitive documents can stay inside the institution's own infrastructure.
 
 ## Status
@@ -44,7 +48,7 @@ SAM 3.1 is wired into the agent as a tool, not a preprocessing step:
 - `frontend/` — reviewer UI (documents left, live agent trace with evidence links right)
 - `generator/` — synthetic document set generator (SPECIMEN-watermarked)
 - `eval/` — synthetic evaluation sets and baseline/agent comparisons
-- `docs/` — plan and notes
+- `docs/` — plan and notes; `docs/demo/` is the GitHub Pages reviewer-UI demo
 
 ## License
 
