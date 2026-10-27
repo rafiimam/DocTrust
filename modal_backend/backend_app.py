@@ -63,6 +63,10 @@ image = (
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("meta-secret")],
+    # Single container is deliberate: the judge job store is in-memory,
+    # so the SSE events stream and result polls must reach the same
+    # instance that accepted the upload.
+    max_containers=1,
     scaledown_window=300,   # scale to zero after ~5 idle minutes
     timeout=900,            # a review job may run several minutes
 )
