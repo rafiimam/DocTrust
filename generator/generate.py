@@ -17,8 +17,11 @@ Variants: clean | variation | discrepancy | degraded
 The birth certificate carries an office stamp. Its style is selectable
 (--stamp-style; default "purple", the original rendering) so the
 SAM-vs-heuristic comparison in eval/SAM_TEST.md can use stamps the
-colour heuristic was not built for. The stamp's bounding box and style
-are recorded in ground_truth.json either way.
+colour heuristic was not built for. Its placement is selectable too
+(--stamp-position; default "margin", the original rendering, which
+occludes no field; "over_dob" centres the stamp on the Born row's
+value). The stamp's bounding box, style and position are recorded in
+ground_truth.json either way.
 """
 
 from __future__ import annotations
@@ -72,6 +75,48 @@ STAMP_STYLES = {
 }
 DEFAULT_STAMP_STYLE = "purple"
 
+# Birth-certificate row layout (see _row and render_birth_certificate):
+# rows start at BC_FIRST_ROW_Y and step ROW_STEP apart; field values
+# are drawn at VALUE_X. "Born" is the fourth row.
+BC_FIRST_ROW_Y = 130
+ROW_STEP = 52
+VALUE_X = 300
+BORN_ROW_INDEX = 3  # Name, Name (BN), Father, Born
+BORN_ROW_Y = BC_FIRST_ROW_Y + BORN_ROW_INDEX * ROW_STEP  # 286
+
+# Stamp placement. "margin" is the original position: the stamp sits
+# in the bottom margin and occludes no field. "over_dob" re-centres
+# the same graphic on the Born row's value — that value (Bangla digits
+# drawn at (VALUE_X, BORN_ROW_Y - 3) in the 26px Bangla font) has a
+# measured ink box of x 300..446, y 286..310, whose centre is
+# (373, 298) — so the stamp covers the date-of-birth digits, and
+# masking it is what makes them readable again. The recovered-read
+# stage of eval/SAM_TEST.md needs exactly that.
+STAMP_CENTER_OVER_DOB = (373, 298)
+STAMP_POSITIONS = {
+    "margin": STAMP_CENTER,
+    "over_dob": STAMP_CENTER_OVER_DOB,
+}
+DEFAULT_STAMP_POSITION = "margin"
+
+
+def _stamp_box(center: tuple[int, int]) -> list[int]:
+    """Axis-aligned bounding box of the stamp graphic at `center`."""
+    cx, cy = center
+    return [cx - STAMP_RADIUS, cy - STAMP_RADIUS,
+            cx + STAMP_RADIUS, cy + STAMP_RADIUS]
+
+
+STAMP_BOX_OVER_DOB = _stamp_box(STAMP_CENTER_OVER_DOB)  # [298, 223, 448, 373]
+
+
+def _stamp_center(position: str) -> tuple[int, int]:
+    if position not in STAMP_POSITIONS:
+        raise ValueError(
+            f"unknown stamp position {position!r}; choose one of "
+            f"{', '.join(sorted(STAMP_POSITIONS))}")
+    return STAMP_POSITIONS[position]
+
 
 def _font(path: str, size: int) -> ImageFont.FreeTypeFont:
     try:
@@ -105,12 +150,12 @@ def _header(d: ImageDraw.ImageDraw, title_en: str, title_bn: str) -> None:
 
 def _row(d: ImageDraw.ImageDraw, y: int, label: str, value: str,
          bangla_value: bool = False, label_x: int = 36,
-         value_x: int = 300) -> int:
+         value_x: int = VALUE_X) -> int:
     d.text((label_x, y), label, font=_font(FONT_LATIN, 21), fill=(90, 90, 90))
     d.text((value_x, y - 3), value,
            font=_font(FONT_BANGLA if bangla_value else FONT_LATIN, 26),
            fill=(15, 15, 15))
-    return y + 52
+    return y + ROW_STEP
 
 
 def render_nid(p: dict) -> Image.Image:
@@ -129,15 +174,16 @@ def render_nid(p: dict) -> Image.Image:
     return _watermark(img)
 
 
-def _draw_stamp(img: Image.Image, style: str) -> Image.Image:
+def _draw_stamp(img: Image.Image, style: str,
+                center: tuple[int, int] = STAMP_CENTER) -> Image.Image:
     """Draw the office stamp as a rotated circular graphic.
 
     The stamp is a double-ring circle with OFFICE / STAMP lettering
-    inside, centred where the original flat stamp sat and rotated by
-    about -12 degrees (Pillow's positive rotation angle is
-    counter-clockwise on screen, so the layer is rotated by +12).
-    It is drawn on a transparent overlay so every style, including
-    the low-alpha faded style, is composited the same way.
+    inside, centred at `center` and rotated by about -12 degrees
+    (Pillow's positive rotation angle is counter-clockwise on screen,
+    so the layer is rotated by +12). It is drawn on a transparent
+    overlay so every style, including the low-alpha faded style, is
+    composited the same way.
     """
     if style not in STAMP_STYLES:
         raise ValueError(
@@ -145,7 +191,7 @@ def _draw_stamp(img: Image.Image, style: str) -> Image.Image:
             f"{', '.join(sorted(STAMP_STYLES))}")
     (r, g, b), alpha = STAMP_STYLES[style]
     ink = (r, g, b, alpha)
-    cx, cy = STAMP_CENTER
+    cx, cy = center
     radius = STAMP_RADIUS
 
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -168,23 +214,24 @@ def _draw_stamp(img: Image.Image, style: str) -> Image.Image:
     od.line([cx - 34, cy - 2, cx + 34, cy - 2], fill=ink, width=2)
 
     overlay = overlay.rotate(12, resample=Image.Resampling.BICUBIC,
-                             center=STAMP_CENTER)
+                             center=center)
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
 
 def render_birth_certificate(p: dict,
-                             stamp_style: str = DEFAULT_STAMP_STYLE
+                             stamp_style: str = DEFAULT_STAMP_STYLE,
+                             stamp_position: str = DEFAULT_STAMP_POSITION
                              ) -> Image.Image:
     img = Image.new("RGB", (W, H), (250, 248, 238))
     d = ImageDraw.Draw(img)
     _header(d, "Birth Certificate (sample)", "জন্ম সনদ")
-    y = 130
+    y = BC_FIRST_ROW_Y
     y = _row(d, y, "Name", p["name_en"])
     y = _row(d, y, "Name (BN)", p["name_bn"], bangla_value=True)
     y = _row(d, y, "Father", p["father_bn"], bangla_value=True)
     y = _row(d, y, "Born", p["dob_bn_digits"], bangla_value=True)
     y = _row(d, y, "Address", p["address_en"])
-    img = _draw_stamp(img, stamp_style)
+    img = _draw_stamp(img, stamp_style, _stamp_center(stamp_position))
     return _watermark(img)
 
 
@@ -242,7 +289,8 @@ def build_person(variant: str, rng: random.Random) -> tuple[dict, dict, dict]:
 
 
 def generate_set(out_dir, variant: str = "clean", seed: int = 7,
-                 stamp_style: str = DEFAULT_STAMP_STYLE) -> dict:
+                 stamp_style: str = DEFAULT_STAMP_STYLE,
+                 stamp_position: str = DEFAULT_STAMP_POSITION) -> dict:
     """Render one synthetic set into `out_dir`; return its ground truth.
 
     Writes nid.png, birth_certificate.png, bank_form.png and
@@ -251,14 +299,16 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
     the backend's judge-mode case-pack endpoint.
 
     The ground truth also records the birth certificate's stamp:
-    "stamp_box" ([x0, y0, x1, y1] in image pixels), "stamp_document"
-    and "stamp_style", so the SAM-vs-heuristic comparison can score
-    masks against the exact region that was drawn.
+    "stamp_box" ([x0, y0, x1, y1] in image pixels, the true box for
+    whichever placement was used), "stamp_document", "stamp_style"
+    and "stamp_position", so the SAM-vs-heuristic comparison can
+    score masks against the exact region that was drawn.
     """
     if stamp_style not in STAMP_STYLES:
         raise ValueError(
             f"unknown stamp style {stamp_style!r}; choose one of "
             f"{', '.join(sorted(STAMP_STYLES))}")
+    stamp_center = _stamp_center(stamp_position)  # validates the name
     rng = random.Random(seed)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -272,7 +322,8 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
 
     nid_img = render_nid(render_person)
     birth_img = render_birth_certificate(render_person,
-                                         stamp_style=stamp_style)
+                                         stamp_style=stamp_style,
+                                         stamp_position=stamp_position)
     form_person = dict(render_person)
     if variant == "discrepancy":
         form_person["dob"] = "12/03/1991"     # …the form carries the swap
@@ -293,9 +344,10 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
         "documents": truth,
         # The stamp lives on the birth certificate; the other two
         # documents carry no stamp (no stamp_box is recorded for them).
-        "stamp_box": list(STAMP_BOX),
+        "stamp_box": _stamp_box(stamp_center),
         "stamp_document": "birth_certificate",
         "stamp_style": stamp_style,
+        "stamp_position": stamp_position,
     }
     (out / "ground_truth.json").write_text(json.dumps(
         ground_truth, indent=2, ensure_ascii=False))
@@ -311,10 +363,16 @@ def main() -> None:
     ap.add_argument("--stamp-style", default=DEFAULT_STAMP_STYLE,
                     choices=sorted(STAMP_STYLES),
                     help="birth-certificate stamp ink (default: purple)")
+    ap.add_argument("--stamp-position", default=DEFAULT_STAMP_POSITION,
+                    choices=sorted(STAMP_POSITIONS),
+                    help="birth-certificate stamp placement "
+                         "(default: margin; over_dob covers the Born "
+                         "row's value)")
     args = ap.parse_args()
 
     generate_set(args.out, args.variant, args.seed,
-                 stamp_style=args.stamp_style)
+                 stamp_style=args.stamp_style,
+                 stamp_position=args.stamp_position)
     print(f"wrote {args.out} ({args.variant})")
 
 
