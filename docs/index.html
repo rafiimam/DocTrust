@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="0; url=demo/">
+<title>DocTrust — live demo</title>
+<script>window.location.replace("demo/");</script>
+<style>
+  :root { --ink: #17202a; --muted: #5d6d7e; --line: #d5dbdb; --accent: #166534; --page: #f7f8f7; --card: #ffffff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); background: var(--page);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.45; display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  main {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04); padding: 32px; max-width: 640px; text-align: center;
+  }
+  h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -.5px; }
+  p { color: var(--muted); margin: 6px 0; }
+  a.demo-link {
+    display: inline-block; margin-top: 16px; padding: 10px 22px;
+    background: var(--accent); color: #fff; font-weight: 600;
+    border-radius: 999px; text-decoration: none;
+  }
+  a.demo-link:hover { text-decoration: underline; }
+  .repo { font-size: 14px; margin-top: 18px; }
+  .repo a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>DocTrust</h1>
+  <p>An open-weight reviewer agent that cross-examines a person's whole document
+  set, re-reads anything it is unsure about, and shows the human reviewer the
+  exact regions that agree or disagree. It never auto-rejects.</p>
+  <p>Redirecting you to the live demo&hellip;</p>
+  <a class="demo-link" href="demo/">Open the DocTrust live demo</a>
+  <p class="repo">Source: <a href="https://github.com/rafiimam/DocTrust">github.com/rafiimam/DocTrust</a></p>
+</main>
+</body>
+</html>
