@@ -1,12 +1,14 @@
 # SAM 3.1 vs. Pillow heuristic — stamp-masking comparison protocol
 
-> **Status: PROTOCOL FIXED IN ADVANCE; SAM-side results pending.**
-> The cases, prompts and scoring below are specified before any SAM
-> run, so they cannot be tuned after seeing results. The heuristic
-> side can run offline today; the SAM side waits on the Modal
-> endpoint (owner's Modal login + Hugging Face token; steps in
-> `modal_sam/README.md`). Until then, every SAM cell reads _pending_
-> and no claim is made either way.
+> **Status: PROTOCOL FIXED IN ADVANCE; comparison results pending.**
+> The cases, prompts and scoring below are specified before the
+> comparison run, so they cannot be tuned after seeing results. The
+> heuristic side can run offline today; the SAM side runs against
+> SAM 3.1 hosted on the Meta Model API (`MetaSAMSegmenter`) — the
+> self-hosted Modal app remains implemented but is not deployed,
+> because the owner's Modal workspace cannot add the payment method
+> its GPU functions require. Until the comparison is run, every SAM
+> cell reads _pending_ and no claim is made either way.
 
 ## Question
 
@@ -16,8 +18,11 @@ stamp that occludes it. Two segmenters can produce that mask:
 - **Pillow heuristic** (`PillowFallbackSegmenter`): finds saturated
   blue/purple ink by colour and masks its bounding box. It was built
   for the generator's original purple stamp.
-- **SAM 3.1 on Modal** (`ModalSegmenter`): open-vocabulary concept
-  segmentation of the same prompt, self-hosted.
+- **SAM 3.1 via the Meta Model API** (`MetaSAMSegmenter`):
+  open-vocabulary concept segmentation of the same prompt, using
+  Meta's hosted endpoint for the same SAM 3.1 weights. (A self-hosted
+  Modal segmenter, `ModalSegmenter`, is also implemented; it is not
+  the route under test here.)
 
 If SAM does not beat the heuristic somewhere real, "SAM as a tool"
 adds nothing over a colour filter, and the README should say so.

@@ -1,11 +1,14 @@
 # SAM 3.1 on Modal — deployment and smoke test
 
-Status: **code written and unit-tested offline; live deployment is the
-one remaining step**, and it needs Rafi's own Hugging Face token and
-Modal login — nobody else can (or should) do these steps. Budget for
-the smoke test below: one cold deploy + a handful of single-image
-calls on an L4 — small enough to fit in Modal's starter credit. The
-$100 hackathon credits, once granted, cover evaluation-scale runs.
+Status: **the hosted route is currently used; this app is the
+self-host path.** The deployed backend segments with SAM 3.1 hosted
+on the Meta Model API (`MetaSAMSegmenter`, `SEGMENTER=meta`), so this
+Modal app is not deployed at present — the owner's Modal workspace
+cannot add the payment method its GPU functions require. The code is
+written and unit-tested offline, and the steps below remain the
+deployment and smoke-test path for a workspace that can run GPUs;
+they need Rafi's own Hugging Face token and Modal login — nobody
+else can (or should) do these steps.
 
 ## What this is
 
@@ -13,8 +16,9 @@ $100 hackathon credits, once granted, cover evaluation-scale runs.
 segmentation: one GPU function (L4, scales to zero) with a POST
 endpoint taking `{"image_base64", "prompt"}` and returning
 `{"boxes", "scores", "mask_base64"}`. The backend reaches it through
-`ModalSegmenter` in `backend/app/segmenter.py` when `SAM_MODAL_ENDPOINT`
-is set. Until it is deployed, the agent uses the deterministic Pillow
+`ModalSegmenter` in `backend/app/segmenter.py` when `SEGMENTER=modal`
+and `SAM_MODAL_ENDPOINT` is set. While it is not deployed, the agent
+uses the Meta-hosted SAM segmenter or the deterministic Pillow
 fallback masker, and reviews work either way — segmentation failing
 never fails a review.
 

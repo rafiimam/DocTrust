@@ -25,7 +25,7 @@ DocTrust never auto-approves or auto-rejects. It is decision support for a human
 
 **https://rafiimam.github.io/DocTrust/demo/** — a self-contained replay of cached agent runs on synthetic document sets (a discrepancy hidden under a stamp, a genuine name/digit variation, a degraded capture), served from [`docs/demo/`](docs/demo/) by GitHub Pages. It calls no model and needs no API keys; live mode is the backend described below. Pages is enabled once by the repository owner: **Settings → Pages → Deploy from a branch → `main` → `/docs`**.
 
-DocTrust is designed so sensitive documents never have to leave the institution: the reader can run on open weights (Muse Spark Open) and the segmenter is a self-hosted SAM 3.1, so a deployment can run entirely inside the institution's own infrastructure. What is verified live so far is the hosted Meta Model API route (`muse-spark-1.3`); the open-weight Baseten route is implemented and selectable by environment variable, with its verification pending a Baseten key — see "Reader provider" under Judge mode.
+DocTrust is designed so sensitive documents never have to leave the institution: the reader can run on open weights (Muse Spark Open) and a self-hosted SAM 3.1 app is provided, so a deployment can run entirely inside the institution's own infrastructure. The current deployment instead uses Meta-hosted models for both reading (`muse-spark-1.3`) and SAM 3.1 segmentation. What is verified live so far is the hosted Meta Model API reader route; the open-weight Baseten route is implemented and selectable by environment variable, with its verification pending a Baseten key — see "Reader provider" under Judge mode.
 
 ## Judge mode — run it yourself, live
 
@@ -59,15 +59,16 @@ The **Bangla gate test has passed** on the Meta Model API route: `muse-spark-1.3
 
 **Evaluation pending — no numbers are claimed yet.** The evaluation protocol and report template are in [`eval/EVALUATION.md`](eval/EVALUATION.md): about 40 synthetic sets (clean, genuine variation, injected discrepancy, degraded, plus physically captured specimen sets), three configurations (exact-match baseline, single-pass + normalization, full agent), all results reported as counts (x/n), never bare percentages. The fixed SAM-vs-heuristic stamp comparison protocol is in [`eval/SAM_TEST.md`](eval/SAM_TEST.md).
 
-## SAM 3.1 segmentation (on Modal)
+## SAM 3.1 segmentation
 
 SAM 3.1 is wired into the agent as a tool, not a preprocessing step:
 
 - `backend/app/segmenter.py` defines the `Segmenter` interface the agent loop uses. When a field's perturbation reads disagree, the `stamp_masked` investigation view re-reads the field from a copy of the image with the stamp region masked by the injected segmenter. If no segmenter is configured — or segmentation fails — the view is read from the original image and the review proceeds unchanged.
-- `ModalSegmenter` calls the self-hosted SAM 3.1 endpoint (`modal_sam/sam_app.py`: one scale-to-zero L4 GPU function on Modal, weights from the gated `facebook/sam3.1` Hugging Face repo, cached in a Modal Volume). Set `SAM_MODAL_ENDPOINT` to enable it.
-- `PillowFallbackSegmenter` is the deterministic offline path: a colour heuristic finds stamp-like (saturated blue/purple ink) regions and Pillow masks them. It needs no GPU, network or credits, and is what the test suite exercises.
+- `MetaSAMSegmenter` calls SAM 3.1 hosted on the Meta Model API (the Responses endpoint, model `sam-3.1`, the same server-side `MODEL_API_KEY` as the reader). It parses the returned boxes in source-image pixels — the wire format carries no confidence score — and, when the optional `meta-sam-parser` package is installed, decodes the returned masks; otherwise the agent masks by box. Segmenter selection is by environment: `SEGMENTER=meta` (or a `MODEL_API_KEY` present with `SEGMENTER` unset) chooses this route, and the deployed backend sets `SEGMENTER=meta`.
+- `ModalSegmenter` calls a self-hosted SAM 3.1 endpoint (`modal_sam/sam_app.py`: one scale-to-zero L4 GPU function on Modal, weights from the gated `facebook/sam3.1` Hugging Face repo, cached in a Modal Volume). Set `SEGMENTER=modal` and `SAM_MODAL_ENDPOINT` to enable it. That app is implemented but not currently deployed: the owner's Modal workspace cannot add the payment method its GPU functions require.
+- `PillowFallbackSegmenter` is the deterministic offline path: a colour heuristic finds stamp-like (saturated blue/purple ink) regions and Pillow masks them. It needs no GPU, network or credits, and is what the offline test suite exercises.
 
-**Status: implemented and covered by offline tests; the live Modal smoke test is pending** — it needs the project owner's Hugging Face read token and Modal login, plus the endpoint's first (slow) weights download. Exact steps are in [modal_sam/README.md](modal_sam/README.md). No accuracy claim is made for segmentation at this stage; all development documents are synthetic and watermarked SPECIMEN.
+**Status:** the hosted SAM 3.1 route is the deployed segmenter; its wire format was verified live against the Meta Model API. No accuracy claim is made for segmentation at this stage — the fixed comparison against the Pillow heuristic is specified in [eval/SAM_TEST.md](eval/SAM_TEST.md) and its results are pending. All development documents are synthetic and watermarked SPECIMEN.
 
 ## Layout
 

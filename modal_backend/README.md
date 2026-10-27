@@ -98,9 +98,12 @@ backend instead — e.g. a local one (`uvicorn app.main:app` in
 `backend/`, for development) — paste its URL into **Backend URL** on
 the page; it is remembered (localStorage) on that browser.
 
-## Optional: SAM 3.1 segmenter
+## SAM 3.1 segmenter
 
-Judge mode uses the Pillow fallback segmenter by default. To use the
-self-hosted SAM 3.1 endpoint instead (see `modal_sam/`), set the
-`SAM_MODAL_ENDPOINT` environment variable for this Modal app to the
-`doctrust-sam31` endpoint URL and redeploy.
+This app sets `SEGMENTER=meta`, so judge mode segments with SAM 3.1
+hosted on the Meta Model API, using the same `MODEL_API_KEY` from
+`meta-secret` — no extra secret or endpoint is needed. The
+self-hosted SAM 3.1 app in `modal_sam/` remains available for
+deployments that can run GPUs: set `SEGMENTER=modal` and
+`SAM_MODAL_ENDPOINT` to the `doctrust-sam31` endpoint URL in
+`backend_app.py` and redeploy.

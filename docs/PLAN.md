@@ -9,7 +9,7 @@ DocTrust is an open-weight reviewer agent that cross-examines a person's whole d
 ## Status note (27 Oct 2026) — what is verified, what is pending
 - **Verified live:** the reader running on the hosted Meta Model API (`muse-spark-1.3`) — the Bangla gate test passed 4/4 and a full judge-mode run completed end-to-end with live reads. Billing resolved via the $150 credit.
 - **Implemented, verification pending:** the open-weight route — Muse Spark Open (`meta-models/muse-spark-open-1026`) via Baseten. The reader is implemented and selectable by environment variable, but no result in this repo comes from it yet; verification waits on a Baseten key. Below, "Muse Spark Open" names that route; where the current build's live behaviour is described, it is the Meta Model API route.
-- **Pending:** SAM 3.1 live smoke test on Modal (needs the owner's Modal login and Hugging Face token) and the evaluation run (protocol in `eval/EVALUATION.md`, stamp comparison in `eval/SAM_TEST.md`).
+- **Segmentation route:** SAM 3.1 is called through the Meta Model API (Meta-hosted, same weights), and that is the segmenter the deployed backend uses. The self-hosted Modal SAM app is implemented but not deployed — the owner's Modal workspace cannot add the payment method its GPU functions require. The evaluation run remains pending (protocol in `eval/EVALUATION.md`, stamp comparison in `eval/SAM_TEST.md`).
 - The open-weights point throughout this plan is a **design property** — a deployment *can* run entirely inside the institution — not a claim about which route the current demo runs.
 
 ## What changed from v1, and why
@@ -69,7 +69,7 @@ Report as a small synthetic-set result. Do not claim real-world accuracy.
 
 ## Stack
 - Reasoning and reading: Muse Spark, provider chosen by environment variable. Verified live: Meta Model API (`muse-spark-1.3`, hosted). Implemented, verification pending a Baseten key: Muse Spark Open (meta-models/muse-spark-open-1026) via Baseten — the open-weight route a deployment inside an institution would use.
-- Segmentation: SAM 3.1 self-hosted on Modal (Hugging Face access granted 27 Oct). Fallbacks: the deterministic Pillow heuristic segmenter (offline), or Meta's hosted `sam-3.1` on the Meta Model API.
+- Segmentation: SAM 3.1 hosted on the Meta Model API (`sam-3.1` via the Responses endpoint; MetaSAMSegmenter, selected with `SEGMENTER=meta`). A self-hosted Modal app (`modal_sam/`) is implemented but not deployed — the workspace cannot add the payment method its GPU functions require. Fallback: the deterministic Pillow heuristic segmenter (offline).
 - Backend: FastAPI. Frontend: purpose-built reviewer UI (documents on the left, live agent trace with evidence links on the right), using whatever you can build fastest. No dashboard-as-product.
 - Repo: fresh public repo with clean history from 27 Oct. README states exactly what was built during the hackathon.
 
