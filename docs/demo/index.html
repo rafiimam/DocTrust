@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DocTrust — live demo (cached agent run)</title>
+<title>DocTrust — demo (cached cases + judge-mode upload)</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,15 +15,19 @@
       whole document set, re-reads anything it is unsure about, and shows the human
       reviewer the exact regions that agree or disagree. It never auto-rejects.</p>
     </div>
-    <span class="badge badge-demo">Demo mode</span>
+    <span class="badge badge-demo" id="modeBadge">Demo mode</span>
   </div>
   <p class="demo-note"><strong>Demo mode — cached agent run on synthetic data.</strong>
   Live mode connects to Muse Spark Open via Baseten and SAM 3.1 on Modal
   (API keys required). Every document below is synthetic and marked SPECIMEN;
   nothing here is a real document or a real person.</p>
+  <nav class="mode-toggle" aria-label="Demo mode">
+    <button type="button" id="modeCachedBtn" aria-selected="true">Cached cases</button>
+    <button type="button" id="modeUploadBtn" aria-selected="false">Upload (judge mode)</button>
+  </nav>
 </header>
 
-<main class="layout">
+<main class="layout" id="cachedMain">
   <section class="docs-column">
     <nav class="case-picker" id="casePicker" aria-label="Demo cases"></nav>
     <p class="case-summary" id="caseSummary"></p>
@@ -46,6 +50,85 @@
   </aside>
 </main>
 
+<section class="layout upload-layout" id="uploadMain" hidden>
+  <div class="upload-column">
+    <p class="synthetic-warning"><strong>Synthetic documents only — do not upload
+    real ID documents.</strong> Download a case pack below, unzip it, and upload
+    the three images. Uploads go only to the backend you configure; nothing is
+    stored there after the run.</p>
+
+    <div class="backend-settings">
+      <label for="backendUrl">Backend URL</label>
+      <input type="url" id="backendUrl" spellcheck="false"
+             placeholder="http://localhost:8000">
+      <button type="button" id="backendSaveBtn">Save</button>
+      <span class="backend-status" id="backendStatus">Not checked yet.</span>
+    </div>
+
+    <h2 class="upload-h">1 · Get a synthetic case pack</h2>
+    <div class="pack-buttons">
+      <a class="pack-btn" data-pack="clean" href="#" download>Clean set</a>
+      <a class="pack-btn" data-pack="variation" href="#" download>Variation set</a>
+      <a class="pack-btn" data-pack="discrepancy" href="#" download>Discrepancy set</a>
+      <a class="pack-btn" data-pack="degraded" href="#" download>Degraded set</a>
+    </div>
+    <p class="upload-hint">Each ZIP holds <code>nid.png</code>,
+    <code>birth_certificate.png</code>, <code>bank_form.png</code> and the
+    <code>ground_truth.json</code> the run should agree with.</p>
+
+    <h2 class="upload-h">2 · Upload the three documents</h2>
+    <div class="upload-grid">
+      <label class="upload-slot">
+        <span class="upload-slot-title">National ID (nid)</span>
+        <input type="file" id="file-nid" accept="image/png,image/jpeg">
+        <img class="upload-preview" id="preview-nid" alt="" hidden>
+        <span class="upload-file-name" id="name-nid">No file chosen</span>
+      </label>
+      <label class="upload-slot">
+        <span class="upload-slot-title">Birth certificate</span>
+        <input type="file" id="file-birth_certificate" accept="image/png,image/jpeg">
+        <img class="upload-preview" id="preview-birth_certificate" alt="" hidden>
+        <span class="upload-file-name" id="name-birth_certificate">No file chosen</span>
+      </label>
+      <label class="upload-slot">
+        <span class="upload-slot-title">Bank form</span>
+        <input type="file" id="file-bank_form" accept="image/png,image/jpeg">
+        <img class="upload-preview" id="preview-bank_form" alt="" hidden>
+        <span class="upload-file-name" id="name-bank_form">No file chosen</span>
+      </label>
+    </div>
+
+    <div class="controls">
+      <button type="button" id="runBtn">Run live review</button>
+      <span class="progress" id="runStatus"></span>
+    </div>
+    <div class="upload-notice" id="uploadNotice" hidden></div>
+
+    <div id="fieldsPanel" hidden>
+      <h2 class="upload-h">What the agent read</h2>
+      <div id="fieldsTable"></div>
+    </div>
+    <div id="evidencePanel" hidden>
+      <h2 class="upload-h">Evidence views the agent read</h2>
+      <div class="evidence-grid" id="evidenceGrid"></div>
+    </div>
+  </div>
+
+  <aside class="trace-column">
+    <h2>Live agent trace</h2>
+    <ol class="trace" id="liveTrace">
+      <li class="trace-empty" style="border:none;background:none;">Upload a
+      synthetic set and press Run — the agent's steps stream here live from
+      the backend. If the backend has no reader configured, this panel says
+      so plainly instead of pretending.</li>
+    </ol>
+    <div class="verdict" id="liveVerdict" hidden>
+      <h3 id="liveVerdictTitle"></h3>
+      <p id="liveVerdictBody"></p>
+    </div>
+  </aside>
+</section>
+
 <footer class="site-footer">
   <p>DocTrust is decision support for a human reviewer — it never auto-approves or
   auto-rejects. Uncertainty comes from disagreement between reads under perturbation,
@@ -58,5 +141,6 @@
 
 <script src="cases.js"></script>
 <script src="app.js"></script>
+<script src="judge.js"></script>
 </body>
 </html>
