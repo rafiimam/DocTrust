@@ -82,6 +82,73 @@ def test_agent_agreeing_reads_do_not_investigate():
         assert len(fr.reads) == 3
 
 
+def test_majority_unique_plurality_wins():
+    # [A, A, B]: A has strictly more reads than every other distinct
+    # value, so it settles the field exactly as before the tie fix.
+    assert agent._majority(["A", "A", "B"]) == "A"
+    assert agent._majority(["A"]) == "A"
+    assert agent._majority(["A", "A", "A", "B", "B"]) == "A"
+
+
+def test_majority_tie_returns_none():
+    # Any tie for the top count — including all-distinct reads — is
+    # not certainty: the field stays unreadable rather than picking
+    # an arbitrary winner by set iteration order.
+    assert agent._majority(["A", "B"]) is None
+    assert agent._majority(["A", "B", "C"]) is None
+    assert agent._majority(["A", "A", "B", "B"]) is None
+    assert agent._majority(["UNREADABLE", "A", "UNREADABLE", "B"]) is None
+
+
+def test_majority_no_readable_returns_none():
+    assert agent._majority([]) is None
+    assert agent._majority(["UNREADABLE", "UNREADABLE"]) is None
+    assert agent._majority(["", "UNREADABLE"]) is None
+
+
+def test_agent_tied_reads_after_investigation_give_recapture():
+    # The investigation leaves the NID dob at [A, B] — one read each,
+    # the rest UNREADABLE. A tie must not coin-flip a winner: the
+    # field stays unreadable and the otherwise-clean set asks for a
+    # recapture instead of flagging or clearing on an arbitrary value.
+    script = _script()
+    script[("nid", "dob")] = ["12/03/1990", "12/03/1996", "UNREADABLE",
+                              "UNREADABLE", "UNREADABLE"]
+    reader = MockReader(script)
+    outcome = agent.run_review(reader, {"nid": "nid.png", "bank_form": "form.png"})
+    dob = next(fr for fr in outcome.field_reads
+               if fr.doc_type == "nid" and fr.field == "dob")
+    assert dob.uncertain is True
+    assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
+    assert dob.value is None
+    assert outcome.verdict == "UNREADABLE"
+
+
+def test_agent_scattered_probe_reads_give_recapture_not_flag():
+    # The live-probe shape (2026-10-27): the stamp-covered birth
+    # certificate DOB read [UNREADABLE, wrong, UNREADABLE, UNREADABLE,
+    # correct] across the five views — the correct value and a wrong
+    # value once each. The old tie-break picked an arbitrary winner
+    # and falsely flagged the genuine set DISCREPANCY; scattered reads
+    # like these must end in a recapture request instead.
+    script = _script()
+    script[("birth_certificate", "name")] = ["Mohammad Abdul Rahman"]
+    script[("birth_certificate", "dob")] = ["UNREADABLE", "১২/০৯/১৯৯০",
+                                            "UNREADABLE", "UNREADABLE",
+                                            "১২/০৩/১৯৯০"]
+    script[("birth_certificate", "father_name")] = ["Abdul Karim"]
+    reader = MockReader(script)
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "birth_certificate": "bc.png",
+                                        "bank_form": "form.png"})
+    dob = next(fr for fr in outcome.field_reads
+               if fr.doc_type == "birth_certificate" and fr.field == "dob")
+    assert dob.uncertain is True
+    assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
+    assert dob.value is None
+    assert outcome.verdict == "UNREADABLE"
+
+
 def test_agent_all_unreadable_investigates_and_stays_unreadable():
     # No first-pass view can read the field: the investigation still
     # runs (5 reads), the field is marked uncertain, and with nothing

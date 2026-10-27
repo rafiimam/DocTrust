@@ -39,10 +39,26 @@ INVESTIGATION_VIEWS = ["stamp_masked", "zoom_tight"]
 
 
 def _majority(values: list[str]) -> str | None:
+    """Settle a field's reads into one value, or None.
+
+    The value is returned only when it is the unique plurality winner —
+    strictly more reads than every other distinct readable value. Any
+    tie for the top count, including all-distinct reads, returns None:
+    scattered reads are not certainty, so the field stays unreadable
+    and the comparator asks for a recapture rather than a coin-flip
+    flag. UNREADABLE/empty reads are ignored, as before.
+    """
     readable = [v for v in values if v and v != "UNREADABLE"]
     if not readable:
         return None
-    return max(set(readable), key=readable.count)
+    counts: dict[str, int] = {}
+    for value in readable:
+        counts[value] = counts.get(value, 0) + 1
+    top = max(counts.values())
+    winners = [v for v, c in counts.items() if c == top]
+    if len(winners) != 1:
+        return None
+    return winners[0]
 
 
 def _investigation_image(segmenter: Segmenter | None, image_path: str,
