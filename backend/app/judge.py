@@ -9,17 +9,19 @@ tight zoom, generated here as real image transforms) and the masked view
 when the segmenter produces one — as PNG data URLs in the result.
 
 Honesty rules (do not weaken these):
-- If no vision reader is configured (no BASETEN_API_KEY and
-  JUDGE_READER unset/unusable), the job still runs the preprocessing
-  and segmentation steps that need no reader, then stops in the
-  "reader_not_configured" state with a clear message. Field reads are
-  NEVER faked, stubbed or copied from anywhere.
+- If no vision reader is configured (no usable reader key for the
+  selected provider and JUDGE_READER unset/unusable), the job still
+  runs the preprocessing and segmentation steps that need no reader,
+  then stops in the "reader_not_configured" state with a clear
+  message. Field reads are NEVER faked, stubbed or copied from anywhere.
 - Judge mode is for SYNTHETIC documents only (see README). Uploads live
   in a per-job temp directory that is deleted when the job finishes;
   results and traces live in memory only, capped and TTL-evicted.
 
 Configuration is environment-only, read per job so flipping env is the
 only change needed once a key exists:
+- JUDGE_READER=meta (with MODEL_API_KEY set) -> MetaReader
+  (Meta Model API, model from META_MODEL, default muse-spark-1.3)
 - JUDGE_READER=baseten (default when BASETEN_API_KEY is set) -> BasetenReader
 - JUDGE_READER=mock with JUDGE_MOCK_SCRIPT_JSON -> MockReader, for local
   development/tests only. Script JSON maps "doc_type|field" -> [values].
@@ -43,7 +45,7 @@ from pathlib import Path
 
 from . import agent as agent_module
 from .comparator import _canonical
-from .providers import BasetenReader, MockReader, Reader
+from .providers import BasetenReader, MetaReader, MockReader, Reader
 from .segmenter import (ModalSegmenter, PillowFallbackSegmenter,
                         Segmenter)
 
@@ -69,8 +71,10 @@ READER_NOT_CONFIGURED_MESSAGE = (
     "No vision reader is configured on this backend, so no field reads "
     "were attempted and no verdict was produced. Preprocessing and "
     "segmentation (which need no reader) did run — see the trace and "
-    "evidence. To enable live reading, set BASETEN_API_KEY (and "
-    "JUDGE_READER=baseten) on the server and re-run."
+    "evidence. To enable live reading, configure a reader API key on "
+    "the server — the Meta Model API (MODEL_API_KEY, with "
+    "JUDGE_READER=meta) or Baseten (BASETEN_API_KEY, with "
+    "JUDGE_READER=baseten) — and re-run."
 )
 
 
@@ -91,6 +95,10 @@ def resolve_reader() -> Reader | None:
             except (ValueError, AttributeError):
                 return None
         return MockReader({})
+    if mode == "meta":
+        if os.environ.get("MODEL_API_KEY"):
+            return MetaReader()
+        return None
     if mode in ("", "baseten"):
         if os.environ.get("BASETEN_API_KEY"):
             return BasetenReader()
