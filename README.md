@@ -14,8 +14,8 @@ KYC and onboarding systems built around Latin names and clean scans fail people 
 
 DocTrust reviews a document set (national ID, birth certificate, bank form) the way a careful senior reviewer would:
 
-1. **Segments** each document and field region with SAM 3.1, called as a tool by the agent.
-2. **Reads** each region with Muse Spark — print, handwriting, Bangla and English, both digit systems.
+1. **Locates the stamp** with SAM 3.1, called as a tool by the agent: SAM finds the stamp region, which the `stamp_masked` investigation view (step 4) then masks out before a re-read.
+2. **Reads** each named field from the document views with Muse Spark — print, handwriting, Bangla and English, both digit systems.
 3. **Estimates uncertainty by perturbation** — each field is read several times under changes (zoom, contrast, an occluding stamp masked out). Disagreement between reads marks a field as uncertain.
 4. **Investigates** uncertain fields: zooms in, masks the stamp, re-reads, and records what changed.
 5. **Normalizes and cross-examines** with deterministic code — digits, dates and name variants are canonicalized, then every shared fact is compared across documents.
