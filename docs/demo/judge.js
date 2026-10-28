@@ -209,6 +209,18 @@
     traceEl.appendChild(li);
   }
 
+  // Job-result strings are untrusted text: field readings and gap
+  // descriptions come from a model interpreting uploaded images, so a
+  // crafted reading could contain HTML. Anything taken from the result
+  // JSON is escaped before it is interpolated into innerHTML below.
+  // (Trace lines and the verdict already render via textContent.)
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;",
+               '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   function renderResult(result) {
     // Fields table
     var docs = result.documents || {};
@@ -217,7 +229,8 @@
       var html = "";
       docNames.forEach(function (doc) {
         html += "<h3 class='fields-doc'>" +
-          (DOC_LABELS[doc] || doc) + "</h3><table class='fields-table'>" +
+          escapeHtml(DOC_LABELS[doc] || doc) +
+          "</h3><table class='fields-table'>" +
           "<tr><th>Field</th><th>Read value</th><th>Canonical</th>" +
           "<th>Views</th></tr>";
         Object.keys(docs[doc]).forEach(function (field) {
@@ -225,11 +238,12 @@
           var views = (fr.reads || []).map(function (r) {
             return r.view + ": " + (r.value || "UNREADABLE");
           }).join(" · ");
-          html += "<tr><td>" + field + (fr.uncertain
+          html += "<tr><td>" + escapeHtml(field) + (fr.uncertain
             ? " <span class='uncertain-tag'>uncertain</span>" : "") +
-            "</td><td>" + (fr.value || "— unreadable —") + "</td><td>" +
-            (fr.canonical || "") + "</td><td class='views-cell'>" +
-            views + "</td></tr>";
+            "</td><td>" + escapeHtml(fr.value || "— unreadable —") +
+            "</td><td>" +
+            escapeHtml(fr.canonical || "") + "</td><td class='views-cell'>" +
+            escapeHtml(views) + "</td></tr>";
         });
         html += "</table>";
       });
@@ -240,9 +254,11 @@
     var evidence = result.evidence || [];
     if (evidence.length) {
       evidenceGrid.innerHTML = evidence.map(function (e) {
-        return "<figure class='evidence-item'><img src='" + e.data_url +
+        return "<figure class='evidence-item'><img src='" +
+          escapeHtml(e.data_url) +
           "' alt=''><figcaption>" +
-          (DOC_LABELS[e.doc_type] || e.doc_type) + " · " + e.view +
+          escapeHtml(DOC_LABELS[e.doc_type] || e.doc_type) + " · " +
+          escapeHtml(e.view) +
           "</figcaption></figure>";
       }).join("");
       evidencePanel.hidden = false;
@@ -253,12 +269,12 @@
     var gaps = result.evidence_gaps || [];
     if (gaps.length) {
       gapsList.innerHTML = gaps.map(function (g) {
-        return "<div class='gap-item gap-" + g.kind + "'>" +
+        return "<div class='gap-item gap-" + escapeHtml(g.kind) + "'>" +
           "<span class='gap-kind'>" +
-          (GAP_KIND_LABELS[g.kind] || g.kind) + "</span>" +
-          "<p class='gap-detail'>" + g.detail + "</p>" +
+          escapeHtml(GAP_KIND_LABELS[g.kind] || g.kind) + "</span>" +
+          "<p class='gap-detail'>" + escapeHtml(g.detail) + "</p>" +
           "<p class='gap-next'><strong>Next step:</strong> " +
-          g.next_step + "</p></div>";
+          escapeHtml(g.next_step) + "</p></div>";
       }).join("");
       gapsPanel.hidden = false;
     }
