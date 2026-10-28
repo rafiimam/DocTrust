@@ -179,3 +179,204 @@ def test_resume_skips_completed_sets(tmp_path):
     on_disk = json.loads((tmp_path / "results.json").read_text())
     assert [s["set_id"] for s in on_disk["sets"]] == ["clean-01", "variation-01"]
     assert (tmp_path / "results.md").exists()
+
+
+# ---------------------------------------------------------------------------
+# Physically captured sets
+# ---------------------------------------------------------------------------
+
+def _write_physical_set(tmp_path, name, variant, seed=11, documents=None,
+                        expectation=None, injected_field=None):
+    """Render a synthetic set and republish its images as a physical
+    capture folder under tmp_path/physical/<name>: the generated
+    PNGs stand in for phone photos, and the manifest is built from
+    the set's ground truth (see eval/PHYSICAL_CAPTURE.md)."""
+    from generator.generate import generate_set
+
+    truth = generate_set(tmp_path / f"src-{name}", variant, seed)
+    folder = tmp_path / "physical" / name
+    folder.mkdir(parents=True)
+    for doc in run_eval.DOC_TYPES:
+        (folder / f"{doc}.png").write_bytes(
+            (tmp_path / f"src-{name}" / f"{doc}.png").read_bytes())
+    if expectation is None:
+        expectation = {"clean": "genuine", "variation": "genuine",
+                       "discrepancy": "discrepancy",
+                       "degraded": "degraded"}[variant]
+    manifest = {"expectation": expectation,
+                "documents": documents or truth["documents"]}
+    if expectation == "discrepancy":
+        manifest["injected_field"] = injected_field or "dob"
+    (folder / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False))
+    return truth
+
+
+def test_physical_genuine_set_scored_through_all_configs(tmp_path):
+    _write_physical_set(tmp_path, "kitchen-table", "variation")
+    factory = lambda spec, phase, truth: TruthReader(truth["documents"])  # noqa: E731
+    result = _run(tmp_path, _counts(), factory,
+                  physical_dir=tmp_path / "physical")
+    record = result.records[0]
+    assert record["set_id"] == "physical-kitchen-table"
+    assert record["category"] == "physical"
+    assert record["expectation"] == "genuine"
+    # The same surface-form trap as the synthetic variation set: raw
+    # matching flags it; normalization and the agent do not.
+    assert record["configs"]["exact"]["verdict"] == "DISCREPANCY"
+    assert record["configs"]["single"]["verdict"] == "CONSISTENT"
+    assert record["configs"]["agent"]["verdict"] == "CONSISTENT"
+    # Headline: the physical genuine set joins the genuine pool.
+    headline = result.summary["configs"]
+    assert (headline["exact"]["false_flags"],
+            headline["exact"]["genuine_n"]) == (1, 1)
+    assert headline["agent"]["false_flags"] == 0
+    # …and it is also reported under its own category, split by
+    # expectation.
+    assert result.summary["physical_sets"] == 1
+    physical = result.summary["physical"]["configs"]
+    assert (physical["exact"]["false_flags"],
+            physical["exact"]["genuine_n"]) == (1, 1)
+    assert physical["agent"]["false_flags"] == 0
+    by_exp = result.summary["physical"]["by_expectation"]["agent"]
+    assert by_exp["genuine"]["genuine_n"] == 1
+    assert by_exp["discrepancy"]["discrepancy_n"] == 0
+    md = (tmp_path / "results.md").read_text()
+    assert "### Physically captured sets" in md
+    assert "By expectation" in md
+
+
+def test_physical_discrepancy_caught_and_silent_error(tmp_path):
+    _write_physical_set(tmp_path, "disc-caught", "discrepancy", seed=12)
+    _write_physical_set(tmp_path, "disc-missed", "discrepancy", seed=13)
+
+    def factory(spec, phase, truth):
+        docs = truth["documents"]
+        if spec.set_id == "physical-disc-missed":
+            # The reader silently "corrects" the swapped form DOB in
+            # every phase: the discrepancy is never seen.
+            return TruthReader(docs, {("bank_form", "dob"): ["12/03/1990"]})
+        return TruthReader(docs)
+
+    result = _run(tmp_path, _counts(), factory,
+                  physical_dir=tmp_path / "physical")
+    by_id = {r["set_id"]: r for r in result.records}
+    caught = by_id["physical-disc-caught"]
+    assert caught["injected_fields"] == ["dob"]
+    assert caught["configs"]["agent"]["verdict"] == "DISCREPANCY"
+    assert caught["configs"]["agent"]["flagged_fields"] == ["dob"]
+    assert by_id["physical-disc-missed"]["configs"]["agent"]["verdict"] \
+        == "CONSISTENT"
+    physical = result.summary["physical"]["by_expectation"]["agent"]
+    assert (physical["discrepancy"]["caught"],
+            physical["discrepancy"]["discrepancy_n"]) == (1, 2)
+    assert physical["discrepancy"]["silent_errors"] == 1
+    headline = result.summary["configs"]["agent"]
+    assert (headline["caught"], headline["discrepancy_n"]) == (1, 2)
+    assert headline["silent_errors"] == 1
+
+
+def test_physical_degraded_set_recovered(tmp_path):
+    _write_physical_set(tmp_path, "glare-shot", "degraded", seed=14)
+    factory = lambda spec, phase, truth: TruthReader(truth["documents"])  # noqa: E731
+    result = _run(tmp_path, _counts(), factory,
+                  physical_dir=tmp_path / "physical")
+    record = result.records[0]
+    assert record["expectation"] == "degraded"
+    assert record["configs"]["agent"]["verdict"] == "CONSISTENT"
+    by_exp = result.summary["physical"]["by_expectation"]["agent"]
+    assert (by_exp["degraded"]["recovered"],
+            by_exp["degraded"]["degraded_n"]) == (1, 1)
+    assert by_exp["degraded"]["recapture"] == 0
+    headline = result.summary["configs"]["agent"]
+    assert (headline["recovered"], headline["degraded_n"]) == (1, 1)
+
+
+def test_physical_malformed_folders_are_skipped(tmp_path, capsys):
+    _write_physical_set(tmp_path, "good", "clean", seed=15)
+    physical_dir = tmp_path / "physical"
+
+    def bare_folder(name):
+        folder = physical_dir / name
+        folder.mkdir()
+        for doc in run_eval.DOC_TYPES:
+            (folder / f"{doc}.png").write_bytes(b"x")
+        return folder
+
+    bare_folder("no-manifest")
+    bad = bare_folder("bad-json")
+    (bad / "manifest.json").write_text("{not json")
+    missing = physical_dir / "missing-image"
+    missing.mkdir()
+    (missing / "nid.png").write_bytes(b"x")
+    (missing / "manifest.json").write_text(
+        json.dumps({"expectation": "genuine", "documents": {}}))
+    _write_physical_set(tmp_path, "disc-no-field", "discrepancy", seed=16)
+    manifest_path = physical_dir / "disc-no-field" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    del manifest["injected_field"]
+    manifest_path.write_text(json.dumps(manifest))
+
+    factory = lambda spec, phase, truth: TruthReader(truth["documents"])  # noqa: E731
+    result = _run(tmp_path, _counts(), factory, physical_dir=physical_dir)
+    # Only the one well-formed set ran; the run itself succeeded.
+    assert [r["set_id"] for r in result.records] == ["physical-good"]
+    assert result.summary["sets_ok"] == 1
+    err = capsys.readouterr().err
+    assert "warning:" in err
+    for name in ("no-manifest", "bad-json", "missing-image",
+                 "disc-no-field"):
+        assert name in err
+
+
+def test_physical_discovery_accepts_jpg_and_jpeg(tmp_path):
+    folder = tmp_path / "mixed-ext"
+    folder.mkdir()
+    (folder / "nid.jpg").write_bytes(b"x")
+    (folder / "birth_certificate.jpeg").write_bytes(b"x")
+    (folder / "bank_form.png").write_bytes(b"x")
+    documents = {
+        "nid": {"name": "Abdul Rahman", "dob": "12/03/1990",
+                "id_number": "1234567890", "father_name": "Abdul Karim"},
+        "birth_certificate": {"name": "Abdul Rahman",
+                              "dob": "১২/০৩/১৯৯০",
+                              "father_name": "Abdul Karim"},
+        "bank_form": {"name": "Abdul Rahman", "dob": "12/03/1990",
+                      "id_number": "1234567890",
+                      "father_name": "Abdul Karim"},
+    }
+    (folder / "manifest.json").write_text(json.dumps(
+        {"expectation": "genuine", "documents": documents},
+        ensure_ascii=False))
+    specs, warnings = run_eval.discover_physical_sets(tmp_path)
+    assert warnings == []
+    assert len(specs) == 1
+    spec = specs[0]
+    assert spec.set_id == "physical-mixed-ext"
+    assert spec.images["nid"].endswith("nid.jpg")
+    assert spec.images["birth_certificate"].endswith(
+        "birth_certificate.jpeg")
+    assert spec.images["bank_form"].endswith("bank_form.png")
+    # A missing directory is simply no sets, not an error.
+    assert run_eval.discover_physical_sets(tmp_path / "nope") == ([], [])
+
+
+def test_physical_resume_skips_completed_sets(tmp_path):
+    _write_physical_set(tmp_path, "porch-light", "clean", seed=17)
+    calls = []
+
+    def factory(spec, phase, truth):
+        calls.append((spec.set_id, phase))
+        return TruthReader(truth["documents"])
+
+    _run(tmp_path, _counts(), factory, physical_dir=tmp_path / "physical")
+    assert {s for s, _ in calls} == {"physical-porch-light"}
+
+    calls.clear()
+    result = _run(tmp_path, _counts(clean=1), factory,
+                  physical_dir=tmp_path / "physical", resume=True)
+    # The completed physical set was not re-read; only the new
+    # synthetic set ran.
+    assert {s for s, _ in calls} == {"clean-01"}
+    assert [r["set_id"] for r in result.records] == [
+        "clean-01", "physical-porch-light"]

@@ -19,6 +19,19 @@ own reads. A reader factory supplies the reader per (set, phase), so
 tests can script a fresh MockReader per phase while the CLI shares
 one live reader (live readers are stateless).
 
+Physically captured sets (EVALUATION.md's ~10 printed/displayed
+SPECIMEN sets photographed with a phone) are ingested from a
+directory of capture folders — one folder per set: the three document
+photos plus a manifest.json declaring the expectation (genuine /
+discrepancy / degraded) and the documents' canonical values, in the
+same shape as the generator's ground truth. They run through the
+same three configurations and the same metrics: a physical genuine
+set counts in the headline genuine pool, and the batch is also
+reported as its own category, split by expectation. See
+eval/PHYSICAL_CAPTURE.md for how to capture a set. A capture folder
+that is missing photos or has a malformed manifest is skipped with a
+warning, never a crash.
+
 Scoring is in COUNTS, exactly as EVALUATION.md prescribes. The runner
 writes results incrementally (one JSON record per set, atomically
 rewritten after each set completes) and supports --resume.
@@ -60,6 +73,8 @@ from generator.generate import STAMP_STYLES, generate_set  # noqa: E402
 DOC_TYPES = ("nid", "birth_certificate", "bank_form")
 CATEGORIES = ("clean", "variation", "discrepancy", "degraded")
 GENUINE_CATEGORIES = ("clean", "variation")
+PHYSICAL_EXPECTATIONS = ("genuine", "discrepancy", "degraded")
+_PHYSICAL_IMAGE_EXTS = (".png", ".jpg", ".jpeg")
 CONFIGS = ("exact", "single", "agent")
 CONFIG_LABELS = {
     "exact": "1. Exact-match",
@@ -137,6 +152,155 @@ def expected_from_truth(truth: dict) -> dict:
                             if f.status == "mismatch"],
         "canonical": {f.field: f.canonical for f in result.findings},
     }
+
+
+# ---------------------------------------------------------------------------
+# Physically captured sets
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PhysicalSpec:
+    """One physically captured set: a folder of phone photos plus a
+    manifest. `documents` mirrors ground_truth.json's "documents"
+    shape exactly, so expectations derive via the same comparator."""
+    set_id: str
+    expectation: str
+    folder: Path
+    images: dict[str, str]
+    documents: dict
+    injected_field: str | None = None
+    conditions: str | None = None
+    category: str = "physical"
+
+
+def _physical_images(folder: Path) -> dict[str, str] | None:
+    """{doc_type: image path} if all three document photos exist
+    (.png/.jpg/.jpeg), else None."""
+    images: dict[str, str] = {}
+    for doc in DOC_TYPES:
+        found = None
+        for ext in _PHYSICAL_IMAGE_EXTS:
+            candidate = folder / f"{doc}{ext}"
+            if candidate.is_file():
+                found = candidate
+                break
+        if found is None:
+            return None
+        images[doc] = str(found)
+    return images
+
+
+def _validate_manifest(manifest) -> tuple[dict | None, str | None]:
+    """Validate one capture manifest. Returns (fields, None) with
+    fields = {expectation, documents, injected_field, conditions},
+    or (None, reason) when the manifest is malformed."""
+    if not isinstance(manifest, dict):
+        return None, "manifest.json is not a JSON object"
+    expectation = manifest.get("expectation")
+    if expectation not in PHYSICAL_EXPECTATIONS:
+        return None, (f"expectation must be one of "
+                      f"{'/'.join(PHYSICAL_EXPECTATIONS)}, "
+                      f"got {expectation!r}")
+    documents = manifest.get("documents")
+    if not isinstance(documents, dict):
+        return None, "manifest has no 'documents' object"
+    for doc in DOC_TYPES:
+        fields = documents.get(doc)
+        if not isinstance(fields, dict):
+            return None, f"documents.{doc} is missing or not an object"
+        expected_fields = set(agent.FIELDS_BY_DOC[doc])
+        if set(fields) != expected_fields:
+            return None, (f"documents.{doc} must carry exactly the "
+                          f"fields {sorted(expected_fields)}, got "
+                          f"{sorted(fields)}")
+        if not all(isinstance(v, str) for v in fields.values()):
+            return None, f"documents.{doc} values must all be strings"
+    injected = manifest.get("injected_field")
+    if expectation == "discrepancy":
+        if not isinstance(injected, str) or not injected:
+            return None, ("expectation 'discrepancy' requires an "
+                          "'injected_field' naming the differing field")
+        if injected not in comparator.SHARED_FIELDS:
+            return None, (f"injected_field {injected!r} is not a shared "
+                          f"field {list(comparator.SHARED_FIELDS)}")
+    elif injected is not None:
+        return None, ("'injected_field' is only meaningful when "
+                      "expectation is 'discrepancy'")
+    # The manifest's documents must actually encode the declared
+    # expectation — derived via the same comparator as the synthetic
+    # ground truth, so a mislabelled capture is caught here, not
+    # scored as a mysterious failure later.
+    expected = expected_from_truth({"documents": documents})
+    if expectation in ("genuine", "degraded"):
+        if expected["verdict"] != "CONSISTENT":
+            return None, (f"expectation is {expectation!r} but the "
+                          f"manifest documents disagree "
+                          f"({expected['injected_fields']})")
+    else:
+        if expected["verdict"] != "DISCREPANCY":
+            return None, ("expectation is 'discrepancy' but the "
+                          "manifest documents agree after "
+                          "normalization — no field differs")
+        if injected not in expected["injected_fields"]:
+            return None, (f"injected_field {injected!r} is not a field "
+                          f"the manifest documents disagree on "
+                          f"({expected['injected_fields']})")
+    conditions = manifest.get("conditions")
+    return {
+        "expectation": expectation,
+        "documents": documents,
+        "injected_field": injected if expectation == "discrepancy" else None,
+        "conditions": conditions if isinstance(conditions, str) else None,
+    }, None
+
+
+def discover_physical_sets(physical_dir: Path) -> tuple[list[PhysicalSpec], list[str]]:
+    """Discover capture sets under `physical_dir`: each immediate
+    subfolder holding the three document photos and a manifest.json
+    is one set (id `physical-<folder>`). Folders that are missing
+    photos or whose manifest is malformed are skipped with a warning
+    printed to stderr (and returned); discovery never raises. A
+    missing directory simply yields no sets."""
+    specs: list[PhysicalSpec] = []
+    warnings: list[str] = []
+
+    def warn(message: str) -> None:
+        warnings.append(message)
+        print(f"warning: {message}", file=sys.stderr)
+
+    if not physical_dir.is_dir():
+        return specs, warnings
+    for folder in sorted(p for p in physical_dir.iterdir() if p.is_dir()):
+        label = f"physical set folder {folder.name!r}"
+        images = _physical_images(folder)
+        if images is None:
+            warn(f"skipping {label}: missing document photo(s); each "
+                 f"set needs nid, birth_certificate and bank_form "
+                 f"images ({'/'.join(_PHYSICAL_IMAGE_EXTS)})")
+            continue
+        manifest_path = folder / "manifest.json"
+        if not manifest_path.is_file():
+            warn(f"skipping {label}: no manifest.json")
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text())
+        except (ValueError, OSError) as exc:
+            warn(f"skipping {label}: manifest.json unreadable ({exc})")
+            continue
+        fields, reason = _validate_manifest(manifest)
+        if fields is None:
+            warn(f"skipping {label}: malformed manifest — {reason}")
+            continue
+        specs.append(PhysicalSpec(
+            set_id=f"physical-{folder.name}",
+            expectation=fields["expectation"],
+            folder=folder,
+            images=images,
+            documents=fields["documents"],
+            injected_field=fields["injected_field"],
+            conditions=fields["conditions"],
+        ))
+    return specs, warnings
 
 
 # ---------------------------------------------------------------------------
@@ -230,10 +394,64 @@ def single_pass_verdict(docs: dict[str, dict[str, str]]) -> tuple[str, list[str]
     return result.verdict, flagged
 
 
+def _usage_cells(reader: CountingReader, latency: float) -> dict:
+    return {
+        "reads": reader.calls,
+        "latency_s": round(latency, 3),
+        "input_tokens": reader.input_tokens if reader.usage_seen else None,
+        "output_tokens": reader.output_tokens if reader.usage_seen else None,
+        "cost_usd": round(_cost_usd(reader.input_tokens,
+                                     reader.output_tokens), 6)
+                    if reader.usage_seen else None,
+    }
+
+
+def _run_configs(images: dict[str, str], truth: dict, spec,
+                 reader_factory, segmenter) -> dict:
+    """Run all three configurations over one set's images and return
+    the per-configuration results. Shared by synthetic and physically
+    captured sets — the configurations do not know which they are
+    scoring."""
+    configs: dict = {}
+
+    # Configurations 1 + 2: one shared read pass, scored two ways.
+    single_reader = CountingReader(reader_factory(spec, "single", truth))
+    start = time.perf_counter()
+    docs = _single_pass_reads(single_reader, images)
+    single_latency = time.perf_counter() - start
+    for name, fn in (("exact", exact_match_verdict),
+                     ("single", single_pass_verdict)):
+        verdict, flagged = fn(docs)
+        configs[name] = {
+            "verdict": verdict,
+            "flagged_fields": flagged,
+            "documents": docs,
+            **_usage_cells(single_reader, single_latency),
+        }
+
+    # Configuration 3: the full agent, its own reader.
+    agent_reader = CountingReader(reader_factory(spec, "agent", truth))
+    start = time.perf_counter()
+    outcome = agent.run_review(agent_reader, images, segmenter=segmenter)
+    agent_latency = time.perf_counter() - start
+    flagged = [f["field"] for f in outcome.findings
+               if f.get("status") == "mismatch"]
+    configs["agent"] = {
+        "verdict": outcome.verdict,
+        "flagged_fields": flagged,
+        "documents": outcome.documents,
+        "uncertain_fields": [f"{fr.doc_type}.{fr.field}"
+                             for fr in outcome.field_reads if fr.uncertain],
+        **_usage_cells(agent_reader, agent_latency),
+    }
+    return configs
+
+
 def evaluate_set(spec: SetSpec, truth: dict, expected: dict,
                  data_dir: Path, reader_factory, segmenter) -> dict:
-    """Run all three configurations over one set. Never raises for
-    reader errors — the caller records them as set errors."""
+    """Run all three configurations over one synthetic set. Never
+    raises for reader errors — the caller records them as set
+    errors."""
     images = {doc: str(data_dir / spec.set_id / f"{doc}.png")
               for doc in DOC_TYPES}
     record: dict = {
@@ -247,53 +465,38 @@ def evaluate_set(spec: SetSpec, truth: dict, expected: dict,
         "injected_fields": expected["injected_fields"],
         "configs": {},
     }
+    record["configs"] = _run_configs(images, truth, spec,
+                                     reader_factory, segmenter)
+    record["status"] = "ok"
+    return record
 
-    # Configurations 1 + 2: one shared read pass, scored two ways.
-    single_reader = CountingReader(reader_factory(spec, "single", truth))
-    start = time.perf_counter()
-    docs = _single_pass_reads(single_reader, images)
-    single_latency = time.perf_counter() - start
-    for name, fn in (("exact", exact_match_verdict),
-                     ("single", single_pass_verdict)):
-        verdict, flagged = fn(docs)
-        record["configs"][name] = {
-            "verdict": verdict,
-            "flagged_fields": flagged,
-            "documents": docs,
-            "reads": single_reader.calls,
-            "latency_s": round(single_latency, 3),
-            "input_tokens": single_reader.input_tokens
-                            if single_reader.usage_seen else None,
-            "output_tokens": single_reader.output_tokens
-                             if single_reader.usage_seen else None,
-            "cost_usd": round(_cost_usd(single_reader.input_tokens,
-                                         single_reader.output_tokens), 6)
-                        if single_reader.usage_seen else None,
-        }
 
-    # Configuration 3: the full agent, its own reader.
-    agent_reader = CountingReader(reader_factory(spec, "agent", truth))
-    start = time.perf_counter()
-    outcome = agent.run_review(agent_reader, images, segmenter=segmenter)
-    agent_latency = time.perf_counter() - start
-    flagged = [f["field"] for f in outcome.findings
-               if f.get("status") == "mismatch"]
-    record["configs"]["agent"] = {
-        "verdict": outcome.verdict,
-        "flagged_fields": flagged,
-        "documents": outcome.documents,
-        "uncertain_fields": [f"{fr.doc_type}.{fr.field}"
-                             for fr in outcome.field_reads if fr.uncertain],
-        "reads": agent_reader.calls,
-        "latency_s": round(agent_latency, 3),
-        "input_tokens": agent_reader.input_tokens
-                        if agent_reader.usage_seen else None,
-        "output_tokens": agent_reader.output_tokens
-                         if agent_reader.usage_seen else None,
-        "cost_usd": round(_cost_usd(agent_reader.input_tokens,
-                                     agent_reader.output_tokens), 6)
-                    if agent_reader.usage_seen else None,
+def evaluate_physical_set(spec: PhysicalSpec, reader_factory,
+                          segmenter) -> dict:
+    """Run all three configurations over one physically captured set.
+    Expectations derive from the manifest's documents via the same
+    comparator as synthetic ground truth; for a discrepancy set the
+    manifest's declared injected field is the field that must be
+    flagged for the catch to count."""
+    truth = {"variant": "physical", "documents": spec.documents}
+    expected = expected_from_truth(truth)
+    if spec.injected_field is not None:
+        expected["injected_fields"] = [spec.injected_field]
+    record: dict = {
+        "set_id": spec.set_id,
+        "category": "physical",
+        "expectation": spec.expectation,
+        "variant": "physical",
+        "seed": None,
+        "stamp_style": "capture",
+        "stamp_position": "n/a",
+        "conditions": spec.conditions,
+        "expected_verdict": expected["verdict"],
+        "injected_fields": expected["injected_fields"],
+        "configs": {},
     }
+    record["configs"] = _run_configs(spec.images, truth, spec,
+                                     reader_factory, segmenter)
     record["status"] = "ok"
     return record
 
@@ -311,10 +514,21 @@ def _blank_cells() -> dict:
     }
 
 
+def _scoring_category(record: dict) -> str:
+    """The scoring pool a record belongs to. Synthetic sets score
+    under their own category; a physical set scores under its
+    declared expectation, with 'genuine' joining the genuine pool
+    alongside the synthetic genuine categories."""
+    if record["category"] == "physical":
+        return "clean" if record["expectation"] == "genuine" \
+            else record["expectation"]
+    return record["category"]
+
+
 def _score_record(cells: dict, record: dict, config: str) -> None:
     cfg = record["configs"][config]
     verdict = cfg["verdict"]
-    category = record["category"]
+    category = _scoring_category(record)
     if category in GENUINE_CATEGORIES:
         cells["genuine_n"] += 1
         if verdict == "DISCREPANCY":
@@ -337,33 +551,52 @@ def _score_record(cells: dict, record: dict, config: str) -> None:
             cells["degraded_false_flags"] += 1
 
 
+def _cells_for(records: list[dict], config: str) -> dict:
+    """Score cells + read/latency/cost means for one configuration
+    over one pool of completed records."""
+    cells = _blank_cells()
+    reads, latencies, costs = [], [], []
+    for record in records:
+        _score_record(cells, record, config)
+        cfg = record["configs"][config]
+        reads.append(cfg["reads"])
+        latencies.append(cfg["latency_s"])
+        if cfg.get("cost_usd") is not None:
+            costs.append(cfg["cost_usd"])
+    cells["reads_mean"] = round(sum(reads) / len(reads), 2) if reads else None
+    cells["latency_mean_s"] = (round(sum(latencies) / len(latencies), 2)
+                               if latencies else None)
+    cells["cost_mean_usd"] = (round(sum(costs) / len(costs), 6)
+                              if costs else None)
+    return cells
+
+
 def aggregate(records: list[dict]) -> dict:
-    """Headline cells per config + the same split by category.
-    Only status == 'ok' records are scored; errored sets are counted
-    separately and never enter a denominator."""
+    """Headline cells per config + the same split by category, plus
+    the physically captured batch scored on its own (and split by
+    expectation). Physical sets also enter the headline pools via
+    their expectation (see _scoring_category). Only status == 'ok'
+    records are scored; errored sets are counted separately and
+    never enter a denominator."""
     done = [r for r in records if r.get("status") == "ok"]
+    physical = [r for r in done if r["category"] == "physical"]
     summary: dict = {"sets_ok": len(done),
                      "sets_error": len(records) - len(done),
-                     "configs": {}, "by_category": {}}
+                     "physical_sets": len(physical),
+                     "configs": {}, "by_category": {},
+                     "physical": {"configs": {}, "by_expectation": {}}}
     for config in CONFIGS:
-        cells = _blank_cells()
-        per_category = {c: _blank_cells() for c in CATEGORIES}
-        reads, latencies, costs = [], [], []
-        for record in done:
-            _score_record(cells, record, config)
-            _score_record(per_category[record["category"]], record, config)
-            cfg = record["configs"][config]
-            reads.append(cfg["reads"])
-            latencies.append(cfg["latency_s"])
-            if cfg.get("cost_usd") is not None:
-                costs.append(cfg["cost_usd"])
-        cells["reads_mean"] = round(sum(reads) / len(reads), 2) if reads else None
-        cells["latency_mean_s"] = (round(sum(latencies) / len(latencies), 2)
-                                   if latencies else None)
-        cells["cost_mean_usd"] = (round(sum(costs) / len(costs), 6)
-                                  if costs else None)
-        summary["configs"][config] = cells
-        summary["by_category"][config] = per_category
+        summary["configs"][config] = _cells_for(done, config)
+        summary["by_category"][config] = {
+            c: _cells_for([r for r in done if r["category"] == c], config)
+            for c in CATEGORIES
+        }
+        summary["physical"]["configs"][config] = _cells_for(physical, config)
+        summary["physical"]["by_expectation"][config] = {
+            exp: _cells_for([r for r in physical
+                             if r["expectation"] == exp], config)
+            for exp in PHYSICAL_EXPECTATIONS
+        }
     return summary
 
 
@@ -373,6 +606,56 @@ def aggregate(records: list[dict]) -> dict:
 
 def _xn(x: int, n: int) -> str:
     return f"{x}/{n}" if n else "—"
+
+
+def _metric_table(cells_by_config: dict) -> list[str]:
+    """The headline metric rows for one pool of sets, in
+    EVALUATION.md's table shape."""
+    c = cells_by_config
+    return [
+        "| Metric | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |",
+        "|---|---|---|---|",
+        "| False flags on genuine sets (x/n) | "
+        + " | ".join(_xn(c[k]["false_flags"], c[k]["genuine_n"])
+                     for k in CONFIGS) + " |",
+        "| Injected discrepancies caught (x/n) | "
+        + " | ".join(_xn(c[k]["caught"], c[k]["discrepancy_n"])
+                     for k in CONFIGS) + " |",
+        "| **Silent errors — verdict \"Consistent\" while a "
+        "discrepancy exists (count)** | "
+        + " | ".join(f"**{c[k]['silent_errors']}**" for k in CONFIGS) + " |",
+        "| Degraded sets: recovered / recapture requested (x/n) | "
+        + " | ".join(
+            f"{_xn(c[k]['recovered'], c[k]['degraded_n'])} / "
+            f"{_xn(c[k]['recapture'], c[k]['degraded_n'])}"
+            for k in CONFIGS) + " |",
+        "| Reads per set (mean) | "
+        + " | ".join(str(c[k]["reads_mean"]) for k in CONFIGS) + " |",
+        "| Latency per set (mean, s) | "
+        + " | ".join(str(c[k]["latency_mean_s"]) for k in CONFIGS) + " |",
+        "| Cost per set (USD, at route prices) | "
+        + " | ".join("—" if c[k]["cost_mean_usd"] is None
+                     else f"{c[k]['cost_mean_usd']:.4f}"
+                     for k in CONFIGS) + " |",
+    ]
+
+
+def _split_row(label: str, cells: dict, pool: str) -> str:
+    """One row of a by-category / by-expectation split table.
+    `pool` is the scoring pool the row covers: genuine, discrepancy
+    or degraded."""
+    if pool == "genuine":
+        ff = _xn(cells["false_flags"], cells["genuine_n"])
+    elif pool == "degraded":
+        ff = _xn(cells["degraded_false_flags"], cells["degraded_n"])
+    else:
+        ff = "—"
+    return (
+        f"| {label} | {ff} | "
+        f"{_xn(cells['caught'], cells['discrepancy_n'])} | "
+        f"{cells['silent_errors']} | "
+        f"{_xn(cells['recovered'], cells['degraded_n'])} / "
+        f"{_xn(cells['recapture'], cells['degraded_n'])} |")
 
 
 def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
@@ -386,42 +669,17 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
         f"(per-set seed = base + set index)",
         f"- Sets completed: {summary['sets_ok']} "
         f"(errors: {summary['sets_error']})",
+    ]
+    if meta.get("physical_sets"):
+        lines.append(
+            f"- Physically captured sets: {meta['physical_sets']} "
+            f"(from {meta.get('physical_dir')})")
+    lines += [
         "",
         "**Counts (x/n) throughout — never bare percentages.**",
         "",
-        "| Metric | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |",
-        "|---|---|---|---|",
     ]
-    c = summary["configs"]
-    lines.append(
-        "| False flags on genuine sets (x/n) | "
-        + " | ".join(_xn(c[k]["false_flags"], c[k]["genuine_n"])
-                     for k in CONFIGS) + " |")
-    lines.append(
-        "| Injected discrepancies caught (x/n) | "
-        + " | ".join(_xn(c[k]["caught"], c[k]["discrepancy_n"])
-                     for k in CONFIGS) + " |")
-    lines.append(
-        "| **Silent errors — verdict \"Consistent\" while a "
-        "discrepancy exists (count)** | "
-        + " | ".join(f"**{c[k]['silent_errors']}**" for k in CONFIGS) + " |")
-    lines.append(
-        "| Degraded sets: recovered / recapture requested (x/n) | "
-        + " | ".join(
-            f"{_xn(c[k]['recovered'], c[k]['degraded_n'])} / "
-            f"{_xn(c[k]['recapture'], c[k]['degraded_n'])}"
-            for k in CONFIGS) + " |")
-    lines.append(
-        "| Reads per set (mean) | "
-        + " | ".join(str(c[k]["reads_mean"]) for k in CONFIGS) + " |")
-    lines.append(
-        "| Latency per set (mean, s) | "
-        + " | ".join(str(c[k]["latency_mean_s"]) for k in CONFIGS) + " |")
-    lines.append(
-        "| Cost per set (USD, at route prices) | "
-        + " | ".join("—" if c[k]["cost_mean_usd"] is None
-                     else f"{c[k]['cost_mean_usd']:.4f}"
-                     for k in CONFIGS) + " |")
+    lines += _metric_table(summary["configs"])
     lines += [
         "",
         "### By category — full agent (configuration 3)",
@@ -432,19 +690,33 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
     ]
     bc = summary["by_category"]["agent"]
     for category in CATEGORIES:
-        cells = bc[category]
-        if category in GENUINE_CATEGORIES:
-            ff = _xn(cells["false_flags"], cells["genuine_n"])
-        elif category == "degraded":
-            ff = _xn(cells["degraded_false_flags"], cells["degraded_n"])
-        else:
-            ff = "—"
-        lines.append(
-            f"| {category} | {ff} | "
-            f"{_xn(cells['caught'], cells['discrepancy_n'])} | "
-            f"{cells['silent_errors']} | "
-            f"{_xn(cells['recovered'], cells['degraded_n'])} / "
-            f"{_xn(cells['recapture'], cells['degraded_n'])} |")
+        pool = "genuine" if category in GENUINE_CATEGORIES else category
+        lines.append(_split_row(category, bc[category], pool))
+    if any(r["category"] == "physical" for r in records):
+        lines += [
+            "",
+            "### Physically captured sets",
+            "",
+            "_The same three configurations over the physically "
+            "captured sets only (see eval/PHYSICAL_CAPTURE.md). "
+            "Physical genuine sets also count in the headline "
+            "genuine pool above._",
+            "",
+        ]
+        lines += _metric_table(summary["physical"]["configs"])
+        lines += [
+            "",
+            "#### By expectation — full agent (configuration 3)",
+            "",
+            "| Expectation | False flags (x/n) | Discrepancies "
+            "caught (x/n) | Silent errors | Recovered / recapture "
+            "(x/n) |",
+            "|---|---|---|---|---|",
+        ]
+        be = summary["physical"]["by_expectation"]["agent"]
+        for expectation in PHYSICAL_EXPECTATIONS:
+            lines.append(_split_row(expectation, be[expectation],
+                                    expectation))
     failures = [
         r for r in records if r.get("status") == "ok" and any(
             r["configs"][k]["verdict"] != r["expected_verdict"]
@@ -459,8 +731,13 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
                  f"got {r['configs'][k]['verdict']}"
                  for k in CONFIGS
                  if r["configs"][k]["verdict"] != r["expected_verdict"]]
-        lines.append(f"- Set {r['set_id']} ({r['category']}, "
-                     f"stamp {r['stamp_style']}/{r['stamp_position']}): "
+        if r["category"] == "physical":
+            descriptor = (f"physical, expectation "
+                          f"{r['expectation']}")
+        else:
+            descriptor = (f"{r['category']}, stamp "
+                          f"{r['stamp_style']}/{r['stamp_position']}")
+        lines.append(f"- Set {r['set_id']} ({descriptor}): "
                      + "; ".join(wrong))
     for r in errors:
         lines.append(f"- Set {r['set_id']} ({r['category']}): "
@@ -508,8 +785,11 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
                    seed_base: int = 7, over_dob: int = 3,
                    data_dir: Path, out_path: Path,
                    reader=None, reader_factory=None, segmenter=None,
-                   workers: int = 4, resume: bool = False) -> RunResult:
-    """Build the dataset and evaluate every set.
+                   workers: int = 4, resume: bool = False,
+                   physical_dir: Path | None = None) -> RunResult:
+    """Build the dataset and evaluate every set — the synthetic sets
+    plus, when `physical_dir` is given, every physically captured set
+    discovered there.
 
     reader_factory(spec, phase, truth) -> Reader, phase in
     {"single", "agent"}. Without a factory, `reader` is shared by all
@@ -518,6 +798,11 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
     counts = dict(counts or DEFAULT_COUNTS)
     specs = build_dataset(counts, seed_base=seed_base, over_dob=over_dob)
     truths = generate_dataset(specs, Path(data_dir))
+
+    physical_specs: list[PhysicalSpec] = []
+    if physical_dir is not None:
+        physical_specs, _warnings = discover_physical_sets(
+            Path(physical_dir))
 
     if reader_factory is None:
         if reader is None:
@@ -533,6 +818,9 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
         "counts": counts,
         "over_dob": over_dob,
         "workers": workers,
+        "physical_dir": str(physical_dir) if physical_dir is not None
+                        else None,
+        "physical_sets": len(physical_specs),
         "reader": type(reader).__name__ if reader is not None
                   else "factory",
         "segmenter": type(segmenter).__name__,
@@ -541,8 +829,14 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
     records: dict[str, dict] = {}
     if resume:
         records = _load_records(Path(out_path))
-    todo = [s for s in specs
-            if records.get(s.set_id, {}).get("status") != "ok"]
+
+    def _error_record(base: dict) -> dict:
+        base.update({
+            "status": "error",
+            "error": traceback.format_exc(limit=3).strip().splitlines()[-1],
+            "configs": {},
+        })
+        return base
 
     def work(spec: SetSpec) -> dict:
         try:
@@ -550,26 +844,39 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
                                 expected_from_truth(truths[spec.set_id]),
                                 Path(data_dir), reader_factory, segmenter)
         except Exception:
-            return {
+            return _error_record({
                 "set_id": spec.set_id, "category": spec.category,
                 "variant": spec.variant, "seed": spec.seed,
                 "stamp_style": spec.stamp_style,
                 "stamp_position": spec.stamp_position,
-                "status": "error",
-                "error": traceback.format_exc(limit=3).strip().splitlines()[-1],
-                "configs": {},
-            }
+            })
 
-    if workers and workers > 1 and len(todo) > 1:
+    def work_physical(spec: PhysicalSpec) -> dict:
+        try:
+            return evaluate_physical_set(spec, reader_factory, segmenter)
+        except Exception:
+            return _error_record({
+                "set_id": spec.set_id, "category": "physical",
+                "expectation": spec.expectation, "variant": "physical",
+                "seed": None, "stamp_style": "capture",
+                "stamp_position": "n/a",
+            })
+
+    jobs = [lambda s=spec: work(s) for spec in specs
+            if records.get(spec.set_id, {}).get("status") != "ok"]
+    jobs += [lambda s=spec: work_physical(s) for spec in physical_specs
+             if records.get(spec.set_id, {}).get("status") != "ok"]
+
+    if workers and workers > 1 and len(jobs) > 1:
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {pool.submit(work, s): s for s in todo}
+            futures = [pool.submit(job) for job in jobs]
             for fut in as_completed(futures):
                 record = fut.result()
                 records[record["set_id"]] = record
                 _write_output(Path(out_path), meta, records)
     else:
-        for spec in todo:
-            record = work(spec)
+        for job in jobs:
+            record = job()
             records[record["set_id"]] = record
             _write_output(Path(out_path), meta, records)
 
@@ -596,6 +903,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seed-base", type=int, default=7)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--data-dir", default="eval/data")
+    ap.add_argument("--physical-dir", default="eval/physical",
+                    help="directory of physically captured sets "
+                         "(default eval/physical; a missing or empty "
+                         "directory simply adds no sets — see "
+                         "eval/PHYSICAL_CAPTURE.md)")
     ap.add_argument("--out", default="eval/results/results.json")
     ap.add_argument("--resume", action="store_true",
                     help="skip sets already completed in the out file")
@@ -620,7 +932,8 @@ def main(argv: list[str] | None = None) -> int:
         counts=counts, seed_base=args.seed_base, over_dob=args.over_dob,
         data_dir=Path(args.data_dir), out_path=Path(args.out),
         reader=reader, segmenter=judge.resolve_segmenter(),
-        workers=args.workers, resume=args.resume)
+        workers=args.workers, resume=args.resume,
+        physical_dir=Path(args.physical_dir))
     print(render_markdown(result.summary, result.meta, result.records))
     print(f"\nWrote {args.out} (+ .md summary alongside)")
     return 0

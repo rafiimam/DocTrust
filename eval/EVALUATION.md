@@ -157,7 +157,7 @@ sets already completed in the output file.
 # .venv/bin/pip install -r backend/requirements.txt pillow pytest
 # Route A (hosted):    JUDGE_READER=meta    MODEL_API_KEY=<key>
 # Route B (open weights): JUDGE_READER=baseten BASETEN_API_KEY=<key>
-JUDGE_READER=meta MODEL_API_KEY=<key> .venv/bin/python -m eval.run_eval --seed-base 7 --workers 4 --out eval/results/results.json
+JUDGE_READER=meta MODEL_API_KEY=<key> .venv/bin/python -m eval.run_eval --seed-base 7 --workers 4 --physical-dir eval/physical --out eval/results/results.json
 ```
 
 - Seed: seed base 7; each set's generator seed is 7 + its index in
@@ -167,6 +167,22 @@ JUDGE_READER=meta MODEL_API_KEY=<key> .venv/bin/python -m eval.run_eval --seed-b
   rendered under `eval/data/<set-id>/`, each with its
   `ground_truth.json`. Category counts are configurable
   (`--clean/--variation/--discrepancy/--degraded`, `--scale`).
+- Physical batch: the ~10 physically captured sets live under
+  `eval/physical/<set-name>/` — the three document photos plus a
+  `manifest.json` declaring the expectation (`genuine` /
+  `discrepancy` / `degraded`), the differing field for discrepancy
+  sets, and the documents' canonical values in the same shape as
+  `ground_truth.json`. How to produce them is in
+  [`PHYSICAL_CAPTURE.md`](PHYSICAL_CAPTURE.md). The runner ingests
+  every well-formed capture folder alongside the synthetic sets
+  (`--physical-dir`, default `eval/physical`; a missing or empty
+  directory simply adds no sets) and scores them through the same
+  three configurations. Physical genuine sets count in the headline
+  genuine pool, and the batch is additionally reported separately —
+  its own tables in `results.md`, split by expectation — matching
+  the "Physically captured" row of the by-category table above. A
+  capture folder missing a photo or carrying a malformed manifest
+  is skipped with a printed warning, never a crash.
 - Expected output: `eval/results/results.json` (run metadata,
   aggregate counts, and one record per set: per-configuration
   verdict, flagged fields, read values, read count, latency, and
