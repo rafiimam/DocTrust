@@ -51,7 +51,7 @@ window.DOCTRUST_CASES = [
     steps: [
       {
         phase: "Segment",
-        text: "SAM 3.1 (self-hosted on Modal) is called as a tool with concept " +
+        text: "SAM 3.1 (via the Meta Model API) is called as a tool with concept " +
           "prompts — \"stamp\", \"signature\", \"handwritten date\", \"photo\" — and " +
           "returns field regions on all three documents. Three documents, 13 fields to review.",
         highlights: ["nid", "birth_certificate", "bank_form"], hl: "focus"
