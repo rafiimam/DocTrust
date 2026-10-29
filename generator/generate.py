@@ -28,15 +28,74 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+# Canonical Linux (Debian) locations of the four fonts the generator
+# renders with. _font() uses these verbatim when they exist; when they
+# do not (e.g. on macOS), it falls back to searching other font
+# directories for the same files — see _resolve_font().
 FONT_LATIN = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_LATIN_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FONT_BANGLA = "/usr/share/fonts/truetype/noto/NotoSansBengali-Regular.ttf"
 FONT_BANGLA_BOLD = "/usr/share/fonts/truetype/noto/NotoSansBengali-Bold.ttf"
+
+_FONT_EXTENSIONS = {".ttf", ".otf", ".ttc"}
+
+
+def _font_search_dirs() -> list[Path]:
+    """Directories searched for a font file, in priority order."""
+    dirs: list[Path] = []
+    env_dir = os.environ.get("DOCTRUST_FONTS_DIR")
+    if env_dir:
+        dirs.append(Path(env_dir).expanduser())
+    dirs.append(Path(__file__).resolve().parent / "fonts")
+    dirs.append(Path.home() / "Library" / "Fonts")  # macOS user fonts
+    dirs.append(Path("/Library/Fonts"))  # macOS system / Homebrew casks
+    dirs.append(Path("/usr/share/fonts/truetype/dejavu"))
+    dirs.append(Path("/usr/share/fonts/truetype/noto"))
+    return dirs
+
+
+def _resolve_font(filename: str) -> Path | None:
+    """Find `filename` in the search directories, or None.
+
+    Matching tolerates the naming differences between font packagers:
+    an exact filename match wins; failing that, a file with the same
+    stem under another font extension (e.g. NotoSansBengali-Bold.otf);
+    failing that, a file whose stem starts with the family name, which
+    covers variable fonts (e.g. "NotoSansBengali[wdth,wght].ttf").
+    Candidates are considered directory by directory in search order
+    and sorted within a directory, so resolution is deterministic.
+    """
+    stem = Path(filename).stem
+    family = stem.split("-")[0]
+    dirs = _font_search_dirs()
+    for directory in dirs:
+        candidate = directory / filename
+        if candidate.is_file():
+            return candidate
+    for directory in dirs:
+        if not directory.is_dir():
+            continue
+        for candidate in sorted(directory.iterdir()):
+            if (candidate.is_file() and candidate.stem == stem
+                    and candidate.suffix.lower() in _FONT_EXTENSIONS):
+                return candidate
+    for directory in dirs:
+        if not directory.is_dir():
+            continue
+        for candidate in sorted(directory.iterdir()):
+            if (candidate.is_file() and candidate.stem.startswith(family)
+                    and candidate.suffix.lower() in _FONT_EXTENSIONS):
+                return candidate
+    return None
+
+
+_FONT_CACHE: dict[str, str] = {}
 
 W, H = 1000, 640
 
@@ -119,17 +178,34 @@ def _stamp_center(position: str) -> tuple[int, int]:
 
 
 def _font(path: str, size: int) -> ImageFont.FreeTypeFont:
+    resolved = _FONT_CACHE.get(path)
+    if resolved is None:
+        if Path(path).is_file():
+            resolved = path
+        else:
+            found = _resolve_font(Path(path).name)
+            if found is not None:
+                resolved = str(found)
+        if resolved is None:
+            # PIL's own message ("cannot open resource") does not say
+            # which file was missing; name it, list where was searched
+            # and point at the fixes (on Modal these packages are
+            # apt-installed in modal_backend/backend_app.py).
+            searched = ", ".join(
+                str(d) for d in _font_search_dirs())
+            raise OSError(
+                f"font file not found: {path}. Searched: {searched}. "
+                "The generator needs the DejaVu and Noto Bengali fonts "
+                "— on Debian/Ubuntu install the fonts-dejavu-core and "
+                "fonts-noto-core packages; on macOS run: brew install "
+                "--cask font-dejavu font-noto-sans-bengali (or set "
+                "DOCTRUST_FONTS_DIR to a folder containing the fonts)."
+            )
+        _FONT_CACHE[path] = resolved
     try:
-        return ImageFont.truetype(path, size)
+        return ImageFont.truetype(resolved, size)
     except OSError as exc:
-        # PIL's own message ("cannot open resource") does not say which
-        # file was missing; name it and point at the fix (on Modal these
-        # packages are apt-installed in modal_backend/backend_app.py).
-        raise OSError(
-            f"font file not found: {path}. The generator needs the "
-            "DejaVu and Noto Bengali system fonts — install the "
-            "fonts-dejavu-core and fonts-noto-core packages."
-        ) from exc
+        raise OSError(f"could not load font file: {resolved}") from exc
 
 
 def _watermark(img: Image.Image) -> Image.Image:
