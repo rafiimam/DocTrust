@@ -167,7 +167,9 @@ window.DOCTRUST_CASES = [
     steps: [
       {
         phase: "Segment",
-        text: "SAM 3.1 segments each document and its field regions. Three documents, " +
+        text: "SAM 3.1 locates the stamp region on the certificate — the region the " +
+          "agent masks if an occluded field needs an investigation re-read. The " +
+          "reader reads named fields from each document view. Three documents, " +
           "13 fields — and almost every shared field is written differently somewhere.",
         highlights: ["nid", "birth_certificate", "bank_form"], hl: "focus"
       },
@@ -262,9 +264,9 @@ window.DOCTRUST_CASES = [
     steps: [
       {
         phase: "Segment",
-        text: "SAM 3.1 segments the set. Two capture problems are visible before any " +
-          "reading: a glare patch across the NID number, and motion blur over the " +
-          "bank form's lower rows.",
+        text: "SAM 3.1 checks the set for a stamp to mask and finds none. Two capture " +
+          "problems are visible before any reading: a glare patch across the NID " +
+          "number, and motion blur over the bank form's lower rows.",
         highlights: ["nid:id_number", "bank_form:dob", "bank_form:id_number"], hl: "warn", tone: "warn"
       },
       {
