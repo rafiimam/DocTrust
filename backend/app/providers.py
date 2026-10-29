@@ -22,7 +22,11 @@ from pathlib import Path
 from typing import Protocol
 
 MODEL_ID = "meta-models/muse-spark-open-1026"
-BASETEN_URL = "https://model-apis.baseten.net/v1/chat/completions"
+# Baseten's documented chat-completions route for the hackathon's
+# Muse Spark Open grant. Dedicated deployments are served from the
+# model-apis host instead; the BASETEN_URL environment variable
+# overrides this default without a code change (see BasetenReader).
+BASETEN_URL = "https://inference.baseten.co/v1/chat/completions"
 
 META_URL = "https://api.meta.ai/v1/chat/completions"
 META_MODEL_ID = "muse-spark-1.3"
@@ -51,7 +55,7 @@ def _read_payload(model: str, image_path: str, doc_type: str, field: str,
     input shape (an image_url content part carrying a data URL), so
     only the URL, auth header, model id and generation knobs differ
     between them. ``reasoning_effort`` is only included when set —
-    BasetenReader leaves it (and the max_tokens default) untouched.
+    BasetenReader leaves it unset but passes its own max_tokens.
     """
     image_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
     payload = {
@@ -91,31 +95,80 @@ class MockReader:
 
 
 class BasetenReader:
-    # UNVERIFIED — recheck when the Baseten key arrives: this reader
-    # still uses max_tokens=128. Muse Spark is a reasoning model, and
-    # on the Meta Model API a 128-token budget is entirely consumed by
-    # reasoning, returning finish_reason="length" and null content
-    # (see MetaReader, which defaults to 1024 + reasoning_effort
-    # "minimal"). If the Baseten-served open model reasons the same
-    # way, this reader will need the same headroom. Behaviour is
-    # intentionally left unchanged until it can be verified live.
-    def __init__(self, api_key: str | None = None, model: str = MODEL_ID):
+    """Muse Spark Open via Baseten's OpenAI-compatible API.
+
+    UNVERIFIED live — prepared for the verification slot once the
+    Baseten hackathon key is in hand; nothing here claims results.
+
+    The default endpoint is Baseten's documented inference route for
+    the hackathon grant (https://inference.baseten.co/v1). A dedicated
+    deployment on the model-apis host stays selectable via the
+    BASETEN_URL environment variable (or the ``url`` argument).
+
+    Reasoning headroom: Muse Spark Open always reasons, and on the
+    Meta Model API a 128-token budget was entirely consumed by
+    reasoning, returning finish_reason="length" and null content (see
+    MetaReader). This reader therefore defaults to max_tokens=1024
+    (override with the ``max_tokens`` argument or BASETEN_MAX_TOKENS).
+    It deliberately does NOT send reasoning_effort — whether the
+    Baseten endpoint accepts that parameter is unverified, so the
+    budget headroom alone carries the fix. An empty or null content
+    raises a clear error naming the likely cause instead of returning
+    an empty string a caller could mistake for a read.
+    """
+
+    def __init__(self, api_key: str | None = None, model: str = MODEL_ID,
+                 url: str | None = None, max_tokens: int | None = None):
         self.api_key = api_key or os.environ.get("BASETEN_API_KEY", "")
         self.model = model
+        self.url = url or os.environ.get("BASETEN_URL") or BASETEN_URL
+        try:
+            self.max_tokens = int(
+                max_tokens or os.environ.get("BASETEN_MAX_TOKENS", "1024"))
+        except (TypeError, ValueError):
+            self.max_tokens = 1024
 
     def read_field(self, image_path: str, doc_type: str, field: str,
                    perturbation: str) -> str:
         import httpx  # deferred so tests never need the network stack
 
         payload = _read_payload(self.model, image_path, doc_type, field,
-                                perturbation)
-        resp = httpx.post(
-            BASETEN_URL,
-            headers={"Authorization": f"Api-Key {self.api_key}"},
-            json=payload, timeout=60,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"].strip()
+                                perturbation, max_tokens=self.max_tokens)
+        try:
+            resp = httpx.post(
+                self.url,
+                headers={"Authorization": f"Api-Key {self.api_key}"},
+                json=payload, timeout=60,
+            )
+        except httpx.HTTPError as exc:
+            # Transport failure: the exception text carries no key
+            # material (the key only ever travels in the header).
+            raise RuntimeError(
+                f"Baseten request failed: {exc}") from exc
+        if resp.status_code >= 400:
+            excerpt = " ".join((resp.text or "").split())[:200]
+            raise RuntimeError(
+                f"Baseten returned HTTP {resp.status_code}: {excerpt}")
+        data = resp.json()
+        choices = data.get("choices") or []
+        if not choices:
+            raise RuntimeError(
+                "Baseten returned no choices — unexpected response "
+                f"shape: {str(data)[:200]}")
+        choice = choices[0]
+        content = (choice.get("message") or {}).get("content")
+        if content is None or not content.strip():
+            # The reasoning-budget failure mode (or a response shape
+            # this parser does not understand): never surface it as
+            # an empty read.
+            raise RuntimeError(
+                "Baseten returned no content "
+                f"(finish_reason={choice.get('finish_reason')!r}); "
+                "Muse Spark Open always reasons, so the completion "
+                "budget was likely consumed by reasoning — raise "
+                "BASETEN_MAX_TOKENS — or the response shape was "
+                "unexpected.")
+        return content.strip()
 
 
 class MetaReader:
