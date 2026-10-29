@@ -177,6 +177,39 @@ def test_upload_consistent_set(generated):
     assert result["verdict"] == "CONSISTENT"
 
 
+def test_planner_decision_in_result_and_trace(generated):
+    # Same disagreement shape as the masked-evidence test, but the
+    # planner is scripted: it chooses the stamp-masked re-read, and
+    # the decision (with its reason) must surface both in the
+    # result's per-field investigation log and as an SSE trace event.
+    doc_dir = generated("clean")
+    script = _script_for("clean")
+    script[("birth_certificate", "dob")] = [
+        "১২/০৩/১৯৯০", "১২/০৮/১৯৯০", "১২/০৩/১৯৯০", "১২/০৩/১৯৯০",
+    ]
+    reader = MockReader(script, planner=[
+        {"action": "stamp_masked",
+         "reason": "The date sits under the stamp."}])
+    with _client(reader) as client:
+        resp = _upload(client, doc_dir)
+        job_id = resp.json()["job_id"]
+        result = _wait_result(client, job_id)
+        assert result["verdict"] == "CONSISTENT"
+        dob = result["documents"]["birth_certificate"]["dob"]
+        assert dob["investigation"] == [
+            {"action": "stamp_masked",
+             "reason": "The date sits under the stamp.",
+             "source": "planner"}]
+        # Untouched fields carry an empty investigation log.
+        assert result["documents"]["nid"]["name"]["investigation"] == []
+
+        with client.stream("GET", f"/api/review/{job_id}/events") as sse:
+            body = "".join(sse.iter_text())
+        assert "Investigate" in body
+        assert "planner chose stamp_masked" in body
+        assert "The date sits under the stamp." in body
+
+
 # --- Validation ---------------------------------------------------------------
 
 def test_upload_rejects_wrong_file_type(generated):

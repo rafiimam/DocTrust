@@ -392,6 +392,25 @@ class _TracingReader:
         })
         return value
 
+    def plan_investigation(self, image_path: str, doc_type: str,
+                           field: str, reads: list[dict],
+                           actions: dict) -> dict:
+        """Forward a planner consultation to the configured reader.
+
+        The planner always sees the original document image (the
+        agent passes the document's own path). A reader without a
+        planner raises here, which the agent treats as a planner
+        failure and answers with its fallback sequence — the same
+        contract the agent has with any planner error.
+        """
+        if time.time() > self._deadline:
+            raise TimeoutError("judge job exceeded its time budget")
+        planner = getattr(self._inner, "plan_investigation", None)
+        if planner is None:
+            raise RuntimeError(
+                "configured reader has no investigation planner")
+        return planner(image_path, doc_type, field, reads, actions)
+
 
 # ---------------------------------------------------------------------------
 # The job itself
@@ -508,6 +527,22 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
     outcome = agent_module.run_review(tracing_reader, paths,
                                       segmenter=tracing_segmenter)
 
+    # One trace event per investigation decision, so the streamed
+    # trace shows *why* each investigation step ran (or that the
+    # deterministic fallback ran it).
+    for fr in outcome.field_reads:
+        for entry in fr.investigation:
+            actor = "planner" if entry["source"] == "planner" \
+                else "fallback"
+            verb = "chose" if entry["source"] == "planner" else "ran"
+            text = (f"{fr.field} ({fr.doc_type}): {actor} {verb} "
+                    f"{entry['action']}")
+            if entry.get("reason"):
+                text += f" — {entry['reason']}"
+            job.emit({"type": "investigation", "phase": "Investigate",
+                      "doc_type": fr.doc_type, "field": fr.field,
+                      "text": text})
+
     job.emit({"type": "compare", "phase": "Cross-examine",
               "text": "Normalized every field (digits, dates, name "
                       "variants) and compared shared facts across the "
@@ -526,6 +561,7 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
             "canonical": _canonical(fr.field, raw) or "",
             "uncertain": fr.uncertain,
             "reads": reads_by_key.get((fr.doc_type, fr.field), []),
+            "investigation": fr.investigation,
         }
 
     verdict_label = VERDICT_LABELS.get(outcome.verdict, outcome.verdict)

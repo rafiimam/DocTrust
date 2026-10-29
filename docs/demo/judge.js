@@ -238,12 +238,23 @@
           var views = (fr.reads || []).map(function (r) {
             return r.view + ": " + (r.value || "UNREADABLE");
           }).join(" · ");
+          // Investigation decisions (planner-chosen steps with their
+          // logged reasons, or the fallback sequence), when the field
+          // needed any — rendered under the views, escaped like
+          // everything else from the result JSON.
+          var inv = (fr.investigation || []).map(function (d) {
+            return (d.source === "planner" ? "planner" : "fallback") +
+              " → " + d.action + (d.reason ? ": " + d.reason : "");
+          }).join(" · ");
           html += "<tr><td>" + escapeHtml(field) + (fr.uncertain
             ? " <span class='uncertain-tag'>uncertain</span>" : "") +
             "</td><td>" + escapeHtml(fr.value || "— unreadable —") +
             "</td><td>" +
             escapeHtml(fr.canonical || "") + "</td><td class='views-cell'>" +
-            escapeHtml(views) + "</td></tr>";
+            escapeHtml(views) +
+            (inv ? "<br><span class='investigation-line'>" +
+              escapeHtml(inv) + "</span>" : "") +
+            "</td></tr>";
         });
         html += "</table>";
       });

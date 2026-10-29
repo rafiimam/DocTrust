@@ -216,6 +216,7 @@ h1 { margin: 0; font-size: 30px; letter-spacing: -.5px; }
 .fields-table th, .fields-table td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
 .fields-table th { background: var(--accent-soft); }
 .views-cell { color: var(--muted); font-size: 12.5px; }
+.investigation-line { color: var(--warn); font-style: italic; }
 .uncertain-tag { color: var(--warn); font-weight: 700; font-size: 11.5px; text-transform: uppercase; }
 .evidence-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .evidence-item { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 8px; }
