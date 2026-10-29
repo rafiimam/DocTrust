@@ -163,3 +163,171 @@ def test_agent_all_unreadable_investigates_and_stays_unreadable():
     assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
     assert dob.value is None
     assert outcome.verdict == "UNREADABLE"
+
+
+# --- Model-directed investigation (planner) ----------------------------------
+#
+# The planner chooses the next investigation step; the comparator
+# still decides the verdict. Unscripted, MockReader.plan_investigation
+# raises, so every test above already exercises the fallback path —
+# the two-view, five-read shapes there ARE the fallback contract.
+
+
+def _dob(outcome, doc_type="birth_certificate"):
+    return next(fr for fr in outcome.field_reads
+                if fr.doc_type == doc_type and fr.field == "dob")
+
+
+def _three_doc_script(bc_dob_reads):
+    script = _script()
+    script[("birth_certificate", "name")] = ["Mohammad Abdul Rahman"]
+    script[("birth_certificate", "dob")] = bc_dob_reads
+    script[("birth_certificate", "father_name")] = ["Abdul Karim"]
+    return script
+
+
+def test_planner_chosen_view_settles_field_in_one_step():
+    # First pass cannot settle the certificate DOB (one read, two
+    # failures). The planner picks the stamp-masked re-read; its read
+    # settles the field, so there is exactly one investigation read
+    # and no second consultation.
+    script = _three_doc_script(
+        ["UNREADABLE", "১২/০৩/১৯৯০", "UNREADABLE", "১২/০৩/১৯৯০"])
+    reader = MockReader(script, planner=[
+        {"action": "stamp_masked",
+         "reason": "A stamp appears to cover the date."}])
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "birth_certificate": "bc.png",
+                                        "bank_form": "form.png"})
+    dob = _dob(outcome)
+    assert dob.value == "১২/০৩/১৯৯০"
+    assert len(dob.reads) == 4  # 3 first-pass + 1 planner-chosen read
+    assert dob.investigation == [
+        {"action": "stamp_masked",
+         "reason": "A stamp appears to cover the date.",
+         "source": "planner"}]
+    assert len(reader.planner_calls) == 1
+    # The planner saw the reads so far and the offered actions.
+    call = reader.planner_calls[0]
+    assert call["doc_type"] == "birth_certificate"
+    assert call["field"] == "dob"
+    assert [r["view"] for r in call["reads"]] == agent.FIRST_PASS_VIEWS
+    assert set(call["actions"]) == {"stamp_masked", "zoom_tight",
+                                    "recapture"}
+    assert outcome.verdict == "CONSISTENT"
+
+
+def test_planner_recapture_ends_investigation_without_reads():
+    # The planner judges the capture hopeless: no investigation views
+    # are read at all, the field stays unreadable, and the otherwise
+    # clean set asks for a recapture.
+    script = _script()
+    script[("bank_form", "dob")] = ["12/03/1990", "12/03/1996",
+                                    "UNREADABLE"]
+    reader = MockReader(script, planner=[
+        {"action": "recapture",
+         "reason": "The capture is too degraded to trust."}])
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "bank_form": "form.png"})
+    dob = _dob(outcome, doc_type="bank_form")
+    assert dob.value is None
+    assert len(dob.reads) == 3  # first pass only — no investigation
+    assert dob.investigation == [
+        {"action": "recapture",
+         "reason": "The capture is too degraded to trust.",
+         "source": "planner"}]
+    assert outcome.verdict == "UNREADABLE"
+
+
+def test_planner_garbage_decision_falls_back_to_fixed_views():
+    # An unknown action is not a decision: the deterministic fallback
+    # runs both fixed views, logged as fallback, and the field still
+    # settles on the majority the fixed sequence recovers.
+    script = _three_doc_script(
+        ["UNREADABLE", "১২/০৩/১৯৯০", "UNREADABLE",
+         "১২/০৩/১৯৯০", "১২/০৩/১৯৯০"])
+    reader = MockReader(script, planner=[
+        {"action": "enhance_everything", "reason": "???"}])
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "birth_certificate": "bc.png",
+                                        "bank_form": "form.png"})
+    dob = _dob(outcome)
+    assert len(dob.reads) == 5  # fallback ran both fixed views
+    assert [e["source"] for e in dob.investigation] == ["fallback",
+                                                        "fallback"]
+    assert [e["action"] for e in dob.investigation] == \
+        agent.INVESTIGATION_VIEWS
+    assert dob.value == "১২/০৩/১৯৯০"
+    assert outcome.verdict == "CONSISTENT"
+
+
+def test_planner_exception_falls_back_to_fixed_views():
+    # A planner that blows up mid-review must not break the review:
+    # same fallback, same recovered majority.
+    script = _three_doc_script(
+        ["UNREADABLE", "১২/০৩/১৯৯০", "UNREADABLE",
+         "১২/০৩/১৯৯০", "১২/০৩/১৯৯০"])
+    reader = MockReader(script, planner=[RuntimeError("planner down")])
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "birth_certificate": "bc.png",
+                                        "bank_form": "form.png"})
+    dob = _dob(outcome)
+    assert len(dob.reads) == 5
+    assert [e["source"] for e in dob.investigation] == ["fallback",
+                                                        "fallback"]
+    assert dob.value == "১২/০৩/১৯৯০"
+    assert outcome.verdict == "CONSISTENT"
+
+
+def test_planner_second_consultation_is_the_last():
+    # Both chosen steps still leave the reads scattered (all distinct
+    # values): the planner is consulted exactly twice — never a
+    # third time — and the unsettled field stays unreadable.
+    script = _script()
+    script[("bank_form", "dob")] = ["12/03/1990", "12/03/1996",
+                                    "UNREADABLE", "12/03/1992",
+                                    "12/03/1994"]
+    reader = MockReader(script, planner=[
+        {"action": "zoom_tight", "reason": "Print looks faint."},
+        {"action": "stamp_masked", "reason": "Try under the stamp."}])
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "bank_form": "form.png"})
+    dob = _dob(outcome, doc_type="bank_form")
+    assert len(reader.planner_calls) == 2
+    assert len(dob.reads) == 5  # 3 first-pass + 2 chosen steps
+    assert [e["action"] for e in dob.investigation] == ["zoom_tight",
+                                                        "stamp_masked"]
+    assert all(e["source"] == "planner" for e in dob.investigation)
+    # The second consultation saw the first chosen step's read.
+    assert [r["view"] for r in reader.planner_calls[1]["reads"]] == \
+        agent.FIRST_PASS_VIEWS + ["zoom_tight"]
+    assert dob.value is None
+    assert outcome.verdict == "UNREADABLE"
+
+
+def test_clean_fields_never_consult_the_planner():
+    # Unanimous first-pass reads: no uncertainty, no investigation,
+    # and the planner is never even asked.
+    reader = MockReader(_script(), planner=[
+        {"action": "recapture", "reason": "must never be used"}])
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "bank_form": "form.png"})
+    assert outcome.verdict == "CONSISTENT"
+    assert reader.planner_calls == []
+    for fr in outcome.field_reads:
+        assert fr.investigation == []
+        assert len(fr.reads) == 3
+
+
+def test_planner_reason_is_collapsed_and_capped_in_the_log():
+    script = _three_doc_script(
+        ["UNREADABLE", "১২/০৩/১৯৯০", "UNREADABLE", "১২/০৩/১৯৯০"])
+    reader = MockReader(script, planner=[
+        {"action": "stamp_masked",
+         "reason": "  a   stamp\n covers\tit " + "x" * 400}])
+    outcome = agent.run_review(reader, {"nid": "nid.png",
+                                        "birth_certificate": "bc.png",
+                                        "bank_form": "form.png"})
+    reason = _dob(outcome).investigation[0]["reason"]
+    assert reason.startswith("a stamp covers it")
+    assert len(reason) == agent.REASON_MAX_CHARS

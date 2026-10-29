@@ -12,11 +12,19 @@ only on this interface; provider choice is configuration:
 - MockReader — deterministic stand-in for tests and offline development.
   Scripted per (doc_type, field): a list of values returned in order, so a
   test can script disagreement ("reads differ under perturbation") exactly.
+
+Readers may also act as the investigation *planner* (see Planner):
+when a field is unsettled, the agent loop asks the planner which
+investigation step to run next. The planner chooses where to look —
+it never decides a field's value or a verdict; the deterministic
+comparator keeps that authority. Both live readers implement it
+against the same chat endpoints as their reads.
 """
 
 from __future__ import annotations
 
 import base64
+import json
 import os
 from pathlib import Path
 from typing import Protocol
@@ -44,6 +52,133 @@ class Reader(Protocol):
     def read_field(self, image_path: str, doc_type: str, field: str,
                    perturbation: str) -> str:
         ...
+
+
+class Planner(Protocol):
+    """Optional reader capability: direct the investigation of one
+    unsettled field. The agent loop uses it opportunistically (a
+    reader without it — or one whose call fails — simply means the
+    deterministic fallback sequence runs).
+
+    ``reads`` is the field's reads so far, [{"view", "value"}, ...];
+    ``actions`` maps each offered action name to a one-line
+    description. Returns {"action": <one of the offered names>,
+    "reason": <one short sentence>}. Any exception is a planner
+    failure as far as the agent is concerned.
+    """
+
+    def plan_investigation(self, image_path: str, doc_type: str,
+                           field: str, reads: list[dict],
+                           actions: dict[str, str]) -> dict:
+        ...
+
+
+PLANNER_PROMPT = (
+    "You are the investigation planner for a document-review agent. "
+    "One field of one document could not be settled by the reads "
+    "listed below. Choose the single most useful next investigation "
+    "step from the offered actions. You choose where to look next — "
+    "you never decide the field's value or whether documents agree; "
+    "a deterministic comparator makes every verdict. Reply with ONLY "
+    "a JSON object of the form {\"action\": \"<action name>\", "
+    "\"reason\": \"<one short sentence>\"} — no prose, no code "
+    "fences, nothing else."
+)
+
+
+def _plan_payload(model: str, image_path: str, doc_type: str, field: str,
+                  reads: list[dict], actions: dict[str, str],
+                  max_tokens: int = 1024,
+                  reasoning_effort: str | None = None) -> dict:
+    """The planner chat-completions payload: same image-input shape
+    as a field read, but the text asks for the next investigation
+    step as strict JSON instead of a field value."""
+    image_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
+    read_lines = "\n".join(f"- {r['view']}: {r['value']}" for r in reads)
+    if not read_lines:
+        read_lines = "- (no reads yet)"
+    action_lines = "\n".join(f"- {name}: {desc}"
+                             for name, desc in actions.items())
+    text = (f"{PLANNER_PROMPT}\nDocument: {doc_type}\nField: {field}\n"
+            f"Reads so far:\n{read_lines}\n"
+            f"Available actions:\n{action_lines}")
+    payload = {
+        "model": model,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": text},
+                {"type": "image_url",
+                 "image_url": {"url": f"data:image/png;base64,{image_b64}"}},
+            ],
+        }],
+        "max_tokens": max_tokens,
+        "temperature": 0.0,
+    }
+    if reasoning_effort:
+        payload["reasoning_effort"] = reasoning_effort
+    return payload
+
+
+def _parse_plan(content: str) -> dict:
+    """Parse a planner reply into {"action", "reason"}.
+
+    The prompt demands a bare JSON object; a surrounding code fence
+    is tolerated, anything else unparseable raises ValueError — the
+    agent treats every planner failure alike and falls back to its
+    fixed investigation sequence. Whether the action is one of the
+    offered ones is the agent's check, not this parser's.
+    """
+    text = content.strip()
+    if text.startswith("```"):
+        text = "\n".join(line for line in text.splitlines()
+                         if not line.strip().startswith("```")).strip()
+    try:
+        decision = json.loads(text[text.index("{"):text.rindex("}") + 1])
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            f"planner reply was not a JSON object: {text[:120]!r}") from exc
+    if not isinstance(decision, dict) or not decision.get("action"):
+        raise ValueError(
+            f"planner reply has no action: {text[:120]!r}")
+    return {"action": str(decision["action"]),
+            "reason": str(decision.get("reason") or "")}
+
+
+def _post_planner(url: str, headers: dict, payload: dict,
+                  label: str) -> dict:
+    """POST one planner call and parse its decision.
+
+    ``label`` ("Meta Model API" / "Baseten") prefixes every error, in
+    the same style as the readers' own errors; the API key travels
+    only in the header and never appears in an error message. Every
+    failure raises — RuntimeError for transport/HTTP/shape problems,
+    ValueError for an unparseable decision.
+    """
+    import httpx  # deferred so tests never need the network stack
+
+    try:
+        resp = httpx.post(url, headers=headers, json=payload, timeout=60)
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"{label} planner request failed: {exc}") from exc
+    if resp.status_code >= 400:
+        excerpt = " ".join((resp.text or "").split())[:200]
+        raise RuntimeError(
+            f"{label} planner returned HTTP {resp.status_code}: {excerpt}")
+    data = resp.json()
+    choices = data.get("choices") or []
+    if not choices:
+        raise RuntimeError(
+            f"{label} planner returned no choices — unexpected "
+            f"response shape: {str(data)[:200]}")
+    choice = choices[0]
+    content = (choice.get("message") or {}).get("content")
+    if content is None or not content.strip():
+        raise RuntimeError(
+            f"{label} planner returned no content "
+            f"(finish_reason={choice.get('finish_reason')!r}); the "
+            "completion budget was likely consumed by reasoning.")
+    return _parse_plan(content)
 
 
 def _read_payload(model: str, image_path: str, doc_type: str, field: str,
@@ -79,9 +214,24 @@ def _read_payload(model: str, image_path: str, doc_type: str, field: str,
 
 
 class MockReader:
-    def __init__(self, script: dict[tuple[str, str], list[str]]):
+    """Scripted reader for tests.
+
+    ``planner`` scripts plan_investigation: a list of decisions
+    ({"action", "reason"} dicts, or Exception instances to raise)
+    consumed in order with the last one repeating — mirroring the
+    read script — or a callable invoked with the planner arguments.
+    Unscripted (the default), plan_investigation raises, so the
+    agent's deterministic fallback sequence is what a test exercises
+    unless it scripts the planner explicitly.
+    """
+
+    def __init__(self, script: dict[tuple[str, str], list[str]],
+                 planner=None):
         self._script = {k: list(v) for k, v in script.items()}
+        self._planner = list(planner) if isinstance(planner, list) \
+            else planner
         self.calls: list[tuple[str, str, str]] = []
+        self.planner_calls: list[dict] = []
 
     def read_field(self, image_path: str, doc_type: str, field: str,
                    perturbation: str) -> str:
@@ -92,6 +242,26 @@ class MockReader:
         if len(queue) > 1:
             return queue.pop(0)
         return queue[0]
+
+    def plan_investigation(self, image_path: str, doc_type: str,
+                           field: str, reads: list[dict],
+                           actions: dict[str, str]) -> dict:
+        self.planner_calls.append({
+            "doc_type": doc_type, "field": field,
+            "reads": [dict(r) for r in reads],
+            "actions": dict(actions),
+        })
+        planner = self._planner
+        if planner is None:
+            raise RuntimeError("MockReader: no planner scripted")
+        if callable(planner):
+            return planner(image_path, doc_type, field, reads, actions)
+        if not planner:
+            raise RuntimeError("MockReader: planner script exhausted")
+        item = planner.pop(0) if len(planner) > 1 else planner[0]
+        if isinstance(item, BaseException):
+            raise item
+        return item
 
 
 class BasetenReader:
@@ -170,6 +340,18 @@ class BasetenReader:
                 "unexpected.")
         return content.strip()
 
+    def plan_investigation(self, image_path: str, doc_type: str,
+                           field: str, reads: list[dict],
+                           actions: dict[str, str]) -> dict:
+        """Planner call on the same endpoint/budget as the reads
+        (no reasoning_effort — see the class docstring)."""
+        payload = _plan_payload(self.model, image_path, doc_type, field,
+                                reads, actions,
+                                max_tokens=self.max_tokens)
+        return _post_planner(
+            self.url, {"Authorization": f"Api-Key {self.api_key}"},
+            payload, "Baseten")
+
 
 class MetaReader:
     """Muse Spark via the Meta Model API (https://api.meta.ai/v1).
@@ -243,3 +425,17 @@ class MetaReader:
                 "raise META_MAX_TOKENS or keep META_REASONING_EFFORT "
                 "at 'minimal'.")
         return content.strip()
+
+    def plan_investigation(self, image_path: str, doc_type: str,
+                           field: str, reads: list[dict],
+                           actions: dict[str, str]) -> dict:
+        """Planner call on the same endpoint and reasoning
+        calibration as the reads (max_tokens 1024,
+        reasoning_effort "minimal" by default)."""
+        payload = _plan_payload(
+            self.model, image_path, doc_type, field, reads, actions,
+            max_tokens=self.max_tokens,
+            reasoning_effort=self.reasoning_effort)
+        return _post_planner(
+            META_URL, {"Authorization": f"Bearer {self.api_key}"},
+            payload, "Meta Model API")

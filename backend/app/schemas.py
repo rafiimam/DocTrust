@@ -14,6 +14,11 @@ class FieldRead:
     value: str | None  # None = could not be read even after investigation
     uncertain: bool = False  # perturbation reads disagreed at some point
     reads: list[str] = dc_field(default_factory=list)  # every raw read, in order
+    # Investigation decisions, in order: {"action", "reason", "source"}
+    # with source "planner" (the model chose the step) or "fallback"
+    # (the planner could not be consulted; the fixed sequence ran).
+    # Empty when the field never needed investigation.
+    investigation: list[dict] = dc_field(default_factory=list)
 
 
 @dataclass

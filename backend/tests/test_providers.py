@@ -286,6 +286,109 @@ def test_meta_reader_transport_error_raises_cleanly(
     assert "super-secret-key" not in str(excinfo.value)
 
 
+# --- Investigation planner calls (Meta + Baseten) -----------------------------
+
+_PLAN_READS = [{"view": "original", "value": "UNREADABLE"},
+               {"view": "zoom", "value": "12/03/1990"},
+               {"view": "contrast", "value": "UNREADABLE"}]
+_PLAN_ACTIONS = {"stamp_masked": "Mask the stamp and re-read.",
+                  "zoom_tight": "Re-read a tighter crop.",
+                  "recapture": "Stop; request a recapture."}
+_PLAN_JSON = '{"action": "stamp_masked", "reason": "A stamp covers it."}'
+
+
+def test_meta_planner_posts_with_read_calibration_and_parses(
+        monkeypatch, image_path):
+    calls = _install_fake_post(
+        monkeypatch, _FakeResponse(200, _chat_payload(_PLAN_JSON)))
+    decision = MetaReader(api_key="test-key-123").plan_investigation(
+        image_path, "birth_certificate", "dob", _PLAN_READS,
+        _PLAN_ACTIONS)
+
+    assert decision == {"action": "stamp_masked",
+                        "reason": "A stamp covers it."}
+    call = calls[0]
+    assert call["url"] == META_URL
+    assert call["headers"]["Authorization"] == "Bearer test-key-123"
+    # Same reasoning calibration as the reads (1024 / minimal).
+    assert call["json"]["max_tokens"] == 1024
+    assert call["json"]["reasoning_effort"] == "minimal"
+    text = call["json"]["messages"][0]["content"][0]["text"]
+    assert "birth_certificate" in text and "dob" in text
+    assert "stamp_masked" in text and "12/03/1990" in text
+    # The prompt reserves verdicts for the deterministic comparator.
+    assert "never decide" in text
+
+
+def test_meta_planner_garbage_reply_raises(monkeypatch, image_path):
+    # An unparseable decision is a planner failure (ValueError) —
+    # the agent answers those with its fallback sequence.
+    _install_fake_post(monkeypatch, _FakeResponse(
+        200, _chat_payload("I would zoom in, probably.")))
+    with pytest.raises(ValueError):
+        MetaReader(api_key="k").plan_investigation(
+            image_path, "nid", "dob", _PLAN_READS, _PLAN_ACTIONS)
+
+
+def test_meta_planner_null_content_raises(monkeypatch, image_path):
+    payload = {"choices": [{"message": {"content": None},
+                            "finish_reason": "length"}]}
+    _install_fake_post(monkeypatch, _FakeResponse(200, payload))
+    with pytest.raises(RuntimeError) as excinfo:
+        MetaReader(api_key="super-secret-key").plan_investigation(
+            image_path, "nid", "dob", _PLAN_READS, _PLAN_ACTIONS)
+    assert "super-secret-key" not in str(excinfo.value)
+
+
+def test_baseten_planner_posts_to_inference_endpoint(monkeypatch,
+                                                     image_path):
+    calls = _install_fake_post(
+        monkeypatch, _FakeResponse(200, _chat_payload(_PLAN_JSON)))
+    decision = BasetenReader(api_key="bk").plan_investigation(
+        image_path, "nid", "dob", _PLAN_READS, _PLAN_ACTIONS)
+    assert decision["action"] == "stamp_masked"
+    call = calls[0]
+    assert call["url"] == "https://inference.baseten.co/v1/chat/completions"
+    assert call["headers"]["Authorization"] == "Api-Key bk"
+    assert call["json"]["model"] == "meta-models/muse-spark-open-1026"
+    assert call["json"]["max_tokens"] == 1024
+    assert "reasoning_effort" not in call["json"]
+
+
+def test_parse_plan_accepts_fenced_json_and_rejects_the_rest():
+    from app.providers import _parse_plan
+
+    assert _parse_plan('{"action": "zoom_tight", "reason": "faint"}') == \
+        {"action": "zoom_tight", "reason": "faint"}
+    assert _parse_plan('```json\n{"action": "recapture"}\n```') == \
+        {"action": "recapture", "reason": ""}
+    for bad in ("", "zoom in please", '{"reason": "no action"}',
+                '["stamp_masked"]'):
+        with pytest.raises(ValueError):
+            _parse_plan(bad)
+
+
+def test_mock_reader_planner_scripting():
+    # Unscripted: raises, so agent tests exercise the fallback.
+    reader = MockReader({})
+    with pytest.raises(RuntimeError):
+        reader.plan_investigation("x.png", "nid", "dob",
+                                  _PLAN_READS, _PLAN_ACTIONS)
+    # Scripted queue: decisions in order, exceptions raised, calls
+    # recorded with the reads/actions the planner was shown.
+    reader = MockReader({}, planner=[
+        {"action": "zoom_tight", "reason": "faint"},
+        RuntimeError("down")])
+    got = reader.plan_investigation("x.png", "nid", "dob",
+                                    _PLAN_READS, _PLAN_ACTIONS)
+    assert got == {"action": "zoom_tight", "reason": "faint"}
+    with pytest.raises(RuntimeError):
+        reader.plan_investigation("x.png", "nid", "dob",
+                                  _PLAN_READS, _PLAN_ACTIONS)
+    assert len(reader.planner_calls) == 2
+    assert reader.planner_calls[0]["actions"] == _PLAN_ACTIONS
+
+
 # --- resolve_reader: the meta path, and the unchanged baseten/mock paths ------
 
 def test_resolve_reader_meta_with_and_without_key(monkeypatch):
