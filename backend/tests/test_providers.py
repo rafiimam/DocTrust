@@ -157,21 +157,110 @@ def test_meta_reader_null_content_raises_with_finish_reason(
     assert "super-secret-key" not in message
 
 
-# --- BasetenReader: behaviour intentionally frozen in this change --------------
+# --- BasetenReader: documented endpoint + reasoning headroom ------------------
 
-def test_baseten_reader_payload_unchanged(monkeypatch, image_path):
+def test_baseten_reader_posts_to_inference_endpoint_with_headroom(
+        monkeypatch, image_path):
     from app.providers import BASETEN_URL
 
     calls = _install_fake_post(
-        monkeypatch, _FakeResponse(200, _chat_payload("12/03/1990")))
+        monkeypatch, _FakeResponse(200, _chat_payload("  12/03/1990 \n")))
     got = BasetenReader(api_key="bk").read_field(
         image_path, "nid", "dob", "original")
-    assert got == "12/03/1990"
+    assert got == "12/03/1990"  # response text extracted + stripped
     call = calls[0]
+    # Default route is Baseten's documented hackathon inference host.
     assert call["url"] == BASETEN_URL
+    assert call["url"] == "https://inference.baseten.co/v1/chat/completions"
     assert call["headers"]["Authorization"] == "Api-Key bk"
-    assert call["json"]["max_tokens"] == 128
+    assert call["json"]["model"] == "meta-models/muse-spark-open-1026"
+    # Spark Open always reasons: the budget must leave room for the
+    # reasoning *and* the answer (the 128 default returned nulls on
+    # the Meta route). No reasoning_effort is sent — whether Baseten
+    # accepts it is unverified.
+    assert call["json"]["max_tokens"] == 1024
     assert "reasoning_effort" not in call["json"]
+
+
+def test_baseten_reader_url_env_override_and_constructor_arg(
+        monkeypatch, image_path):
+    # The dedicated model-apis route stays selectable via env...
+    monkeypatch.setenv(
+        "BASETEN_URL", "https://model-apis.baseten.net/v1/chat/completions")
+    reader = BasetenReader(api_key="bk")
+    assert reader.url == "https://model-apis.baseten.net/v1/chat/completions"
+    calls = _install_fake_post(
+        monkeypatch, _FakeResponse(200, _chat_payload("x")))
+    reader.read_field(image_path, "nid", "dob", "original")
+    assert calls[0]["url"] == \
+        "https://model-apis.baseten.net/v1/chat/completions"
+
+    # ...and an explicit constructor url beats the environment.
+    assert BasetenReader(
+        api_key="bk",
+        url="https://example.invalid/v1/chat/completions").url == \
+        "https://example.invalid/v1/chat/completions"
+
+
+def test_baseten_reader_max_tokens_env_and_constructor(
+        monkeypatch, image_path):
+    monkeypatch.setenv("BASETEN_MAX_TOKENS", "2048")
+    assert BasetenReader(api_key="bk").max_tokens == 2048
+    # Constructor argument beats the environment, and lands in the
+    # payload actually sent.
+    reader = BasetenReader(api_key="bk", max_tokens=512)
+    assert reader.max_tokens == 512
+    calls = _install_fake_post(
+        monkeypatch, _FakeResponse(200, _chat_payload("x")))
+    reader.read_field(image_path, "nid", "name", "original")
+    assert calls[0]["json"]["max_tokens"] == 512
+
+
+def test_baseten_reader_null_content_raises_with_finish_reason(
+        monkeypatch, image_path):
+    # What a reasoning model returns when the budget is eaten by
+    # reasoning: finish_reason "length", content null. Must raise a
+    # clear error — never an empty string treated as a read, and
+    # never a crash on None.strip().
+    payload = {"choices": [{"message": {"content": None},
+                            "finish_reason": "length"}]}
+    _install_fake_post(monkeypatch, _FakeResponse(200, payload))
+    reader = BasetenReader(api_key="super-secret-key")
+    with pytest.raises(RuntimeError) as excinfo:
+        reader.read_field(image_path, "nid", "dob", "original")
+    message = str(excinfo.value)
+    assert "length" in message
+    assert "reasoning" in message
+    assert "super-secret-key" not in message
+
+
+def test_baseten_reader_empty_content_raises(monkeypatch, image_path):
+    _install_fake_post(
+        monkeypatch, _FakeResponse(200, _chat_payload("   ")))
+    reader = BasetenReader(api_key="bk")
+    with pytest.raises(RuntimeError):
+        reader.read_field(image_path, "nid", "dob", "original")
+
+
+def test_baseten_reader_no_choices_raises(monkeypatch, image_path):
+    _install_fake_post(monkeypatch, _FakeResponse(200, {}))
+    reader = BasetenReader(api_key="bk")
+    with pytest.raises(RuntimeError) as excinfo:
+        reader.read_field(image_path, "nid", "dob", "original")
+    assert "no choices" in str(excinfo.value)
+
+
+def test_baseten_reader_http_error_raises_cleanly(
+        monkeypatch, image_path):
+    body = '{\n  "error": {"message": "Invalid API key"}\n}'
+    _install_fake_post(monkeypatch, _FakeResponse(401, {}, text=body))
+    reader = BasetenReader(api_key="super-secret-key")
+    with pytest.raises(RuntimeError) as excinfo:
+        reader.read_field(image_path, "nid", "dob", "original")
+    message = str(excinfo.value)
+    assert "401" in message
+    assert "Invalid API key" in message  # short body excerpt
+    assert "super-secret-key" not in message  # never leak the key
 
 
 # --- MetaReader error handling -------------------------------------------------
