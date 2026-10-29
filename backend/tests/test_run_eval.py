@@ -148,6 +148,31 @@ def test_metrics_counting_on_tiny_fixture(tmp_path):
     assert configs["agent"]["reads_mean"] == 33  # 11 fields x 3 views
 
 
+def test_counting_reader_counts_planner_consultations():
+    # The agent's reads figure must include planner consultations —
+    # they are billed model calls, and configuration 3's cost would
+    # be understated without them. A wrapped reader with no planner
+    # raises before the counter moves (no model call happened), so
+    # the agent falls back exactly as it would unwrapped.
+    import pytest
+
+    class _PlanningReader(TruthReader):
+        def plan_investigation(self, image_path, doc_type, field,
+                               reads, actions):
+            return {"action": "recapture", "reason": "scripted"}
+
+    counting = run_eval.CountingReader(_PlanningReader({}))
+    decision = counting.plan_investigation(
+        "x.png", "nid", "dob", [], {"recapture": "stop"})
+    assert decision["action"] == "recapture"
+    assert counting.calls == 1
+
+    counting = run_eval.CountingReader(TruthReader({}))
+    with pytest.raises(RuntimeError):
+        counting.plan_investigation("x.png", "nid", "dob", [], {})
+    assert counting.calls == 0
+
+
 def test_per_set_errors_are_recorded_not_fatal(tmp_path):
     def factory(spec, phase, truth):
         raise RuntimeError("reader exploded")

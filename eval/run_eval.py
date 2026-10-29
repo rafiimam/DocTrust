@@ -10,7 +10,10 @@ SAME sets through three configurations over the SAME reader:
 2. single-pass + normalization — the same single reads, then the
    deterministic normalize + comparator path (backend/app/comparator).
 3. full agent — backend.app.agent.run_review (perturbation reads,
-   disagreement-triggered investigation, same comparator).
+   disagreement-triggered investigation — model-directed steps with
+   a deterministic fallback — same comparator). The runner's "reads"
+   for this configuration count planner consultations as model
+   calls too (see CountingReader).
 
 Configurations 1 and 2 share one read pass by design: it is a paired
 comparison — the identical reads are scored two ways, so any verdict
@@ -308,11 +311,16 @@ def discover_physical_sets(physical_dir: Path) -> tuple[list[PhysicalSpec], list
 # ---------------------------------------------------------------------------
 
 class CountingReader:
-    """Wraps a reader: counts calls and accumulates token usage when
-    the wrapped reader reports it (a `last_usage` dict attribute set
-    after each call, with input/prompt and output/completion token
-    keys). Current live readers report no usage -> tokens stay None
-    and the run reports reads only."""
+    """Wraps a reader: counts model calls and accumulates token usage
+    when the wrapped reader reports it (a `last_usage` dict attribute
+    set after each call, with input/prompt and output/completion
+    token keys). Current live readers report no usage -> tokens stay
+    None and the run reports reads only.
+
+    A "call" here is any billed model call: field reads AND planner
+    consultations both count — the planner is part of configuration
+    3's cost, and leaving it out would understate the agent's reads.
+    """
 
     def __init__(self, inner: Reader):
         self.inner = inner
@@ -321,11 +329,7 @@ class CountingReader:
         self.output_tokens = 0
         self.usage_seen = False
 
-    def read_field(self, image_path: str, doc_type: str, field: str,
-                   perturbation: str) -> str:
-        self.calls += 1
-        value = self.inner.read_field(image_path, doc_type, field,
-                                      perturbation)
+    def _absorb_usage(self) -> None:
         usage = getattr(self.inner, "last_usage", None)
         if isinstance(usage, dict):
             self.usage_seen = True
@@ -334,7 +338,32 @@ class CountingReader:
             self.output_tokens += int(
                 usage.get("output_tokens",
                           usage.get("completion_tokens", 0)) or 0)
+
+    def read_field(self, image_path: str, doc_type: str, field: str,
+                   perturbation: str) -> str:
+        self.calls += 1
+        value = self.inner.read_field(image_path, doc_type, field,
+                                      perturbation)
+        self._absorb_usage()
         return value
+
+    def plan_investigation(self, image_path: str, doc_type: str,
+                           field: str, reads: list[dict],
+                           actions: dict) -> dict:
+        """Forward a planner consultation, counted like a read.
+
+        A wrapped reader with no planner raises BEFORE the counter
+        moves — no model call happened — and the agent answers with
+        its fallback sequence, exactly as it would unwrapped.
+        """
+        planner = getattr(self.inner, "plan_investigation", None)
+        if planner is None:
+            raise RuntimeError(
+                "wrapped reader has no investigation planner")
+        self.calls += 1
+        decision = planner(image_path, doc_type, field, reads, actions)
+        self._absorb_usage()
+        return decision
 
 
 def _cost_usd(input_tokens: int, output_tokens: int) -> float:
