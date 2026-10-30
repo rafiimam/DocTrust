@@ -127,12 +127,74 @@ def normalize_name(text: str) -> list[str]:
     return tokens
 
 
+_VOWELS = frozenset("aeiou")
+
+
+def _consonant_skeleton(token: str) -> str:
+    """Token with vowels removed ('y' counts as a consonant and stays).
+
+    Transliteration between Bangla/Devanagari and Latin scripts mostly
+    disagrees about vowels — করিম comes back as Karim, Karami, Karimi or
+    Karomi depending on the reader — while the consonant frame is stable.
+    """
+    return "".join(ch for ch in token if ch not in _VOWELS)
+
+
+def _edit_distance(a: str, b: str) -> int:
+    """Levenshtein distance (tokens are short; a plain DP is fine)."""
+    if len(a) < len(b):
+        a, b = b, a
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, start=1):
+        current = [i]
+        for j, cb in enumerate(b, start=1):
+            current.append(min(
+                previous[j] + 1,                # delete
+                current[j - 1] + 1,             # insert
+                previous[j - 1] + (ca != cb),   # substitute
+            ))
+        previous = current
+    return previous[-1]
+
+
+def _token_pair_matches(a: str, b: str) -> bool:
+    """One folded token pair: identical, or transliteration-equivalent.
+
+    Equivalence is deliberately narrow — both tokens at least 4 chars,
+    identical non-empty consonant skeletons, and edit distance <= 2 — so
+    it bridges vowel residue (Karim≈Karami, Rahman≈Rahamana) without ever
+    merging different names (Karim≁Rahim: skeletons krm vs rhm).
+    """
+    if a == b:
+        return True
+    if len(a) < 4 or len(b) < 4:
+        return False
+    sa, sb = _consonant_skeleton(a), _consonant_skeleton(b)
+    if not sa or sa != sb:
+        return False
+    return _edit_distance(a, b) <= 2
+
+
+def _token_lists_equivalent(ta: list[str], tb: list[str]) -> bool:
+    """Same token count and every token pair matching, in order or —
+    mirroring the sorted 'variant' rule — in sorted order."""
+    if len(ta) != len(tb) or not ta:
+        return False
+    if all(_token_pair_matches(x, y) for x, y in zip(ta, tb)):
+        return True
+    return all(_token_pair_matches(x, y)
+               for x, y in zip(sorted(ta), sorted(tb)))
+
+
 def names_match(a: str, b: str) -> str:
     """'match' if canonical tokens are identical, 'variant' if they share
     every token but differ in order/spelling residue, else 'mismatch'.
 
     'variant' exists so a reviewer sees "same person, different
-    transliteration" instead of a false discrepancy flag.
+    transliteration" instead of a false discrepancy flag. Residue includes
+    transliteration vowel differences: token lists that pair up under
+    consonant-skeleton equivalence (see _token_pair_matches) are 'variant',
+    never 'mismatch'.
     """
     ta, tb = normalize_name(a), normalize_name(b)
     if not ta or not tb:
@@ -140,5 +202,7 @@ def names_match(a: str, b: str) -> str:
     if ta == tb:
         return "match"
     if sorted(ta) == sorted(tb):
+        return "variant"
+    if _token_lists_equivalent(ta, tb):
         return "variant"
     return "mismatch"

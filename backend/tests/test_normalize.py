@@ -29,3 +29,28 @@ def test_name_variants_fold():
     assert normalize.names_match("Mohammed Hossain", "Muhammad Hossein") == "match"
     assert normalize.names_match("Fatima Akter", "Fatima Khatun") == "mismatch"
     assert normalize.names_match("", "Someone") == "unknown"
+
+
+def test_transliteration_skeleton_equivalences():
+    # The measured failure: করিম read back from the Bangla birth
+    # certificate as Karami/Karimi/Karomi must equal Latin "Karim".
+    for variant in ("Abdul Karami", "Abdul Karimi", "Abdul Karomi"):
+        assert normalize.names_match("Abdul Karim", variant) == "variant"
+    assert normalize.names_match("Mohammad", "Mohammed") == "match"  # folded
+    assert normalize.names_match("Rahman", "Rahamana") == "variant"
+    assert normalize.names_match(
+        "Mohammad Abdul Rahman", "Mohammed Abdul Rahamana") == "variant"
+
+
+def test_transliteration_skeleton_non_equivalences():
+    # Same-looking but genuinely different names stay mismatches:
+    # skeletons differ (krm vs rhm) even where edit distance is small.
+    assert normalize.names_match("Karim", "Rahim") == "mismatch"
+    assert normalize.names_match("Abdul Karim", "Abdul Rahim") == "mismatch"
+    assert normalize.names_match(
+        "Mohammad Abdul Rahman", "Mohammad Abdul Rahim") == "mismatch"
+    # Different token counts never merge.
+    assert normalize.names_match("Abdul Karim", "Abdul Karim Hossain") == "mismatch"
+    assert normalize.names_match("Abdul Karim", "Karim") == "mismatch"
+    # Short tokens get no skeleton slack.
+    assert normalize.names_match("Ali", "Aly") == "mismatch"

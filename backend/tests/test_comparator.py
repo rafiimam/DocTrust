@@ -36,6 +36,40 @@ def test_unparsable_field_is_unreadable_not_discrepancy():
     assert result.verdict == "UNREADABLE"
 
 
+def test_transliterated_father_name_is_consistent():
+    # The 2026-10-29 evaluation failure: the birth certificate renders
+    # the father name in Bangla and the reader transliterates it back as
+    # "Abdul Karami" while the other documents read "Abdul Karim".
+    docs = {
+        "nid": {"name": "Mohammad Abdul Rahman", "dob": "12/03/1990",
+                "id_number": "1234567890", "father_name": "Abdul Karim"},
+        "birth_certificate": {"name": "Mohammad Abdul Rahman",
+                              "dob": "১২/০৩/১৯৯০",
+                              "father_name": "Abdul Karami"},
+        "bank_form": {"name": "Mohammad Abdul Rahman", "dob": "12/03/1990",
+                      "id_number": "1234567890",
+                      "father_name": "Abdul Karim"},
+    }
+    result = comparator.compare(docs)
+    assert result.verdict == "CONSISTENT"
+    father = next(f for f in result.findings if f.field == "father_name")
+    assert father.status == "variant"
+
+
+def test_genuinely_different_father_name_still_flags():
+    docs = {
+        "nid": {"name": "Mohammad Abdul Rahman", "father_name": "Abdul Karim"},
+        "birth_certificate": {"name": "Mohammad Abdul Rahman",
+                              "father_name": "Abdul Rahim"},
+        "bank_form": {"name": "Mohammad Abdul Rahman",
+                      "father_name": "Abdul Karim"},
+    }
+    result = comparator.compare(docs)
+    assert result.verdict == "DISCREPANCY"
+    father = next(f for f in result.findings if f.field == "father_name")
+    assert father.status == "mismatch"
+
+
 def test_id_written_in_bangla_digits_matches():
     docs = {
         "nid": {"id_number": "৯৮৭৬৫৪৩২১০"},
