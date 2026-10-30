@@ -56,6 +56,13 @@ def test_transliteration_skeleton_non_equivalences():
     # skeletons differ (krm vs rhm) even where edit distance is small.
     assert normalize.names_match("Karim", "Rahim") == "mismatch"
     assert normalize.names_match("Abdul Karim", "Abdul Rahim") == "mismatch"
+    # Near-miss pairs a reviewer asked about, checked explicitly:
+    # different people whose names share letters but not skeletons.
+    assert normalize.names_match("Karim", "Kamal") == "mismatch"  # krm vs kml
+    assert normalize.names_match("Rahim", "Rahman") == "mismatch"  # rhm vs rhmn
+    assert normalize.names_match("Hasan", "Hossain") == "mismatch"  # hsn vs hssn
+    # And the common spelling variant of the same name still folds.
+    assert normalize.names_match("Hossain", "Hussain") == "match"
     assert normalize.names_match(
         "Mohammad Abdul Rahman", "Mohammad Abdul Rahim") == "mismatch"
     # Different token counts never merge.

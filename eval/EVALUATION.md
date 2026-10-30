@@ -258,7 +258,11 @@ either route.
   pending, so every number above is synthetic-only.
 - Small n: about 10 sets per category, so one case is about 10
   points. Differences of one or two cases between configurations are
-  noise, and are described as such.
+  noise, and are described as such. Zero observed events are not a
+  zero rate: 0 false flags in 22 genuine sets still allows a true
+  false-flag rate up to roughly 3/22 ≈ 14% (rule of three, 95%
+  bound), and the same caution applies to the zero silent-error
+  counts.
 - One document family (Bangladeshi NID / birth certificate / bank
   form, as synthetic approximations) and one base person record with
   variations, plus one Hindi persona. No claim extends beyond that.

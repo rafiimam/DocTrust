@@ -10,6 +10,17 @@ Built for the **Meta Global AI Developer Hackathon 2026** (Indie Developer track
 
 KYC and onboarding systems built around Latin names and clean scans fail people in non-Latin-script markets. In Bangladesh, the same person appears as Mohammad, Md. or Muhammed across documents; Bangla digits (০১২৩) sit next to 0123; dates change format from one document to the next; and applicants submit folded, glare-lit photos from low-end phones. Exact-match pipelines silently reject genuine customers, and tired human reviewers miss the subtle inconsistencies — a one-digit date-of-birth difference — that actually matter.
 
+## Results at a glance
+
+Full agent vs the baselines it has to beat — Meta route (muse-spark-1.3), 40 synthetic Bangla sets, post-fix system, 2026-10-30. Full tables, the second reader route, the Hindi sets, and every failure: [Results](#results) and [`eval/EVALUATION.md`](eval/EVALUATION.md).
+
+| Metric | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
+|---|---|---|---|
+| False flags on genuine sets (x/n) | 22/22 | 0/22 | 0/22 |
+| Injected discrepancies caught (x/n) | 9/10 | 9/10 | 10/10 |
+| Silent errors (count) | 0 | 0 | 0 |
+| Degraded sets recovered (x/n) | 0/8 | 8/8 | 8/8 |
+
 ## What DocTrust does
 
 DocTrust reviews a document set (national ID, birth certificate, bank form) the way a careful senior reviewer would:
@@ -25,7 +36,7 @@ DocTrust never auto-approves or auto-rejects. It is decision support for a human
 
 ## Live demo
 
-**https://rafiimam.github.io/DocTrust/demo/** — a self-contained replay of cached agent runs on synthetic document sets (a discrepancy hidden under a stamp, a genuine name/digit variation, a degraded capture), served from [`docs/demo/`](docs/demo/) by GitHub Pages. It calls no model and needs no API keys; live mode is the backend described below. Pages is enabled once by the repository owner: **Settings → Pages → Deploy from a branch → `main` → `/docs`**.
+**https://rafiimam.github.io/DocTrust/demo/** — a self-contained replay of cached agent runs on synthetic document sets (a discrepancy hidden under a stamp, a genuine name/digit variation, a degraded capture), served from [`docs/demo/`](docs/demo/) by GitHub Pages. It calls no model and needs no API keys; live mode is the backend described below.
 
 DocTrust is designed so sensitive documents never have to leave the institution: the reader can run on open weights (Muse Spark Open) and a self-hosted SAM 3.1 app is provided, so a deployment can run entirely inside the institution's own infrastructure. The current deployment instead uses Meta-hosted models for both reading (`muse-spark-1.3`) and SAM 3.1 segmentation. Both reader routes are verified live — the hosted Meta Model API route end-to-end in judge mode, and the open-weight Baseten route across the full evaluation (see Results) — see "Reader provider" under Judge mode.
 
@@ -53,7 +64,7 @@ Then open the demo, switch to Upload mode — the demo's default backend URL is 
 
 ## Status
 
-Day 1 (27 Oct 2026): repository scaffold and plan; deterministic normalization and comparator with tests; synthetic SPECIMEN generator v1; agent loop with perturbation-based uncertainty and investigation reads; SAM 3.1 segmenter layer (Modal + Pillow fallback); GitHub Pages demo with cached cases; judge mode — live upload API with SSE trace, on-the-fly case packs, a Modal deployment wrapper, and an Upload tab in the demo. See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
+Feature-complete and in final evaluation (30 Oct 2026). Built across the hackathon window: deterministic normalization and comparator with tests; synthetic SPECIMEN generator (Bangla and Hindi personas); agent loop with perturbation-based uncertainty and model-planned investigation reads; SAM 3.1 segmenter layer (hosted Meta route + Pillow fallback; self-hosted Modal app provided); GitHub Pages demo with cached cases; judge mode — live upload API with SSE trace, on-the-fly case packs, a Modal deployment, and an Upload tab in the demo. The full three-configuration evaluation has run on both reader routes (see Results). Still open before submission: the physically-captured specimen batch, a fresh-seed held-out batch, and a stamp-over-field hard batch (SAM vs Pillow at verdict level). See [docs/PLAN.md](docs/PLAN.md) for the full plan, evaluation design, and schedule.
 
 The **Bangla gate test has passed** on the Meta Model API route: `muse-spark-1.3` read all four fields of a clean synthetic NID exactly (4/4) — including the Bangla-digit ID number, preserved digit-for-digit. One calibration mattered: Muse Spark is a reasoning model, so the reader needs completion headroom (`max_tokens` 1024, `reasoning_effort` "minimal"); at a 128-token budget every call returned null content, the budget entirely consumed by reasoning. The judge-mode pipeline has also been verified publicly end-to-end on this route against the Modal deployment (fresh case pack downloaded, uploaded back, streamed investigation trace, correct *Discrepancy* verdict). The Baseten (Muse Spark Open) route has since been verified across the full evaluation (2026-10-29/30; see Results and [`eval/EVALUATION.md`](eval/EVALUATION.md)).
 
