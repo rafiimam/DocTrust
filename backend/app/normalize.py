@@ -15,12 +15,14 @@ import re
 from datetime import date
 
 _BANGLA_DIGITS = "০১২৩৪৫৬৭৮৯"
-_TO_LATIN = str.maketrans(_BANGLA_DIGITS, "0123456789")
+_DEVANAGARI_DIGITS = "०१२३४५६७८९"
+_TO_LATIN = str.maketrans(_BANGLA_DIGITS + _DEVANAGARI_DIGITS,
+                          "0123456789" * 2)
 _TO_BANGLA = str.maketrans("0123456789", _BANGLA_DIGITS)
 
 
 def digits_to_latin(text: str) -> str:
-    """Convert Bangla digits to Latin digits; leave everything else."""
+    """Convert Bangla and Devanagari digits to Latin; leave the rest."""
     return text.translate(_TO_LATIN)
 
 

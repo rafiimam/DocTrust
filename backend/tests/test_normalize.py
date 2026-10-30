@@ -31,6 +31,15 @@ def test_name_variants_fold():
     assert normalize.names_match("", "Someone") == "unknown"
 
 
+def test_devanagari_digits_convert():
+    assert normalize.digits_to_latin("१९९०") == "1990"
+    assert normalize.digits_to_latin("जन्म १२/०३/१९९०") == "जन्म 12/03/1990"
+    assert normalize.normalize_id("९८७६५४३२१०") == "9876543210"
+    assert normalize.parse_date("१२/०३/१९९०") == date(1990, 3, 12)
+    # Mixed scripts in one string all fold to Latin digits.
+    assert normalize.digits_to_latin("১2३") == "123"
+
+
 def test_transliteration_skeleton_equivalences():
     # The measured failure: করিম read back from the Bangla birth
     # certificate as Karami/Karimi/Karomi must equal Latin "Karim".

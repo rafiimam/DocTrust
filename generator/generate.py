@@ -42,6 +42,8 @@ FONT_LATIN = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_LATIN_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FONT_BANGLA = "/usr/share/fonts/truetype/noto/NotoSansBengali-Regular.ttf"
 FONT_BANGLA_BOLD = "/usr/share/fonts/truetype/noto/NotoSansBengali-Bold.ttf"
+FONT_DEVANAGARI = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
+FONT_DEVANAGARI_BOLD = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf"
 
 _FONT_EXTENSIONS = {".ttf", ".otf", ".ttc"}
 
@@ -110,6 +112,73 @@ BASE_PERSON = {
     "id_bn_digits": "১২৩৪৫৬৭৮৯০",
     "address_en": "House 12, Rajshahi, Bangladesh",
 }
+
+# The Hindi persona mirrors BASE_PERSON's structure for the eval's
+# secondary-script sets (eval/run_eval.py --hindi): the same document
+# family, with Devanagari in the slots the Bangla persona fills with
+# Bangla. Claims stay narrow — Bangla primary, Hindi secondary, small n.
+HINDI_PERSON = {
+    "name_en": "Rahul Sharma",
+    "name_hi": "राहुल शर्मा",
+    "father_en": "Rajesh Sharma",
+    "father_hi": "राजेश शर्मा",
+    "dob": "12/03/1990",
+    "dob_hi_digits": "१२/०३/१९९०",
+    "id_number": "1234567890",
+    "id_hi_digits": "१२३४५६७८९०",
+    "address_en": "House 12, Lucknow, India",
+}
+
+SCRIPTS = ("bangla", "hindi")
+
+# Document letterhead titles: English plus the Indic-script line, per
+# script. (The English line is a sample marker, identical either way.)
+_DOC_TITLES = {
+    "nid": ("National Identity Card (sample)",
+            {"bangla": "জাতীয় পরিচয় পত্র", "hindi": "राष्ट्रीय पहचान पत्र"}),
+    "birth_certificate": ("Birth Certificate (sample)",
+                          {"bangla": "জন্ম সনদ", "hindi": "जन्म प्रमाण पत्र"}),
+    "bank_form": ("Account Opening Form (sample)",
+                  {"bangla": "হিসাব খোলার ফরম", "hindi": "खाता खोलने का आवेदन"}),
+}
+
+# Variation-variant spellings per script: (name as the NID prints it,
+# name as the bank form prints it). Both must stay equivalent to the
+# base name under the comparator — that is the point of the category.
+_VARIATION_NAMES = {
+    "bangla": ("Md. Abdul Rahman", "Mohammed Abdul Rahaman"),
+    "hindi": ("Rahul Sharama", "Rahul Sharmaa"),
+}
+
+
+def _indic_font(script: str, size: int, bold: bool = False):
+    """The Indic-script font for `script` (Bangla or Devanagari)."""
+    if script == "hindi":
+        return _font(FONT_DEVANAGARI_BOLD if bold else FONT_DEVANAGARI, size)
+    return _font(FONT_BANGLA_BOLD if bold else FONT_BANGLA, size)
+
+
+def _base_person(script: str) -> dict:
+    """A renderer-shaped person dict for `script`.
+
+    The renderer slots are named for the original Bangla persona
+    (name_bn, father_bn, dob_bn_digits, id_bn_digits): they carry the
+    persona's Indic-script strings whichever script that is, and
+    `script` itself selects the font and titles at render time.
+    """
+    if script == "hindi":
+        h = HINDI_PERSON
+        return {
+            "name_en": h["name_en"], "name_bn": h["name_hi"],
+            "father_en": h["father_en"], "father_bn": h["father_hi"],
+            "dob": h["dob"], "dob_bn_digits": h["dob_hi_digits"],
+            "id_number": h["id_number"], "id_bn_digits": h["id_hi_digits"],
+            "address_en": h["address_en"],
+        }
+    if script == "bangla":
+        return dict(BASE_PERSON)
+    raise ValueError(
+        f"unknown script {script!r}; choose one of {', '.join(SCRIPTS)}")
 
 # The birth-certificate office stamp: a circular graphic at a fixed
 # position, with selectable ink. "purple" stays the default style.
@@ -195,11 +264,13 @@ def _font(path: str, size: int) -> ImageFont.FreeTypeFont:
                 str(d) for d in _font_search_dirs())
             raise OSError(
                 f"font file not found: {path}. Searched: {searched}. "
-                "The generator needs the DejaVu and Noto Bengali fonts "
-                "— on Debian/Ubuntu install the fonts-dejavu-core and "
-                "fonts-noto-core packages; on macOS run: brew install "
-                "--cask font-dejavu font-noto-sans-bengali (or set "
-                "DOCTRUST_FONTS_DIR to a folder containing the fonts)."
+                "The generator needs the DejaVu, Noto Bengali and Noto "
+                "Devanagari fonts — on Debian/Ubuntu install the "
+                "fonts-dejavu-core and fonts-noto-core packages; on "
+                "macOS run: brew install --cask font-dejavu "
+                "font-noto-sans-bengali — Hindi sets also need "
+                "font-noto-sans-devanagari (or set DOCTRUST_FONTS_DIR "
+                "to a folder containing the fonts)."
             )
         _FONT_CACHE[path] = resolved
     try:
@@ -218,31 +289,36 @@ def _watermark(img: Image.Image) -> Image.Image:
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
 
-def _header(d: ImageDraw.ImageDraw, title_en: str, title_bn: str) -> None:
+def _header(d: ImageDraw.ImageDraw, title_en: str, title_indic: str,
+            script: str = "bangla") -> None:
     d.rectangle([0, 0, W, 84], fill=(22, 101, 52))
-    d.text((28, 14), title_bn, font=_font(FONT_BANGLA_BOLD, 30), fill="white")
+    d.text((28, 14), title_indic, font=_indic_font(script, 30, bold=True),
+           fill="white")
     d.text((28, 50), title_en, font=_font(FONT_LATIN, 20), fill=(210, 235, 218))
 
 
 def _row(d: ImageDraw.ImageDraw, y: int, label: str, value: str,
          bangla_value: bool = False, label_x: int = 36,
-         value_x: int = VALUE_X) -> int:
+         value_x: int = VALUE_X, script: str = "bangla") -> int:
     d.text((label_x, y), label, font=_font(FONT_LATIN, 21), fill=(90, 90, 90))
     d.text((value_x, y - 3), value,
-           font=_font(FONT_BANGLA if bangla_value else FONT_LATIN, 26),
+           font=_indic_font(script, 26) if bangla_value
+           else _font(FONT_LATIN, 26),
            fill=(15, 15, 15))
     return y + ROW_STEP
 
 
-def render_nid(p: dict) -> Image.Image:
+def render_nid(p: dict, script: str = "bangla") -> Image.Image:
     img = Image.new("RGB", (W, H), (240, 246, 240))
     d = ImageDraw.Draw(img)
-    _header(d, "National Identity Card (sample)", "জাতীয় পরিচয় পত্র")
+    title_en, titles = _DOC_TITLES["nid"]
+    _header(d, title_en, titles[script], script=script)
     d.rectangle([36, 116, 196, 316], outline=(120, 120, 120), width=3)
     d.text((58, 196), "PHOTO", font=_font(FONT_LATIN, 22), fill=(120, 120, 120))
     y = 120
-    kw = {"label_x": 225, "value_x": 430}
-    y = _row(d, y, "Name (BN)", p["name_bn"], bangla_value=True, **kw); y += 66
+    kw = {"label_x": 225, "value_x": 430, "script": script}
+    name_label = "Name (HI)" if script == "hindi" else "Name (BN)"
+    y = _row(d, y, name_label, p["name_bn"], bangla_value=True, **kw); y += 66
     y = _row(d, y, "Name", p["name_en"], **kw)
     y = _row(d, y, "Father", p["father_en"], **kw)
     y = _row(d, y, "Date of Birth", p["dob"], **kw)
@@ -296,31 +372,34 @@ def _draw_stamp(img: Image.Image, style: str,
 
 def render_birth_certificate(p: dict,
                              stamp_style: str = DEFAULT_STAMP_STYLE,
-                             stamp_position: str = DEFAULT_STAMP_POSITION
-                             ) -> Image.Image:
+                             stamp_position: str = DEFAULT_STAMP_POSITION,
+                             script: str = "bangla") -> Image.Image:
     img = Image.new("RGB", (W, H), (250, 248, 238))
     d = ImageDraw.Draw(img)
-    _header(d, "Birth Certificate (sample)", "জন্ম সনদ")
+    title_en, titles = _DOC_TITLES["birth_certificate"]
+    _header(d, title_en, titles[script], script=script)
+    name_label = "Name (HI)" if script == "hindi" else "Name (BN)"
     y = BC_FIRST_ROW_Y
-    y = _row(d, y, "Name", p["name_en"])
-    y = _row(d, y, "Name (BN)", p["name_bn"], bangla_value=True)
-    y = _row(d, y, "Father", p["father_bn"], bangla_value=True)
-    y = _row(d, y, "Born", p["dob_bn_digits"], bangla_value=True)
-    y = _row(d, y, "Address", p["address_en"])
+    y = _row(d, y, "Name", p["name_en"], script=script)
+    y = _row(d, y, name_label, p["name_bn"], bangla_value=True, script=script)
+    y = _row(d, y, "Father", p["father_bn"], bangla_value=True, script=script)
+    y = _row(d, y, "Born", p["dob_bn_digits"], bangla_value=True, script=script)
+    y = _row(d, y, "Address", p["address_en"], script=script)
     img = _draw_stamp(img, stamp_style, _stamp_center(stamp_position))
     return _watermark(img)
 
 
-def render_bank_form(p: dict) -> Image.Image:
+def render_bank_form(p: dict, script: str = "bangla") -> Image.Image:
     img = Image.new("RGB", (W, H), (244, 246, 250))
     d = ImageDraw.Draw(img)
-    _header(d, "Account Opening Form (sample)", "হিসাব খোলার ফরম")
+    title_en, titles = _DOC_TITLES["bank_form"]
+    _header(d, title_en, titles[script], script=script)
     y = 130
-    y = _row(d, y, "Applicant", p["name_en"])
-    y = _row(d, y, "Father's Name", p["father_en"])
-    y = _row(d, y, "DOB (DD/MM/YYYY)", p["dob"])
-    y = _row(d, y, "NID Number", p["id_number"])
-    y = _row(d, y, "Address", p["address_en"])
+    y = _row(d, y, "Applicant", p["name_en"], script=script)
+    y = _row(d, y, "Father's Name", p["father_en"], script=script)
+    y = _row(d, y, "DOB (DD/MM/YYYY)", p["dob"], script=script)
+    y = _row(d, y, "NID Number", p["id_number"], script=script)
+    y = _row(d, y, "Address", p["address_en"], script=script)
     return _watermark(img)
 
 
@@ -338,16 +417,18 @@ def apply_degradation(img: Image.Image, kind: str, rng: random.Random) -> Image.
     return img
 
 
-def build_person(variant: str, rng: random.Random) -> tuple[dict, dict, dict]:
+def build_person(variant: str, rng: random.Random,
+                 script: str = "bangla") -> tuple[dict, dict, dict]:
     """Returns (nid_fields, birth_fields, form_fields) — what each document
     *says*, which is the ground truth the comparator is scored against."""
-    p = dict(BASE_PERSON)
+    p = _base_person(script)
     nid = {"name": p["name_en"], "dob": p["dob"],
            "id_number": p["id_bn_digits"], "father_name": p["father_en"]}
-    # The birth certificate renders name/father/dates in Bangla. Ground truth
-    # records what the pipeline's reader is asked to return: names
-    # transliterated to Latin, digits as printed. The comparator canonicalizes
-    # from there (see backend/app/normalize.py).
+    # The birth certificate renders name/father/dates in the persona's
+    # Indic script (Bangla, or Devanagari for the Hindi persona). Ground
+    # truth records what the pipeline's reader is asked to return: names
+    # transliterated to Latin, digits as printed. The comparator
+    # canonicalizes from there (see backend/app/normalize.py).
     birth = {"name": p["name_en"], "dob": p["dob_bn_digits"],
              "father_name": p["father_en"]}
     form = {"name": p["name_en"], "dob": p["dob"],
@@ -356,8 +437,7 @@ def build_person(variant: str, rng: random.Random) -> tuple[dict, dict, dict]:
     if variant == "variation":
         # Legitimate inconsistency: transliteration + digit systems differ,
         # the underlying facts are the same. Must NOT be flagged.
-        nid["name"] = "Md. Abdul Rahman"
-        form["name"] = "Mohammed Abdul Rahaman"
+        nid["name"], form["name"] = _VARIATION_NAMES[script]
     elif variant == "discrepancy":
         # One-digit DOB swap on the form — the demo's catch.
         form["dob"] = "12/03/1991"
@@ -366,7 +446,8 @@ def build_person(variant: str, rng: random.Random) -> tuple[dict, dict, dict]:
 
 def generate_set(out_dir, variant: str = "clean", seed: int = 7,
                  stamp_style: str = DEFAULT_STAMP_STYLE,
-                 stamp_position: str = DEFAULT_STAMP_POSITION) -> dict:
+                 stamp_position: str = DEFAULT_STAMP_POSITION,
+                 script: str = "bangla") -> dict:
     """Render one synthetic set into `out_dir`; return its ground truth.
 
     Writes nid.png, birth_certificate.png, bank_form.png and
@@ -388,24 +469,25 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
     rng = random.Random(seed)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    person, truth, _ = build_person(variant, rng)
+    person, truth, _ = build_person(variant, rng, script=script)
 
     render_person = dict(person)
     if variant == "variation":
-        render_person["name_en"] = "Md. Abdul Rahman"
+        render_person["name_en"] = _VARIATION_NAMES[script][0]
     if variant == "discrepancy":
         render_person["dob"] = "12/03/1990"  # NID + certificate stay true…
 
-    nid_img = render_nid(render_person)
+    nid_img = render_nid(render_person, script=script)
     birth_img = render_birth_certificate(render_person,
                                          stamp_style=stamp_style,
-                                         stamp_position=stamp_position)
+                                         stamp_position=stamp_position,
+                                         script=script)
     form_person = dict(render_person)
     if variant == "discrepancy":
         form_person["dob"] = "12/03/1991"     # …the form carries the swap
     if variant == "variation":
-        form_person["name_en"] = "Mohammed Abdul Rahaman"
-    form_img = render_bank_form(form_person)
+        form_person["name_en"] = _VARIATION_NAMES[script][1]
+    form_img = render_bank_form(form_person, script=script)
 
     images = {"nid": nid_img, "birth_certificate": birth_img, "bank_form": form_img}
     if variant == "degraded":
@@ -417,6 +499,7 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
 
     ground_truth = {
         "variant": variant,
+        "script": script,
         "documents": truth,
         # The stamp lives on the birth certificate; the other two
         # documents carry no stamp (no stamp_box is recorded for them).
@@ -444,12 +527,16 @@ def main() -> None:
                     help="birth-certificate stamp placement "
                          "(default: margin; over_dob covers the Born "
                          "row's value)")
+    ap.add_argument("--script", default="bangla", choices=list(SCRIPTS),
+                    help="persona script: bangla (default) or hindi "
+                         "(Devanagari; the eval's secondary-script sets)")
     args = ap.parse_args()
 
     generate_set(args.out, args.variant, args.seed,
                  stamp_style=args.stamp_style,
-                 stamp_position=args.stamp_position)
-    print(f"wrote {args.out} ({args.variant})")
+                 stamp_position=args.stamp_position,
+                 script=args.script)
+    print(f"wrote {args.out} ({args.variant}, script={args.script})")
 
 
 if __name__ == "__main__":
