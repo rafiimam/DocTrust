@@ -114,6 +114,28 @@ _If the Baseten key has not arrived by the run, this table's left
 column stays empty and says why. An empty column is a status, not a
 result._
 
+### Hindi-script sets (secondary, small n)
+
+_The second script is deliberately cheap: the same document family
+and generator, one Hindi persona (Devanagari on the birth certificate,
+Devanagari digits for the NID number and the certificate's date, Latin
+on the bank form), scored through the same three configurations and
+reported here only — these sets are NOT part of the headline tables
+above, so the 40-set Bangla comparison stays apples-to-apples. The
+claim this section can support is exactly "Bangla primary, Hindi
+secondary, small n" — never "Indian languages" or "multilingual" in
+general. Run with `--hindi 10`: 4 clean, 3 variation, 2 discrepancy,
+1 degraded._
+
+| Metric | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
+|---|---|---|---|
+| False flags on genuine sets (x/n) | _/_ | _/_ | _/_ |
+| Injected discrepancies caught (x/n) | _/_ | _/_ | _/_ |
+| **Silent errors — verdict "Consistent" while a discrepancy exists (count)** | _ | _ | _ |
+| Degraded sets: recovered / recapture requested (x/n) | _/_ | _/_ | _/_ |
+| Reads per set (mean) | _ | _ | _ |
+| Latency per set (mean, s) | _ | _ | _ |
+
 ## Failure analysis
 
 _Every failure, listed individually — no sampling, no summarising
@@ -125,6 +147,31 @@ away. One entry per failed set:_
   - What went wrong: _
   - Why (read error, normalization gap, segmentation miss,
     comparator logic, genuinely ambiguous even for a human): _
+
+### Name transliteration — before / after the skeleton-equivalence fix
+
+_The dominant failure of the first run (2026-10-29/30), found by
+inspecting the per-field reads: every genuine-set false flag on the
+Meta route was `father_name` on the birth certificate. That document
+renders the name in Bangla (আব্দুল করিম) while the other documents
+print Latin "Abdul Karim"; the hosted reader transliterated করিম
+back as "Abdul Karami" (and variants Karimi / Karomi) consistently,
+and the comparator's variant folding did not bridge the trailing-
+vowel difference. The fix is deterministic, in the comparator's name
+comparison only (`backend/app/normalize.py`): folded token lists are
+also a variant when every token pair is equal or shares a consonant
+skeleton with edit distance ≤ 2. It was re-measured by re-running
+both readers over the same sets; both columns below are reported —
+the pre-fix numbers are not replaced, they are the reason the fix
+exists._
+
+| Metric (full agent, Bangla sets) | Pre-fix — 2026-10-29/30 run | Post-fix — re-run |
+|---|---|---|
+| False flags on genuine sets, Meta route (x/n) | _transcribe from results-meta.json_ | _/_ |
+| False flags on genuine sets, Baseten route (x/n) | _transcribe from results-baseten2.json_ | _/_ |
+| Injected discrepancies caught, Meta route (x/n) | _transcribe from results-meta.json_ | _/_ |
+| Injected discrepancies caught, Baseten route (x/n) | _transcribe from results-baseten2.json_ | _/_ |
+| Silent errors, both routes (count) | _transcribe_ | _ |
 
 ## Limitations
 
@@ -167,6 +214,16 @@ JUDGE_READER=meta MODEL_API_KEY=<key> .venv/bin/python -m eval.run_eval --seed-b
   rendered under `eval/data/<set-id>/`, each with its
   `ground_truth.json`. Category counts are configurable
   (`--clean/--variation/--discrepancy/--degraded`, `--scale`).
+- Hindi sets: `--hindi 10` appends 10 Hindi-script sets (4 clean,
+  3 variation, 2 discrepancy, 1 degraded; set ids `hindi-<category>-NN`,
+  seeds continuing the same sequence) rendered from the generator's
+  Hindi persona (`generate_set(..., script="hindi")`). They are scored
+  through the same three configurations and reported in their own
+  summary section (`summary.hindi` in results.json, "Hindi-script
+  sets" in results.md) — never in the headline pools. Re-running with
+  the same `--out` file and no `--hindi` after a `--hindi` run keeps
+  the earlier Hindi records in the file; use a fresh `--out` per run
+  when before/after separation matters.
 - Physical batch: the ~10 physically captured sets live under
   `eval/physical/<set-name>/` — the three document photos plus a
   `manifest.json` declaring the expectation (`genuine` /

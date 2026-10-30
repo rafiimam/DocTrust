@@ -405,3 +405,76 @@ def test_physical_resume_skips_completed_sets(tmp_path):
     assert {s for s, _ in calls} == {"clean-01"}
     assert [r["set_id"] for r in result.records] == [
         "clean-01", "physical-porch-light"]
+
+
+# ---------------------------------------------------------------------------
+# Hindi-script sets (--hindi): separately scored, never in the headline
+# ---------------------------------------------------------------------------
+
+def test_hindi_counts_composition():
+    assert run_eval._hindi_counts(10) == {
+        "clean": 4, "variation": 3, "discrepancy": 2, "degraded": 1}
+    for n in (0, 1, 3, 5, 20, 37):
+        counts = run_eval._hindi_counts(n)
+        assert sum(counts.values()) == n
+        assert counts["clean"] >= counts["variation"] \
+            >= counts["discrepancy"] >= counts["degraded"]
+
+
+def test_build_dataset_hindi_specs():
+    counts = {"clean": 2, "variation": 0, "discrepancy": 0, "degraded": 0}
+    specs = run_eval.build_dataset(counts, seed_base=7, hindi=10)
+    bangla = [s for s in specs if s.script == "bangla"]
+    hindi = [s for s in specs if s.script == "hindi"]
+    assert len(bangla) == 2 and len(hindi) == 10
+    assert [s.set_id for s in hindi] == [
+        "hindi-clean-01", "hindi-clean-02", "hindi-clean-03",
+        "hindi-clean-04", "hindi-variation-01", "hindi-variation-02",
+        "hindi-variation-03", "hindi-discrepancy-01",
+        "hindi-discrepancy-02", "hindi-degraded-01"]
+    # Seeds continue the Bangla sequence — no collisions anywhere.
+    assert hindi[0].seed == 7 + 2
+    assert len({s.seed for s in specs}) == len(specs)
+    # The first Hindi discrepancy set mirrors the Bangla emphasis:
+    # stamp over the birth-certificate DOB.
+    disc = [s for s in hindi if s.category == "discrepancy"]
+    assert [s.stamp_position for s in disc] == ["over_dob", "margin"]
+    # Default: no Hindi sets at all.
+    assert all(s.script == "bangla"
+               for s in run_eval.build_dataset(counts, seed_base=7))
+
+
+def test_hindi_sets_scored_separately_from_headline(tmp_path):
+    def factory(spec, phase, truth):
+        return TruthReader(truth["documents"])
+
+    result = _run(tmp_path,
+                  _counts(clean=1, variation=1, discrepancy=1, degraded=1),
+                  factory, hindi=10)
+    assert result.summary["hindi_sets"] == 10
+    headline = result.summary["configs"]
+    # Headline pools are the 4 Bangla sets only — Hindi sets never
+    # leak in (genuine = clean + variation, degraded scored apart).
+    for name in ("single", "agent"):
+        assert headline[name]["genuine_n"] == 2
+        assert headline[name]["discrepancy_n"] == 1
+        assert headline[name]["degraded_n"] == 1
+    hindi = result.summary["hindi"]["configs"]
+    for name in ("single", "agent"):
+        # Hindi genuine pool: 4 clean + 3 variation; 2 discrepancies,
+        # both caught by a truthful reader; 1 degraded, recovered.
+        assert hindi[name]["genuine_n"] == 7
+        assert hindi[name]["false_flags"] == 0
+        assert (hindi[name]["caught"], hindi[name]["discrepancy_n"]) == (2, 2)
+        assert hindi[name]["silent_errors"] == 0
+        assert (hindi[name]["recovered"], hindi[name]["degraded_n"]) == (1, 1)
+    records = {r["set_id"]: r for r in result.records}
+    assert all(r["script"] == "hindi" for r in result.records
+               if r["set_id"].startswith("hindi-"))
+    assert records["hindi-clean-01"]["expected_verdict"] == "CONSISTENT"
+    assert records["hindi-discrepancy-01"]["expected_verdict"] == "DISCREPANCY"
+    assert records["hindi-discrepancy-01"]["injected_fields"] == ["dob"]
+    md = run_eval.render_markdown(result.summary, result.meta,
+                                  result.records)
+    assert "Hindi-script sets (secondary, small n)" in md
+    assert "Bangla primary" in md

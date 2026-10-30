@@ -107,13 +107,35 @@ class SetSpec:
     seed: int
     stamp_style: str
     stamp_position: str
+    script: str = "bangla"
+
+
+# Hindi-script composition per 10 sets (--hindi): mostly clean and
+# variation, a couple of discrepancies, one degraded. The remainder
+# from scaling goes to the earliest categories first.
+_HINDI_QUOTAS = {"clean": 4, "variation": 3, "discrepancy": 2, "degraded": 1}
+
+
+def _hindi_counts(n: int) -> dict[str, int]:
+    counts = {c: (n * q) // 10 for c, q in _HINDI_QUOTAS.items()}
+    remainder = n - sum(counts.values())
+    order = list(_HINDI_QUOTAS)
+    i = 0
+    while remainder > 0:
+        counts[order[i % len(order)]] += 1
+        remainder -= 1
+        i += 1
+    return counts
 
 
 def build_dataset(counts: dict[str, int], seed_base: int = 7,
-                  over_dob: int = 3) -> list[SetSpec]:
+                  over_dob: int = 3, hindi: int = 0) -> list[SetSpec]:
     """Deterministic set list: fixed category order, seeds seed_base+i,
     stamp styles cycled, the first `over_dob` discrepancy sets placing
-    the stamp over the birth-certificate DOB."""
+    the stamp over the birth-certificate DOB. With hindi > 0, that many
+    Hindi-script sets (see _HINDI_QUOTAS) are appended with continuing
+    seeds; they are scored separately and never enter the headline
+    pools (the Bangla comparison stays apples-to-apples)."""
     specs: list[SetSpec] = []
     index = 0
     for category in CATEGORIES:
@@ -130,6 +152,23 @@ def build_dataset(counts: dict[str, int], seed_base: int = 7,
                 stamp_position=position,
             ))
             index += 1
+    if hindi > 0:
+        hindi_counts = _hindi_counts(hindi)
+        for category in CATEGORIES:
+            for i in range(hindi_counts.get(category, 0)):
+                position = "over_dob" if (
+                    category == "discrepancy" and i == 0) else "margin"
+                specs.append(SetSpec(
+                    set_id=f"hindi-{category}-{i + 1:02d}",
+                    category=category,
+                    variant=category,
+                    seed=seed_base + index,
+                    stamp_style=_STAMP_STYLE_CYCLE[
+                        index % len(_STAMP_STYLE_CYCLE)],
+                    stamp_position=position,
+                    script="hindi",
+                ))
+                index += 1
     return specs
 
 
@@ -140,7 +179,8 @@ def generate_dataset(specs: list[SetSpec], data_dir: Path) -> dict[str, dict]:
         out = data_dir / spec.set_id
         truth = generate_set(out, spec.variant, spec.seed,
                              stamp_style=spec.stamp_style,
-                             stamp_position=spec.stamp_position)
+                             stamp_position=spec.stamp_position,
+                             script=spec.script)
         truths[spec.set_id] = truth
     return truths
 
@@ -490,6 +530,7 @@ def evaluate_set(spec: SetSpec, truth: dict, expected: dict,
         "seed": spec.seed,
         "stamp_style": spec.stamp_style,
         "stamp_position": spec.stamp_position,
+        "script": spec.script,
         "expected_verdict": expected["verdict"],
         "injected_fields": expected["injected_fields"],
         "configs": {},
@@ -519,6 +560,7 @@ def evaluate_physical_set(spec: PhysicalSpec, reader_factory,
         "seed": None,
         "stamp_style": "capture",
         "stamp_position": "n/a",
+        "script": "physical",
         "conditions": spec.conditions,
         "expected_verdict": expected["verdict"],
         "injected_fields": expected["injected_fields"],
@@ -604,20 +646,26 @@ def aggregate(records: list[dict]) -> dict:
     """Headline cells per config + the same split by category, plus
     the physically captured batch scored on its own (and split by
     expectation). Physical sets also enter the headline pools via
-    their expectation (see _scoring_category). Only status == 'ok'
-    records are scored; errored sets are counted separately and
-    never enter a denominator."""
+    their expectation (see _scoring_category). Hindi-script sets are
+    scored in their own section and NEVER enter the headline pools —
+    the headline comparison is the Bangla sets only. Only
+    status == 'ok' records are scored; errored sets are counted
+    separately and never enter a denominator."""
     done = [r for r in records if r.get("status") == "ok"]
-    physical = [r for r in done if r["category"] == "physical"]
+    hindi = [r for r in done if r.get("script") == "hindi"]
+    headline = [r for r in done if r.get("script") != "hindi"]
+    physical = [r for r in headline if r["category"] == "physical"]
     summary: dict = {"sets_ok": len(done),
                      "sets_error": len(records) - len(done),
                      "physical_sets": len(physical),
+                     "hindi_sets": len(hindi),
                      "configs": {}, "by_category": {},
-                     "physical": {"configs": {}, "by_expectation": {}}}
+                     "physical": {"configs": {}, "by_expectation": {}},
+                     "hindi": {"configs": {}, "by_category": {}}}
     for config in CONFIGS:
-        summary["configs"][config] = _cells_for(done, config)
+        summary["configs"][config] = _cells_for(headline, config)
         summary["by_category"][config] = {
-            c: _cells_for([r for r in done if r["category"] == c], config)
+            c: _cells_for([r for r in headline if r["category"] == c], config)
             for c in CATEGORIES
         }
         summary["physical"]["configs"][config] = _cells_for(physical, config)
@@ -625,6 +673,11 @@ def aggregate(records: list[dict]) -> dict:
             exp: _cells_for([r for r in physical
                              if r["expectation"] == exp], config)
             for exp in PHYSICAL_EXPECTATIONS
+        }
+        summary["hindi"]["configs"][config] = _cells_for(hindi, config)
+        summary["hindi"]["by_category"][config] = {
+            c: _cells_for([r for r in hindi if r["category"] == c], config)
+            for c in CATEGORIES
         }
     return summary
 
@@ -703,6 +756,11 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
         lines.append(
             f"- Physically captured sets: {meta['physical_sets']} "
             f"(from {meta.get('physical_dir')})")
+    if meta.get("hindi_sets"):
+        lines.append(
+            f"- Hindi-script sets: {meta['hindi_sets']} "
+            "(secondary script, reported separately below; not in "
+            "the headline tables)")
     lines += [
         "",
         "**Counts (x/n) throughout — never bare percentages.**",
@@ -746,6 +804,31 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
         for expectation in PHYSICAL_EXPECTATIONS:
             lines.append(_split_row(expectation, be[expectation],
                                     expectation))
+    if any(r.get("script") == "hindi" for r in records):
+        lines += [
+            "",
+            "### Hindi-script sets (secondary, small n)",
+            "",
+            "_The same three configurations over the Hindi-script "
+            "(Devanagari) sets only. These sets are NOT included in "
+            "the headline tables above — the headline comparison is "
+            "the Bangla sets. Claims stay narrow: Bangla primary, "
+            "Hindi secondary, small n._",
+            "",
+        ]
+        lines += _metric_table(summary["hindi"]["configs"])
+        lines += [
+            "",
+            "#### By category — full agent (configuration 3)",
+            "",
+            "| Category | False flags (x/n) | Discrepancies caught (x/n) "
+            "| Silent errors | Recovered / recapture (x/n) |",
+            "|---|---|---|---|---|",
+        ]
+        hb = summary["hindi"]["by_category"]["agent"]
+        for category in CATEGORIES:
+            pool = "genuine" if category in GENUINE_CATEGORIES else category
+            lines.append(_split_row(category, hb[category], pool))
     failures = [
         r for r in records if r.get("status") == "ok" and any(
             r["configs"][k]["verdict"] != r["expected_verdict"]
@@ -763,6 +846,9 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
         if r["category"] == "physical":
             descriptor = (f"physical, expectation "
                           f"{r['expectation']}")
+        elif r.get("script") == "hindi":
+            descriptor = (f"{r['category']}, script hindi, stamp "
+                          f"{r['stamp_style']}/{r['stamp_position']}")
         else:
             descriptor = (f"{r['category']}, stamp "
                           f"{r['stamp_style']}/{r['stamp_position']}")
@@ -811,21 +897,23 @@ def _write_output(out_path: Path, meta: dict, records: dict[str, dict]) -> dict:
 
 
 def run_evaluation(*, counts: dict[str, int] | None = None,
-                   seed_base: int = 7, over_dob: int = 3,
+                   seed_base: int = 7, over_dob: int = 3, hindi: int = 0,
                    data_dir: Path, out_path: Path,
                    reader=None, reader_factory=None, segmenter=None,
                    workers: int = 4, resume: bool = False,
                    physical_dir: Path | None = None) -> RunResult:
     """Build the dataset and evaluate every set — the synthetic sets
     plus, when `physical_dir` is given, every physically captured set
-    discovered there.
+    discovered there. `hindi` > 0 appends that many Hindi-script sets,
+    scored separately (see build_dataset).
 
     reader_factory(spec, phase, truth) -> Reader, phase in
     {"single", "agent"}. Without a factory, `reader` is shared by all
     phases and sets (the CLI path: one stateless live reader).
     """
     counts = dict(counts or DEFAULT_COUNTS)
-    specs = build_dataset(counts, seed_base=seed_base, over_dob=over_dob)
+    specs = build_dataset(counts, seed_base=seed_base, over_dob=over_dob,
+                          hindi=hindi)
     truths = generate_dataset(specs, Path(data_dir))
 
     physical_specs: list[PhysicalSpec] = []
@@ -850,6 +938,7 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
         "physical_dir": str(physical_dir) if physical_dir is not None
                         else None,
         "physical_sets": len(physical_specs),
+        "hindi_sets": sum(1 for s in specs if s.script == "hindi"),
         "reader": type(reader).__name__ if reader is not None
                   else "factory",
         "segmenter": type(segmenter).__name__,
@@ -878,6 +967,7 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
                 "variant": spec.variant, "seed": spec.seed,
                 "stamp_style": spec.stamp_style,
                 "stamp_position": spec.stamp_position,
+                "script": spec.script,
             })
 
     def work_physical(spec: PhysicalSpec) -> dict:
@@ -888,7 +978,7 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
                 "set_id": spec.set_id, "category": "physical",
                 "expectation": spec.expectation, "variant": "physical",
                 "seed": None, "stamp_style": "capture",
-                "stamp_position": "n/a",
+                "stamp_position": "n/a", "script": "physical",
             })
 
     jobs = [lambda s=spec: work(s) for spec in specs
@@ -929,6 +1019,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--over-dob", type=int, default=3,
                     help="discrepancy sets with the stamp over the "
                          "birth-certificate DOB (default 3)")
+    ap.add_argument("--hindi", type=int, default=0,
+                    help="add N Hindi-script (Devanagari) sets, scored "
+                         "separately from the headline Bangla tables "
+                         "(default 0; 10 = 4 clean / 3 variation / "
+                         "2 discrepancy / 1 degraded)")
     ap.add_argument("--seed-base", type=int, default=7)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--data-dir", default="eval/data")
@@ -959,6 +1054,7 @@ def main(argv: list[str] | None = None) -> int:
 
     result = run_evaluation(
         counts=counts, seed_base=args.seed_base, over_dob=args.over_dob,
+        hindi=args.hindi,
         data_dir=Path(args.data_dir), out_path=Path(args.out),
         reader=reader, segmenter=judge.resolve_segmenter(),
         workers=args.workers, resume=args.resume,
