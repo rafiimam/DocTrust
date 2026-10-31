@@ -279,9 +279,39 @@ the skeleton rule does not over-forgive on new names. SAM vs
 Pillow again produced no verdict-level difference worth claiming
 (26 vs 27, one set, within noise). Pooled across the development,
 held-out and multi-persona batches, silent errors are 0 in 50
-injected-discrepancy sets (bound ≈ 6%, rule of three). What this
-batch does not measure: false flags across the persona pool — the
-genuine-set evidence remains single-persona.
+injected-discrepancy sets (bound ≈ 6%, rule of three).
+
+### Genuine multi-persona sets — the false-flag direction (seed base 404), Meta route, 2026-10-31
+
+_The discrepancy batch above cannot measure false flags on new
+names; this run can: 30 genuine sets across the same ten personas
+(15 clean, 15 variation with per-persona spelling variants verified
+CONSISTENT at build time), SAM segmenter._
+
+| Metric | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
+|---|---|---|---|
+| Genuine sets cleared as Consistent (x/n) | 0/30 | 23/30 | 23/30 |
+| False flags (x/n) | 30/30 | 7/30 | 5/30 |
+| Recapture requested (x/n) | 0/30 | 0/30 | 2/30 |
+
+**Every false flag in both normalized configurations is on
+`father_name`**, concentrated in three of the ten personas
+(fathers Rafiqul Islam, Shamsul Haque, Abdul Aziz). The mechanism
+is the original Karami channel in a new dimension: the hosted
+reader's transliteration of the certificate's Bangla father name
+varies in the *consonants* — "Rafiqul" read as "Rafikul" and
+"Rafkil" (q → k) — and the comparator's equivalence, which folds
+vowels and a trailing -i, does not fold q/k, so the reads score as
+a mismatch. The base persona's 0/22 false-flag rate does **not**
+generalize across names: on new personas the false-flag rate is
+5–7 in 30.
+
+The agent and single-pass clear the same 23/30 by different
+routes: investigation rescued two sets single-pass flagged (one
+zoom re-read settled the certificate's father name to agreement),
+and the agent sent two sets single-pass cleared to recapture
+instead. The failure *shape* differs even when the count does
+not: 5 flags + 2 recaptures against 7 flags.
 
 ### Hindi-script sets (secondary, small n)
 
@@ -429,9 +459,15 @@ either route.
 - One document family (Bangladeshi NID / birth certificate / bank
   form, as synthetic approximations) and one base person record with
   variations, plus one Hindi persona. No claim extends beyond that.
-  The multi-persona batch widens the name evidence on the
-  discrepancy side only; false-flag rates across different persons
-  are not yet measured.
+  The multi-persona batches widen the name evidence: catch rates
+  hold on new names, but genuine-set false flags rise to 5–7 in 30
+  (from 0 in 22 on the base persona), all on father_name, driven by
+  consonant-level transliteration variance (q → k) that the
+  comparator's equivalence does not fold. The equivalence is also
+  strict in a place real-world spelling is not: doubled consonants
+  change the skeleton, so Hasan/Hassan and Hosen/Hossain score as
+  different names (verified at build time; both directions are
+  stated rather than tuned away).
 - Cover-masking limit: the `stamp_masked` investigation view replaces
   the stamp region with a cover; it cannot reveal print underneath a
   stamp. Fields under a stamp are recovered, when they are recovered,
