@@ -141,8 +141,12 @@ _The transliteration fix was designed from the development sets'
 failures, so the headline tables above are development-set numbers.
 This batch answers that directly: 50 fresh sets at seed base 101 —
 seeds the fix was never tuned on — run once with the frozen post-fix
-system, no code changes. 49/50 completed; discrepancy-03 errored on
-a network timeout (recorded as an error, not a verdict). One limit
+system, no code changes. 49/50 completed on the first pass;
+discrepancy-03 errored on a network timeout and was retried the
+same day with `--resume` — it completed as UNREADABLE in all three
+configurations (black stamp over the DOB; the occlusion failure
+described below), for a final 50/50 with caught 9/10 everywhere.
+One limit
 on what this batch proves: it reuses the development sets' base
 person record — the new seeds vary noise, layout and stamps, not
 names — so it tests the fix's stability on new noise, not its
@@ -152,14 +156,14 @@ generalization to new names._
 |---|---|---|---|
 | False flags on genuine sets (x/n) | 22/22 | 0/22 | 0/22 |
 | Genuine sets cleared as Consistent (x/n) | 0/22 | 22/22 | 21/22 |
-| Injected discrepancies caught (x/n) | 9/9 | 9/9 | 9/9 |
+| Injected discrepancies caught (x/n) | 9/10 | 9/10 | 9/10 |
 | **Silent errors (count)** | **0** | **0** | **0** |
 | Degraded sets: recovered / recapture requested (x/n) | 0/8 / 0/8 | 8/8 / 0/8 | 8/8 / 0/8 |
-| Reads per set (mean) | 11.0 | 11.0 | 33.49 |
-| Latency per set (mean, s) | 19.05 | 19.05 | 57.68 |
+| Reads per set (mean) | 11.0 | 11.0 | 33.55 |
+| Latency per set (mean, s) | 19.15 | 19.15 | 57.9 |
 
 By category, full agent: clean false flags 0/12; variation 0/10;
-discrepancies caught 9/9; degraded recovered 8/8. The one blemish is
+discrepancies caught 9/10; degraded recovered 8/8. The one blemish is
 variation-05, where the agent returned Unreadable / request
 recapture on a genuine set (the same conservative failure shape as
 variation-07/09 in the development run — the agent asking for a
@@ -175,10 +179,50 @@ unseen seeds — zero false flags, zero silent errors, every completed
 discrepancy caught. The development-set numbers did not appear to
 be an artefact of tuning on the test — with the name caveat above:
 this is one synthetic batch over a single person record. Note also
-the caught row: with discrepancy-03 — the stamp-over-DOB set, and
-the one set where the agent alone beat the baselines in the
-development run — lost to the timeout, all three configurations
-tie at 9/9 here.
+the caught row: the retried discrepancy-03 — a black stamp over
+the DOB, the hardest occlusion in the batch — was unreadable to
+every configuration, so the three configurations tie on catches
+here; the agent's development-run edge on discrepancy-03 came on a
+purple stamp, where the print stays partly legible.
+
+### Hard batch — stamp-over-field sets (seed base 202), Meta route, 2026-10-31
+
+_18 sets built to stress the occlusion path: 10 discrepancy sets,
+every one with the stamp over the birth-certificate DOB, plus the 8
+degraded sets. Same sets run three ways: the full agent with SAM
+3.1, the full agent with the Pillow fallback segmenter, and the
+full agent with SAM but the planner disabled (`--no-planner`, the
+deterministic fallback investigation sequence)._
+
+| Run | Caught (x/n) | Silent errors | Degraded recovered | Agent latency / set |
+|---|---|---|---|---|
+| SAM 3.1 segmenter | 7/10 | 0 | 8/8 | 73.7 s |
+| Pillow fallback segmenter | 7/10 | 0 | 8/8 | 63.3 s |
+| SAM, planner disabled | 7/10 | 0 | 8/8 | 59.5 s |
+
+Single-pass + normalization also caught 7/10 and recovered 8/8 in
+every run. The three missed sets are the same in all runs and all
+configurations — discrepancy-01, -05 and -09, each a **black**
+stamp over the DOB — and every one returned Unreadable / request
+recapture rather than a wrong verdict.
+
+Planner activity (from the recorded investigation logs): with SAM,
+11 fields investigated in 16 planner-chosen steps (stamp_masked
+×9, zoom_tight ×5, recapture ×2); with Pillow, 9 fields in 15
+planner-chosen steps; with the planner disabled, 10 fields in 20
+fallback steps — the fixed sequence always spends both steps,
+where the planner sometimes stopped after one or chose recapture.
+
+**Reading of this batch:** on black-stamp occlusion, localization
+is not the bottleneck. SAM's box-IoU advantage over the heuristic
+(0.99 vs 0.00 on black stamps, measured earlier) changed no
+verdict here, because the raw reads of the covered print are
+already unreadable before masking enters the picture — and the
+planner's step choice changed no verdict either, only the step
+count. What the batch does establish: the failure mode under hard
+occlusion is a safe recapture request, never a silent pass, in
+every configuration and both segmenters. No verdict-level claim
+is made for SAM or for the planner from this batch.
 
 ### Hindi-script sets (secondary, small n)
 
@@ -319,9 +363,9 @@ either route.
   zero rate: 0 false flags in 22 genuine sets still allows a true
   false-flag rate up to roughly 3/22 ≈ 14% (rule of three, 95%
   bound). Silent errors can only occur on injected-discrepancy
-  sets, so their denominator is smaller: 0 observed in 19 pooled
-  completed discrepancy sets (10 development + 9 held-out) still
-  allows a true silent-error rate up to roughly 3/19 ≈ 16%.
+  sets, so their denominator is smaller: 0 observed in 20 pooled
+  completed discrepancy sets (10 development + 10 held-out) still
+  allows a true silent-error rate up to roughly 3/20 = 15%.
 - One document family (Bangladeshi NID / birth certificate / bank
   form, as synthetic approximations) and one base person record with
   variations, plus one Hindi persona. No claim extends beyond that.
