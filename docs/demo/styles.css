@@ -416,6 +416,50 @@ h1 {
 .gap-detail { margin: 0 0 4px; font-size: 14px; }
 .gap-next { margin: 0; font-size: 13.5px; color: var(--muted); }
 
+/* --- Technology strip ------------------------------------------------------ */
+.tech-strip {
+  max-width: 1280px; margin: 0 auto; padding: 0 22px 12px;
+  display: flex; flex-wrap: wrap; gap: 7px;
+}
+.tech-chip {
+  font-size: 12px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: 4.5px 12px;
+  background: rgba(13, 20, 40, .55);
+  font-family: ui-monospace, Menlo, monospace;
+}
+.tech-chip strong { color: var(--cyan); font-weight: 700; }
+
+/* --- Agent presence card ---------------------------------------------------- */
+.agent-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  border: 1px solid rgba(167, 139, 250, .35); border-radius: 14px;
+  background: linear-gradient(120deg, rgba(167, 139, 250, .1), rgba(34, 211, 238, .05));
+  padding: 12px 14px; margin-top: 14px;
+}
+.agent-orb {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, #a5f3fc, var(--cyan) 38%, var(--indigo) 72%, var(--violet));
+  box-shadow: 0 0 18px rgba(56, 189, 248, .55), 0 0 42px rgba(167, 139, 250, .3);
+  animation: orb-breathe 3.2s ease-in-out infinite;
+}
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+.agent-card-body { min-width: 0; }
+.agent-card-name { font-weight: 800; font-size: 14px; }
+.agent-card-sub { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+.agent-card-text { margin: 3px 0 0; font-size: 13.5px; color: var(--ink); }
+
+/* Technology tag on trace entries — which part of the stack did this step */
+.tech-tag {
+  float: right; font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  color: #a5f3fc; border: 1px solid rgba(34, 211, 238, .35);
+  background: rgba(34, 211, 238, .08); border-radius: 999px; padding: 2px 8px;
+  margin-left: 8px;
+}
+
 /* Evidence items open the lightbox */
 .evidence-item { cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease; }
 .evidence-item:hover, .evidence-item:focus-visible {
@@ -515,6 +559,6 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .trace li, .verdict { animation: none; }
-  .pulse-dot, .badge::before, .stagebar li.active .stage-dot { animation: none; }
+  .pulse-dot, .badge::before, .stagebar li.active .stage-dot, .agent-orb { animation: none; }
   .stamp, .field, .doc-card { transition: none; }
 }

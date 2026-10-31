@@ -8,6 +8,10 @@
 > deterministic comparator fix. Both are reported — the headline
 > tables are the post-fix system; the pre-fix numbers appear in the
 > before/after section, because they are the reason the fix exists.
+> Because the fix was designed from the first run's failures, those
+> post-fix numbers are development-set numbers; a fresh-seed
+> held-out batch (seed base 101, run once, no code changes) was run
+> on 2026-10-31 and is reported in its own section below.
 > Physical-capture sets have not been captured yet; that batch is
 > still pending and no physical number appears anywhere below.
 
@@ -122,6 +126,41 @@ route's counts use its own completed sets._
 | Silent errors (count) | 0 | 0 |
 | Degraded: recovered / recapture (x/n) | 5/8 / 3/8 | 8/8 / 0/8 |
 | Reads per set (mean) / latency per set (mean, s) | 35.28 / 194.55 | 34.2 / 60.69 |
+
+### Held-out batch — fresh seeds (seed base 101), Meta route, 2026-10-31
+
+_The transliteration fix was designed from the development sets'
+failures, so the headline tables above are development-set numbers.
+This batch answers that directly: 50 fresh sets at seed base 101 —
+seeds the fix was never tuned on — run once with the frozen post-fix
+system, no code changes. 49/50 completed; discrepancy-03 errored on
+a network timeout (recorded as an error, not a verdict)._
+
+| Metric (Bangla sets) | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
+|---|---|---|---|
+| False flags on genuine sets (x/n) | 22/22 | 0/22 | 0/22 |
+| Injected discrepancies caught (x/n) | 9/9 | 9/9 | 9/9 |
+| **Silent errors (count)** | **0** | **0** | **0** |
+| Degraded sets: recovered / recapture requested (x/n) | 0/8 / 0/8 | 8/8 / 0/8 | 8/8 / 0/8 |
+| Reads per set (mean) | 11.0 | 11.0 | 33.49 |
+| Latency per set (mean, s) | 19.05 | 19.05 | 57.68 |
+
+By category, full agent: clean false flags 0/12; variation 0/10;
+discrepancies caught 9/9; degraded recovered 8/8. The one blemish is
+variation-05, where the agent returned Unreadable / request
+recapture on a genuine set (the same conservative failure shape as
+variation-07/09 in the development run — the agent asking for a
+better capture rather than guessing).
+
+Hindi sets in the held-out batch (10 sets, all completed), full
+agent: false flags 0/7 genuine, discrepancies caught 2/2, degraded
+recovered 1/1, silent errors 0 — the same pattern as the development
+Hindi sets.
+
+**Reading of this batch:** the post-fix behaviour replicates on
+unseen seeds — zero false flags, zero silent errors, every completed
+discrepancy caught. The development-set numbers were not an artefact
+of tuning on the test.
 
 ### Hindi-script sets (secondary, small n)
 

@@ -59,6 +59,28 @@
 
   function setStatus(text) { if (statusText) { statusText.textContent = text; } }
 
+  // Which part of the stack produced a step — shown as a tag on the
+  // trace entry and used to brief the agent-presence card.
+  var TECH_BY_STAGE = {
+    locate: "SAM 3.1",
+    read: "Muse Spark",
+    investigate: "Planner · Muse Spark",
+    normalize: "Deterministic code",
+    cross: "Deterministic comparator",
+    verdict: "Deterministic comparator"
+  };
+  var cardText = document.getElementById("agentCardTextCached");
+  var CARD_INTRO = "Press Play and I'll walk you through this set — what I " +
+    "read, where I'm unsure, and what I suggest checking next.";
+
+  function plainText(html) {
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+    return tmp.textContent || "";
+  }
+
+  function setCard(text) { if (cardText) { cardText.textContent = text; } }
+
   function currentCase() { return cases[state.caseIndex]; }
 
   function fieldHTML(field) {
@@ -144,17 +166,33 @@
 
     var li = document.createElement("li");
     if (step.tone) { li.className = "tone-" + step.tone; }
+    var stage = stageForPhase(step.phase);
+    if (stage === "investigate") {
+      li.classList.add("decision-card");
+      var chip = document.createElement("span");
+      chip.className = "decision-chip";
+      chip.textContent = "Agent suggestion";
+      li.appendChild(chip);
+    }
     var phase = document.createElement("span");
     phase.className = "phase";
     phase.textContent = step.phase;
+    li.appendChild(phase);
+    if (stage && TECH_BY_STAGE[stage]) {
+      var tag = document.createElement("span");
+      tag.className = "tech-tag";
+      tag.textContent = TECH_BY_STAGE[stage];
+      li.appendChild(tag);
+    }
     var p = document.createElement("p");
     p.innerHTML = step.text;
-    li.appendChild(phase);
     li.appendChild(p);
     traceEl.appendChild(li);
     traceEl.scrollTop = traceEl.scrollHeight;
-    setStage(stageForPhase(step.phase));
+    setStage(stage);
     setStatus(step.phase);
+    var narration = plainText(step.text);
+    setCard(stage === "investigate" ? "My suggestion: " + narration : narration);
 
     if (step.verdict) {
       verdictTitleEl.textContent = step.verdict.title;
@@ -191,6 +229,7 @@
     clearHighlights();
     clearStages();
     setStatus("Idle — press Play to replay the run");
+    setCard(CARD_INTRO);
     setStamp(false);
     updateProgress();
   }

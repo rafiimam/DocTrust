@@ -172,6 +172,48 @@
 
   function setStatus(text) { if (statusText) { statusText.textContent = text; } }
 
+  // Which part of the stack produced a step — shown as a tag on the
+  // trace entry; and the agent-presence card, which narrates the run
+  // from the same real events (never invented dialogue: investigation
+  // suggestions are templated from the event's own field/action/reason,
+  // everything else mirrors the event text).
+  var TECH_BY_STAGE = {
+    locate: "SAM 3.1",
+    read: "Muse Spark",
+    investigate: "Planner · Muse Spark",
+    normalize: "Deterministic code",
+    cross: "Deterministic comparator",
+    verdict: "Deterministic comparator"
+  };
+  var cardText = document.getElementById("agentCardTextLive");
+  var CARD_INTRO = "Upload a set and run a review — I'll narrate each " +
+    "step here as I work: what I'm reading, where I'm unsure, and " +
+    "what I suggest next.";
+  var ACTION_PHRASES = {
+    stamp_masked: "mask the stamp and re-read",
+    zoom_tight: "re-read a tighter zoomed crop",
+    recapture: "stop here and request a recapture"
+  };
+
+  function setCard(text) { if (cardText) { cardText.textContent = text; } }
+
+  function suggestionFrom(event) {
+    var text = event.text || "";
+    var m = text.match(/planner chose (\S+)(?: — (.*))?$/);
+    if (m) {
+      return "My suggestion: " +
+        (ACTION_PHRASES[m[1]] || m[1].replace(/_/g, " ")) + " — " +
+        (event.field || "the field") + " on the " +
+        (DOC_LABELS[event.doc_type] || event.doc_type || "document") +
+        (m[2] ? ". Why: " + m[2] : "");
+    }
+    if (text.indexOf("fallback ran") !== -1) {
+      return "The planner wasn't reachable, so I ran the standard " +
+        "investigation step instead: " + text;
+    }
+    return text;
+  }
+
   var eventSource = null;
   // Fallback polling state (see the onerror handler in the run flow):
   // if the SSE stream drops before 'done', the client polls the job's
@@ -222,6 +264,8 @@
     traceEl.innerHTML = "";
     clearStages();
     setStatus("Starting…");
+    setCard("Working — watch this space: I'll narrate each step and " +
+      "flag anything I suggest checking.");
     verdictEl.hidden = true;
     fieldsPanel.hidden = true;
     evidencePanel.hidden = true;
@@ -253,14 +297,26 @@
     var phase = document.createElement("span");
     phase.className = "phase";
     phase.textContent = event.phase || event.type;
+    li.appendChild(phase);
+    var stage = stageForPhase(event.phase);
+    if (stage && TECH_BY_STAGE[stage]) {
+      var tag = document.createElement("span");
+      tag.className = "tech-tag";
+      tag.textContent = TECH_BY_STAGE[stage];
+      li.appendChild(tag);
+    }
     var p = document.createElement("p");
     p.textContent = event.text || "";
-    li.appendChild(phase);
     li.appendChild(p);
     traceEl.appendChild(li);
     traceEl.scrollTop = traceEl.scrollHeight;
-    setStage(stageForPhase(event.phase));
+    setStage(stage);
     setStatus(event.phase || event.type);
+    if (event.type === "investigation") {
+      setCard(suggestionFrom(event));
+    } else if (event.text) {
+      setCard(event.text);
+    }
   }
 
   // Job-result strings are untrusted text: field readings and gap
@@ -370,6 +426,19 @@
     refreshRunBtn();
     setStatus(!done.state || done.state === "done"
       ? "Complete" : "Finished — " + done.state);
+    if (result.verdict) {
+      var findingLine = (result.findings || []).map(function (f) {
+        return f.field + ": " + f.status;
+      }).join(" · ");
+      setCard("Done — my verdict: " + (result.verdict_label ||
+        result.verdict) + ". " + (findingLine ||
+        "Every shared fact agreed across the set."));
+    } else if (done.state === "reader_not_configured" ||
+        result.state === "reader_not_configured") {
+      setCard("I could preprocess and segment the set, but this " +
+        "backend has no reader configured — so I read nothing and " +
+        "produced no verdict, rather than pretend.");
+    }
     if (done.state === "reader_not_configured" ||
         result.state === "reader_not_configured") {
       runStatus.textContent = "Finished — reader not configured.";

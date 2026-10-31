@@ -34,6 +34,13 @@
   Live mode runs the real agent with Muse Spark (Meta Model API or Baseten)
   and SAM 3.1 via the Meta Model API (server-side keys required). Every document below is synthetic and marked SPECIMEN;
   nothing here is a real document or a real person.</p>
+  <div class="tech-strip" aria-label="Technology stack">
+    <span class="tech-chip"><strong>Muse Spark</strong> vision reader</span>
+    <span class="tech-chip"><strong>SAM 3.1</strong> stamp localization</span>
+    <span class="tech-chip"><strong>Investigation planner</strong> model-chosen steps</span>
+    <span class="tech-chip"><strong>Muse Spark Open</strong> open-weights route</span>
+    <span class="tech-chip"><strong>Deterministic comparator</strong> traceable verdicts</span>
+  </div>
   <nav class="mode-toggle" aria-label="Demo mode">
     <button type="button" id="modeCachedBtn" aria-selected="true">Cached cases</button>
     <button type="button" id="modeUploadBtn" aria-selected="false">Upload (judge mode)</button>
@@ -53,6 +60,13 @@
       <div class="agent-status" id="agentStatusCached">
         <span class="pulse-dot"></span>
         <span class="agent-status-text" id="agentStatusTextCached">Idle — press Play to replay the run</span>
+      </div>
+    </div>
+    <div class="agent-card">
+      <span class="agent-orb" aria-hidden="true"></span>
+      <div class="agent-card-body">
+        <span class="agent-card-name">DocTrust Agent <span class="agent-card-sub">· your review assistant</span></span>
+        <p class="agent-card-text" id="agentCardTextCached">Press Play and I'll walk you through this set — what I read, where I'm unsure, and what I suggest checking next.</p>
       </div>
     </div>
     <ol class="stagebar" id="stageBarCached" aria-label="Agent pipeline stages">
@@ -155,6 +169,13 @@
       <div class="agent-status" id="agentStatusLive">
         <span class="pulse-dot"></span>
         <span class="agent-status-text" id="agentStatusTextLive">Waiting for a run</span>
+      </div>
+    </div>
+    <div class="agent-card">
+      <span class="agent-orb" aria-hidden="true"></span>
+      <div class="agent-card-body">
+        <span class="agent-card-name">DocTrust Agent <span class="agent-card-sub">· your review assistant</span></span>
+        <p class="agent-card-text" id="agentCardTextLive">Upload a set and run a review — I'll narrate each step here as I work: what I'm reading, where I'm unsure, and what I suggest next.</p>
       </div>
     </div>
     <ol class="stagebar" id="stageBarLive" aria-label="Agent pipeline stages">
