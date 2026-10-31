@@ -218,6 +218,13 @@ def case_pack(variant: str):
             # persona (Devanagari) — the secondary script, same
             # document family. Its ground truth records script="hindi".
             generate_set(tmp, "clean", script="hindi")
+        elif variant == "discrepancy":
+            # The discrepancy pack tells the stamp story: the legacy
+            # form-DOB swap, with the certificate's own DOB covered by
+            # the office stamp — the catch the demo leads with. (The
+            # default margin placement left the stamp over no text,
+            # which made the pack's story incoherent.)
+            generate_set(tmp, variant, stamp_position="over_dob")
         else:
             generate_set(tmp, variant)
         buf = io.BytesIO()
