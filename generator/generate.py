@@ -113,6 +113,117 @@ BASE_PERSON = {
     "address_en": "House 12, Rajshahi, Bangladesh",
 }
 
+# A pool of Bangla personas for the eval's multi-persona batch
+# (eval/run_eval.py --persona-batch). Every headline batch before it
+# reused BASE_PERSON alone, so the name comparator's transliteration
+# rules were only ever exercised on one name and one father's name;
+# the pool exists so discrepancy injections land on names the rules
+# were NOT tuned against. Persona 0 is BASE_PERSON itself, so the
+# pool includes the original identity unchanged. DOB days are all
+# <= 25 so the eval's day+1 DOB injection always stays a valid date.
+BANGLA_PERSONAS = [
+    dict(BASE_PERSON),
+    {
+        "name_en": "Md. Sazzad Hossain",
+        "name_bn": "মোঃ সাজ্জাদ হোসেন",
+        "father_en": "Abdul Kader",
+        "father_bn": "আব্দুল কাদের",
+        "dob": "15/06/1988",
+        "dob_bn_digits": "১৫/০৬/১৯৮৮",
+        "id_number": "2345678901",
+        "id_bn_digits": "২৩৪৫৬৭৮৯০১",
+        "address_en": "House 8, Sylhet, Bangladesh",
+    },
+    {
+        "name_en": "Fatima Akter",
+        "name_bn": "ফাতিমা আক্তার",
+        "father_en": "Md. Nurul Islam",
+        "father_bn": "মোঃ নূরুল ইসলাম",
+        "dob": "22/11/1995",
+        "dob_bn_digits": "২২/১১/১৯৯৫",
+        "id_number": "3456789012",
+        "id_bn_digits": "৩৪৫৬৭৮৯০১২",
+        "address_en": "House 21, Chattogram, Bangladesh",
+    },
+    {
+        "name_en": "Md. Tanvir Hasan",
+        "name_bn": "মোঃ তানভীর হাসান",
+        "father_en": "Abdul Malek",
+        "father_bn": "আব্দুল মালেক",
+        "dob": "05/02/1992",
+        "dob_bn_digits": "০৫/০২/১৯৯২",
+        "id_number": "4567890123",
+        "id_bn_digits": "৪৫৬৭৮৯০১২৩",
+        "address_en": "House 5, Khulna, Bangladesh",
+    },
+    {
+        "name_en": "Sharmin Akhtar",
+        "name_bn": "শারমিন আখতার",
+        "father_en": "Md. Rafiqul Islam",
+        "father_bn": "মোঃ রফিকুল ইসলাম",
+        "dob": "18/09/1997",
+        "dob_bn_digits": "১৮/০৯/১৯৯৭",
+        "id_number": "5678901234",
+        "id_bn_digits": "৫৬৭৮৯০১২৩৪",
+        "address_en": "House 17, Barishal, Bangladesh",
+    },
+    {
+        "name_en": "Md. Ariful Islam",
+        "name_bn": "মোঃ আরিফুল ইসলাম",
+        "father_en": "Shamsul Haque",
+        "father_bn": "শামসুল হক",
+        "dob": "09/04/1985",
+        "dob_bn_digits": "০৯/০৪/১৯৮৫",
+        "id_number": "6789012345",
+        "id_bn_digits": "৬৭৮৯০১২৩৪৫",
+        "address_en": "House 9, Mymensingh, Bangladesh",
+    },
+    {
+        "name_en": "Nusrat Jahan",
+        "name_bn": "নুসরাত জাহান",
+        "father_en": "Abdul Rahim",
+        "father_bn": "আব্দুল রহিম",
+        "dob": "25/12/1993",
+        "dob_bn_digits": "২৫/১২/১৯৯৩",
+        "id_number": "7890123456",
+        "id_bn_digits": "৭৮৯০১২৩৪৫৬",
+        "address_en": "House 25, Narayanganj, Bangladesh",
+    },
+    {
+        "name_en": "Md. Imran Hosen",
+        "name_bn": "মোঃ ইমরান হোসেন",
+        "father_en": "Abdul Aziz",
+        "father_bn": "আব্দুল আজিজ",
+        "dob": "07/07/1991",
+        "dob_bn_digits": "০৭/০৭/১৯৯১",
+        "id_number": "8901234567",
+        "id_bn_digits": "৮৯০১২৩৪৫৬৭",
+        "address_en": "House 7, Cumilla, Bangladesh",
+    },
+    {
+        "name_en": "Rokeya Begum",
+        "name_bn": "রোকেয়া বেগম",
+        "father_en": "Abdus Salam",
+        "father_bn": "আব্দুস সালাম",
+        "dob": "14/01/1989",
+        "dob_bn_digits": "১৪/০১/১৯৮৯",
+        "id_number": "9012345678",
+        "id_bn_digits": "৯০১২৩৪৫৬৭৮",
+        "address_en": "House 14, Rangpur, Bangladesh",
+    },
+    {
+        "name_en": "Md. Fahim Rahman",
+        "name_bn": "মোঃ ফাহিম রহমান",
+        "father_en": "Habibur Rahman",
+        "father_bn": "হাবিবুর রহমান",
+        "dob": "20/10/1994",
+        "dob_bn_digits": "২০/১০/১৯৯৪",
+        "id_number": "1023456789",
+        "id_bn_digits": "১০২৩৪৫৬৭৮৯",
+        "address_en": "House 20, Gazipur, Bangladesh",
+    },
+]
+
 # The Hindi persona mirrors BASE_PERSON's structure for the eval's
 # secondary-script sets (eval/run_eval.py --hindi): the same document
 # family, with Devanagari in the slots the Bangla persona fills with
@@ -417,11 +528,39 @@ def apply_degradation(img: Image.Image, kind: str, rng: random.Random) -> Image.
     return img
 
 
+# Fields a discrepancy injection may target — always on the bank
+# form, the applicant-filled document, mirroring the legacy DOB swap.
+INJECTION_FIELDS = ("dob", "id_number", "father_name", "name")
+
+# Ground-truth field -> the renderer slot the bank form prints it in.
+_FORM_RENDER_KEYS = {"dob": "dob", "id_number": "id_number",
+                     "father_name": "father_en", "name": "name_en"}
+
+
+def _validate_injection(injection: dict) -> None:
+    if injection.get("field") not in INJECTION_FIELDS:
+        raise ValueError(
+            f"unknown injection field {injection.get('field')!r}; "
+            f"choose one of {', '.join(INJECTION_FIELDS)}")
+    if not isinstance(injection.get("value"), str) \
+            or not injection["value"]:
+        raise ValueError("injection needs a non-empty string 'value'")
+
+
 def build_person(variant: str, rng: random.Random,
-                 script: str = "bangla") -> tuple[dict, dict, dict]:
-    """Returns (nid_fields, birth_fields, form_fields) — what each document
-    *says*, which is the ground truth the comparator is scored against."""
-    p = _base_person(script)
+                 script: str = "bangla", person: dict | None = None,
+                 injection: dict | None = None
+                 ) -> tuple[dict, dict, dict]:
+    """Returns (person, documents, {}) — what each document *says*,
+    which is the ground truth the comparator is scored against.
+
+    `person` is a renderer-shaped persona dict (see BANGLA_PERSONAS);
+    None keeps the legacy per-script base persona. `injection`
+    ({"field", "value"}) replaces the legacy form-DOB swap for the
+    discrepancy variant: the named field on the bank form — and only
+    there — takes the injected value, in the ground truth here and
+    in the rendering in generate_set."""
+    p = dict(person) if person is not None else _base_person(script)
     nid = {"name": p["name_en"], "dob": p["dob"],
            "id_number": p["id_bn_digits"], "father_name": p["father_en"]}
     # The birth certificate renders name/father/dates in the persona's
@@ -439,15 +578,22 @@ def build_person(variant: str, rng: random.Random,
         # the underlying facts are the same. Must NOT be flagged.
         nid["name"], form["name"] = _VARIATION_NAMES[script]
     elif variant == "discrepancy":
-        # One-digit DOB swap on the form — the demo's catch.
-        form["dob"] = "12/03/1991"
+        if injection is None:
+            # Legacy: one-digit DOB swap on the form — the demo's catch.
+            form["dob"] = "12/03/1991"
+        else:
+            _validate_injection(injection)
+            form[injection["field"]] = injection["value"]
     return p, {"nid": nid, "birth_certificate": birth, "bank_form": form}, {}
 
 
 def generate_set(out_dir, variant: str = "clean", seed: int = 7,
                  stamp_style: str = DEFAULT_STAMP_STYLE,
                  stamp_position: str = DEFAULT_STAMP_POSITION,
-                 script: str = "bangla") -> dict:
+                 script: str = "bangla",
+                 person: dict | None = None,
+                 injection: dict | None = None,
+                 degrade: bool = False) -> dict:
     """Render one synthetic set into `out_dir`; return its ground truth.
 
     Writes nid.png, birth_certificate.png, bank_form.png and
@@ -460,6 +606,15 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
     whichever placement was used), "stamp_document", "stamp_style"
     and "stamp_position", so the SAM-vs-heuristic comparison can
     score masks against the exact region that was drawn.
+
+    `person` / `injection` (see build_person) render a set for one of
+    the BANGLA_PERSONAS with a chosen bank-form discrepancy instead
+    of the legacy swap; `degrade=True` applies the degraded variant's
+    glare/blur on top of any variant (the multi-persona batch's
+    degraded-plus-discrepancy third). With all three at their
+    defaults the output is byte-identical to the original generator.
+    When `person` / `injection` are given, the ground truth records
+    them under "persona" (the persona's name_en) and "injection".
     """
     if stamp_style not in STAMP_STYLES:
         raise ValueError(
@@ -469,12 +624,14 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
     rng = random.Random(seed)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    person, truth, _ = build_person(variant, rng, script=script)
+    person_out, truth, _ = build_person(variant, rng, script=script,
+                                        person=person,
+                                        injection=injection)
 
-    render_person = dict(person)
+    render_person = dict(person_out)
     if variant == "variation":
         render_person["name_en"] = _VARIATION_NAMES[script][0]
-    if variant == "discrepancy":
+    if variant == "discrepancy" and injection is None:
         render_person["dob"] = "12/03/1990"  # NID + certificate stay true…
 
     nid_img = render_nid(render_person, script=script)
@@ -484,13 +641,17 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
                                          script=script)
     form_person = dict(render_person)
     if variant == "discrepancy":
-        form_person["dob"] = "12/03/1991"     # …the form carries the swap
+        if injection is None:
+            form_person["dob"] = "12/03/1991"  # …the form carries the swap
+        else:
+            form_person[_FORM_RENDER_KEYS[injection["field"]]] = \
+                injection["value"]
     if variant == "variation":
         form_person["name_en"] = _VARIATION_NAMES[script][1]
     form_img = render_bank_form(form_person, script=script)
 
     images = {"nid": nid_img, "birth_certificate": birth_img, "bank_form": form_img}
-    if variant == "degraded":
+    if variant == "degraded" or degrade:
         images["nid"] = apply_degradation(nid_img, "glare", rng)
         images["bank_form"] = apply_degradation(form_img, "blur", rng)
 
@@ -508,6 +669,10 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
         "stamp_style": stamp_style,
         "stamp_position": stamp_position,
     }
+    if person is not None:
+        ground_truth["persona"] = person["name_en"]
+    if injection is not None:
+        ground_truth["injection"] = dict(injection)
     (out / "ground_truth.json").write_text(json.dumps(
         ground_truth, indent=2, ensure_ascii=False))
     return ground_truth

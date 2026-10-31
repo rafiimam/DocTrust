@@ -451,6 +451,138 @@ def test_physical_resume_skips_completed_sets(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Multi-persona sets (--persona-batch): discrepancy sets planted
+# across a pool of personas, not just the base person
+# ---------------------------------------------------------------------------
+
+def test_build_dataset_persona_batch_composition():
+    specs = run_eval.build_dataset(_counts(), seed_base=7,
+                                   persona_batch=30)
+    assert [s.set_id for s in specs] == [
+        f"persona-disc-{i + 1:02d}" for i in range(30)]
+    assert all(s.category == "discrepancy" and s.variant == "discrepancy"
+               and s.script == "bangla" for s in specs)
+    # Seeds continue the (empty) base sequence without collisions.
+    assert [s.seed for s in specs] == [7 + i for i in range(30)]
+    # Personas cycle 0..9 across the batch, once per third.
+    assert [s.persona_index for s in specs] == \
+        [i % 10 for i in range(30)]
+    # Thirds: stamp over the DOB; plain margin; degraded margin.
+    first, second, third = specs[:10], specs[10:20], specs[20:]
+    assert all(s.stamp_position == "over_dob" and not s.degrade
+               for s in first)
+    assert all(s.stamp_position == "margin" and not s.degrade
+               for s in second)
+    assert all(s.stamp_position == "margin" and s.degrade
+               for s in third)
+    assert all(s.injection for s in specs)
+    # Appended AFTER any regular sets, seeds continuing theirs.
+    mixed = run_eval.build_dataset(_counts(clean=2), seed_base=100,
+                                   persona_batch=3)
+    assert [s.set_id for s in mixed] == [
+        "clean-01", "clean-02", "persona-disc-01", "persona-disc-02",
+        "persona-disc-03"]
+    assert [s.seed for s in mixed] == [100, 101, 102, 103, 104]
+    assert [s.stamp_position for s in mixed[2:]] == [
+        "over_dob", "margin", "margin"]
+    assert [s.degrade for s in mixed[2:]] == [False, False, True]
+    # Default: no persona sets at all.
+    assert all(s.persona_index is None
+               for s in run_eval.build_dataset(_counts(clean=1)))
+
+
+def test_build_dataset_defaults_unchanged():
+    # The persona work must not perturb the legacy batches: same ids,
+    # seeds, positions, and the new spec fields at their defaults.
+    specs = run_eval.build_dataset(
+        {"clean": 2, "variation": 1, "discrepancy": 2, "degraded": 1},
+        seed_base=7, over_dob=1)
+    assert [(s.set_id, s.seed, s.stamp_position) for s in specs] == [
+        ("clean-01", 7, "margin"), ("clean-02", 8, "margin"),
+        ("variation-01", 9, "margin"),
+        ("discrepancy-01", 10, "over_dob"),
+        ("discrepancy-02", 11, "margin"),
+        ("degraded-01", 12, "margin"),
+    ]
+    assert all(s.persona_index is None and s.injection is None
+               and s.degrade is False for s in specs)
+    explicit_zero = run_eval.build_dataset(
+        {"clean": 2, "variation": 1, "discrepancy": 2, "degraded": 1},
+        seed_base=7, over_dob=1, persona_batch=0)
+    assert specs == explicit_zero
+
+
+def test_persona_batch_every_set_scores_its_injection(tmp_path):
+    # The batch's whole point, checked with the same comparator the
+    # runner scores with: every planted set is a genuine discrepancy
+    # and exactly the injected field is flagged — including the
+    # near-miss name pairs, which is where an over-forgiving name
+    # rule would silently turn a set genuine.
+    specs = run_eval.build_dataset(_counts(), seed_base=7,
+                                   persona_batch=30)
+    truths = run_eval.generate_dataset(specs, tmp_path / "data")
+    for spec in specs:
+        expected = run_eval.expected_from_truth(truths[spec.set_id])
+        assert expected["verdict"] == "DISCREPANCY", spec.set_id
+        assert expected["injected_fields"] == \
+            [spec.injection["field"]], spec.set_id
+        # The ground truth carries the audit trail.
+        assert truths[spec.set_id]["persona"] == \
+            run_eval.BANGLA_PERSONAS[spec.persona_index]["name_en"]
+        assert truths[spec.set_id]["injection"] == spec.injection
+
+
+def test_persona_injection_never_plants_a_non_mismatch():
+    # Direct check of the fallback: personas whose prescribed
+    # near-miss the comparator forgives (Akter/Akhtar fold together;
+    # Hosen/Hasan share a consonant skeleton) must get a DOB
+    # injection for the name kind, never the forgiven name.
+    personas = run_eval.BANGLA_PERSONAS
+    for persona in personas:
+        for kind in ("father_name", "name"):
+            injection = run_eval._persona_injection(persona, kind)
+            if injection["field"] == kind:
+                original = persona["father_en" if kind == "father_name"
+                                   else "name_en"]
+                assert run_eval.normalize.names_match(
+                    original, injection["value"]) == "mismatch", \
+                    (persona["name_en"], kind)
+            else:
+                assert injection["field"] == "dob"
+    by_name = {p["name_en"]: p for p in personas}
+    # The two known fold/skeleton traps, pinned explicitly.
+    assert run_eval._persona_injection(
+        by_name["Fatima Akter"], "name")["field"] == "dob"
+    assert run_eval._persona_injection(
+        by_name["Md. Imran Hosen"], "name")["field"] == "dob"
+    # ...while a true near-miss pair is planted as a name.
+    assert run_eval._persona_injection(
+        by_name["Mohammad Abdul Rahman"], "name") == {
+            "field": "name", "value": "Mohammad Abdul Rahim"}
+    assert run_eval._persona_injection(
+        by_name["Mohammad Abdul Rahman"], "father_name") == {
+            "field": "father_name", "value": "Abdul Rahim"}
+
+
+def test_persona_batch_run_end_to_end(tmp_path):
+    factory = lambda spec, phase, truth: TruthReader(truth["documents"])  # noqa: E731
+    result = _run(tmp_path, _counts(), factory, persona_batch=3)
+    assert [r["set_id"] for r in result.records] == [
+        "persona-disc-01", "persona-disc-02", "persona-disc-03"]
+    assert result.meta["persona_sets"] == 3
+    for record in result.records:
+        assert record["expected_verdict"] == "DISCREPANCY"
+        assert record["configs"]["agent"]["verdict"] == "DISCREPANCY"
+        assert record["configs"]["agent"]["flagged_fields"] == \
+            record["injected_fields"]
+    agent = result.summary["configs"]["agent"]
+    assert (agent["caught"], agent["discrepancy_n"]) == (3, 3)
+    assert agent["silent_errors"] == 0
+    md = (tmp_path / "results.md").read_text()
+    assert "Multi-persona sets: 3" in md
+
+
+# ---------------------------------------------------------------------------
 # Hindi-script sets (--hindi): separately scored, never in the headline
 # ---------------------------------------------------------------------------
 

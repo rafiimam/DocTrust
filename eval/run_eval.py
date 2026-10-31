@@ -69,9 +69,10 @@ for _p in (str(_REPO_ROOT), str(_REPO_ROOT / "backend")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from app import agent, comparator, judge  # noqa: E402
+from app import agent, comparator, judge, normalize  # noqa: E402
 from app.providers import Reader  # noqa: E402
-from generator.generate import STAMP_STYLES, generate_set  # noqa: E402
+from generator.generate import (  # noqa: E402
+    BANGLA_PERSONAS, STAMP_STYLES, generate_set)
 
 DOC_TYPES = ("nid", "birth_certificate", "bank_form")
 CATEGORIES = ("clean", "variation", "discrepancy", "degraded")
@@ -108,6 +109,13 @@ class SetSpec:
     stamp_style: str
     stamp_position: str
     script: str = "bangla"
+    # Multi-persona batch only (--persona-batch): which BANGLA_PERSONAS
+    # entry the set is generated for, the bank-form injection planted
+    # in it, and whether the degraded treatment is layered on top of
+    # the discrepancy variant. All defaults = the legacy batches.
+    persona_index: int | None = None
+    injection: dict | None = None
+    degrade: bool = False
 
 
 # Hindi-script composition per 10 sets (--hindi): mostly clean and
@@ -128,14 +136,154 @@ def _hindi_counts(n: int) -> dict[str, int]:
     return counts
 
 
+# ---------------------------------------------------------------------------
+# Multi-persona batch (--persona-batch)
+# ---------------------------------------------------------------------------
+# Every batch before this one reused the generator's single base
+# person, so the name rules were only ever tested on the names they
+# were tuned against. The persona batch plants discrepancies on a
+# pool of ten personas instead. Injections are near-miss names and
+# one-digit changes on the bank form (see generator.generate's
+# INJECTION_FIELDS), keyed to each persona so the values fit it.
+
+# Near-miss surname replacements for the father's name (applied to
+# its last token) and for the person's own name. Pairs are chosen so
+# the consonant skeletons differ — a same-skeleton pair (Salam ->
+# Salim, Islam -> Aslam) would be transliteration residue under the
+# comparator, not a discrepancy, and is never used.
+_FATHER_NEAR_MISS = {
+    "Karim": "Rahim", "Kader": "Kamal", "Islam": "Rahim",
+    "Malek": "Kamal", "Haque": "Hasan", "Rahim": "Karim",
+    "Aziz": "Azim", "Salam": "Kamal", "Rahman": "Rahim",
+}
+_NAME_NEAR_MISS = {
+    "Rahman": "Rahim", "Hossain": "Hasan", "Akter": "Akhtar",
+    "Hasan": "Hossain", "Akhtar": "Akter", "Jahan": "Jamal",
+    "Hosen": "Hasan", "Begum": "Khatun",
+}
+
+# Injection kinds cycled within a third of the batch. The over-DOB
+# third leads with dob (the field the stamp covers); the other two
+# thirds lead with the near-miss father names.
+_KINDS_OVER_DOB = ("dob", "father_name", "id_number", "name")
+_KINDS_PLAIN = ("father_name", "dob", "id_number", "name")
+
+
+def _persona_dob_injection(persona: dict) -> dict:
+    """Day + 1 on the persona's DOB. Persona DOB days are all <= 25,
+    so the result is always a valid, genuinely different date."""
+    day, month, year = persona["dob"].split("/")
+    return {"field": "dob",
+            "value": f"{int(day) + 1:02d}/{month}/{year}"}
+
+
+def _persona_id_injection(persona: dict) -> dict:
+    """The ID's 5th digit, +1 mod 10 — a one-digit change."""
+    digits = persona["id_number"]
+    bumped = str((int(digits[4]) + 1) % 10)
+    return {"field": "id_number",
+            "value": digits[:4] + bumped + digits[5:]}
+
+
+def _persona_name_injection(persona: dict, field: str,
+                            mapping: dict[str, str]) -> dict | None:
+    """Replace the last token of the persona's name/father's name via
+    `mapping` — but only when the result is a genuine comparator
+    mismatch. Two prescribed pairs fail that test and must not be
+    planted: Akter <-> Akhtar folds to identical tokens in
+    normalize._NAME_VARIANTS (a 'match'), and Hosen -> Hasan shares
+    a consonant skeleton at edit distance 2 (a 'variant'). Those
+    return None and the caller falls back to a DOB injection, so no
+    generated set ever carries a non-discrepancy as its injection."""
+    original = persona["father_en" if field == "father_name"
+                       else "name_en"]
+    tokens = original.split()
+    replacement = mapping.get(tokens[-1])
+    if replacement is None:
+        return None
+    candidate = " ".join([*tokens[:-1], replacement])
+    if normalize.names_match(original, candidate) != "mismatch":
+        return None
+    return {"field": field, "value": candidate}
+
+
+def _persona_injection(persona: dict, kind: str) -> dict:
+    """The injection of `kind` for one persona, guaranteed to be a
+    genuine mismatch under the comparator: name kinds fall back to a
+    DOB injection when the persona's surname has no usable near-miss
+    (unmapped token, or a mapped pair the comparator treats as the
+    same name — see _persona_name_injection)."""
+    if kind == "dob":
+        return _persona_dob_injection(persona)
+    if kind == "id_number":
+        return _persona_id_injection(persona)
+    if kind == "father_name":
+        injection = _persona_name_injection(
+            persona, "father_name", _FATHER_NEAR_MISS)
+    elif kind == "name":
+        injection = _persona_name_injection(
+            persona, "name", _NAME_NEAR_MISS)
+    else:
+        raise ValueError(f"unknown injection kind {kind!r}")
+    return injection if injection is not None \
+        else _persona_dob_injection(persona)
+
+
+def _persona_specs(persona_batch: int, seed_base: int,
+                   index: int) -> list[SetSpec]:
+    """The persona-batch specs, appended after the regular sets with
+    seeds continuing the caller's index sequence. Composition in
+    thirds (remainder to the earliest thirds): the first third puts
+    the stamp over the birth-certificate DOB, the second is plain
+    margin sets, the last third layers the degraded treatment over
+    the discrepancy. Personas cycle 0..9 across the whole batch."""
+    base, remainder = divmod(persona_batch, 3)
+    sizes = [base + (1 if t < remainder else 0) for t in range(3)]
+    specs: list[SetSpec] = []
+    position_in_batch = 0
+    for third, size in enumerate(sizes):
+        for k in range(size):
+            persona_index = position_in_batch % len(BANGLA_PERSONAS)
+            persona = BANGLA_PERSONAS[persona_index]
+            if third == 0:
+                stamp_position, degrade = "over_dob", False
+                kind = _KINDS_OVER_DOB[k % len(_KINDS_OVER_DOB)]
+            elif third == 1:
+                stamp_position, degrade = "margin", False
+                kind = _KINDS_PLAIN[k % len(_KINDS_PLAIN)]
+            else:
+                stamp_position, degrade = "margin", True
+                kind = _KINDS_PLAIN[k % len(_KINDS_PLAIN)]
+            specs.append(SetSpec(
+                set_id=f"persona-disc-{position_in_batch + 1:02d}",
+                category="discrepancy",
+                variant="discrepancy",
+                seed=seed_base + index,
+                stamp_style=_STAMP_STYLE_CYCLE[
+                    index % len(_STAMP_STYLE_CYCLE)],
+                stamp_position=stamp_position,
+                persona_index=persona_index,
+                injection=_persona_injection(persona, kind),
+                degrade=degrade,
+            ))
+            index += 1
+            position_in_batch += 1
+    return specs
+
+
 def build_dataset(counts: dict[str, int], seed_base: int = 7,
-                  over_dob: int = 3, hindi: int = 0) -> list[SetSpec]:
+                  over_dob: int = 3, hindi: int = 0,
+                  persona_batch: int = 0) -> list[SetSpec]:
     """Deterministic set list: fixed category order, seeds seed_base+i,
     stamp styles cycled, the first `over_dob` discrepancy sets placing
     the stamp over the birth-certificate DOB. With hindi > 0, that many
     Hindi-script sets (see _HINDI_QUOTAS) are appended with continuing
     seeds; they are scored separately and never enter the headline
-    pools (the Bangla comparison stays apples-to-apples)."""
+    pools (the Bangla comparison stays apples-to-apples). With
+    persona_batch > 0, that many multi-persona discrepancy sets (see
+    _persona_specs) are appended last, again with continuing seeds;
+    they are Bangla discrepancy sets and score in the headline pools
+    under their category like any other discrepancy set."""
     specs: list[SetSpec] = []
     index = 0
     for category in CATEGORIES:
@@ -169,6 +317,8 @@ def build_dataset(counts: dict[str, int], seed_base: int = 7,
                     script="hindi",
                 ))
                 index += 1
+    if persona_batch > 0:
+        specs += _persona_specs(persona_batch, seed_base, index)
     return specs
 
 
@@ -180,7 +330,12 @@ def generate_dataset(specs: list[SetSpec], data_dir: Path) -> dict[str, dict]:
         truth = generate_set(out, spec.variant, spec.seed,
                              stamp_style=spec.stamp_style,
                              stamp_position=spec.stamp_position,
-                             script=spec.script)
+                             script=spec.script,
+                             person=(BANGLA_PERSONAS[spec.persona_index]
+                                     if spec.persona_index is not None
+                                     else None),
+                             injection=spec.injection,
+                             degrade=spec.degrade)
         truths[spec.set_id] = truth
     return truths
 
@@ -830,6 +985,12 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
             f"- Hindi-script sets: {meta['hindi_sets']} "
             "(secondary script, reported separately below; not in "
             "the headline tables)")
+    if meta.get("persona_sets"):
+        lines.append(
+            f"- Multi-persona sets: {meta['persona_sets']} "
+            "(discrepancy sets planted across a pool of ten Bangla "
+            "personas, not just the base person; scored in the "
+            "headline tables as discrepancy sets)")
     lines += [
         "",
         "**Counts (x/n) throughout — never bare percentages.**",
@@ -968,6 +1129,7 @@ def _write_output(out_path: Path, meta: dict, records: dict[str, dict]) -> dict:
 
 def run_evaluation(*, counts: dict[str, int] | None = None,
                    seed_base: int = 7, over_dob: int = 3, hindi: int = 0,
+                   persona_batch: int = 0,
                    data_dir: Path, out_path: Path,
                    reader=None, reader_factory=None, segmenter=None,
                    workers: int = 4, resume: bool = False,
@@ -976,7 +1138,8 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
     """Build the dataset and evaluate every set — the synthetic sets
     plus, when `physical_dir` is given, every physically captured set
     discovered there. `hindi` > 0 appends that many Hindi-script sets,
-    scored separately (see build_dataset).
+    scored separately; `persona_batch` > 0 appends that many
+    multi-persona discrepancy sets (see build_dataset).
 
     reader_factory(spec, phase, truth) -> Reader, phase in
     {"single", "agent"}. Without a factory, `reader` is shared by all
@@ -984,7 +1147,7 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
     """
     counts = dict(counts or DEFAULT_COUNTS)
     specs = build_dataset(counts, seed_base=seed_base, over_dob=over_dob,
-                          hindi=hindi)
+                          hindi=hindi, persona_batch=persona_batch)
     truths = generate_dataset(specs, Path(data_dir))
 
     physical_specs: list[PhysicalSpec] = []
@@ -1010,6 +1173,8 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
                         else None,
         "physical_sets": len(physical_specs),
         "hindi_sets": sum(1 for s in specs if s.script == "hindi"),
+        "persona_sets": sum(1 for s in specs
+                            if s.persona_index is not None),
         "reader": type(reader).__name__ if reader is not None
                   else "factory",
         "segmenter": type(segmenter).__name__,
@@ -1098,6 +1263,12 @@ def main(argv: list[str] | None = None) -> int:
                          "separately from the headline Bangla tables "
                          "(default 0; 10 = 4 clean / 3 variation / "
                          "2 discrepancy / 1 degraded)")
+    ap.add_argument("--persona-batch", type=int, default=0,
+                    help="add N multi-persona discrepancy sets across "
+                         "the generator's pool of ten Bangla personas "
+                         "(near-miss name and one-digit bank-form "
+                         "injections; composed in thirds: stamp over "
+                         "the DOB, plain, degraded — default 0)")
     ap.add_argument("--seed-base", type=int, default=7)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--data-dir", default="eval/data")
@@ -1133,7 +1304,7 @@ def main(argv: list[str] | None = None) -> int:
 
     result = run_evaluation(
         counts=counts, seed_base=args.seed_base, over_dob=args.over_dob,
-        hindi=args.hindi,
+        hindi=args.hindi, persona_batch=args.persona_batch,
         data_dir=Path(args.data_dir), out_path=Path(args.out),
         reader=reader, segmenter=judge.resolve_segmenter(),
         workers=args.workers, resume=args.resume,
