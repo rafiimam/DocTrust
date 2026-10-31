@@ -18,6 +18,12 @@
 ## Setup
 
 - Dates of run: first run 2026-10-29/30; post-fix re-run 2026-10-30.
+- Reader calibration (the Bangla gate): before any evaluation,
+  `muse-spark-1.3` had to read all four fields of a clean synthetic
+  NID exactly (4/4), the Bangla-digit ID preserved digit-for-digit.
+  That gate produced the working configuration — `max_tokens` 1024
+  with `reasoning_effort` "minimal"; at a 128-token budget every
+  call returned null content, the budget consumed by reasoning.
 - Repo commits: first run at the pre-fix head (before `484e013b`);
   post-fix re-run at `21c54143`.
 - Reader(s): Muse Spark — route A: `muse-spark-1.3` via the Meta Model
@@ -85,6 +91,7 @@ would pretend to a precision the sample does not have.
 | Metric | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
 |---|---|---|---|
 | False flags on genuine sets (x/n) | 22/22 | 0/22 | 0/22 |
+| Genuine sets cleared as Consistent (x/n) | 0/22 | 22/22 | 20/22 |
 | Injected discrepancies caught (x/n) | 9/10 | 9/10 | 10/10 |
 | **Silent errors — verdict "Consistent" while a discrepancy exists (count)** | **0** | **0** | **0** |
 | Degraded sets: recovered / recapture requested (x/n) | 0/8 / 0/8 | 8/8 / 0/8 | 8/8 / 0/8 |
@@ -122,6 +129,7 @@ route's counts use its own completed sets._
 |---|---|---|
 | Sets completed | 42/50 (8 run errors, all completion-budget) | 50/50 |
 | False flags on genuine sets (x/n) | 0/21 | 0/22 |
+| Genuine sets cleared as Consistent (x/n) | 21/21 | 20/22 |
 | Injected discrepancies caught (x/n) | 8/10 | 10/10 |
 | Silent errors (count) | 0 | 0 |
 | Degraded: recovered / recapture (x/n) | 5/8 / 3/8 | 8/8 / 0/8 |
@@ -134,11 +142,16 @@ failures, so the headline tables above are development-set numbers.
 This batch answers that directly: 50 fresh sets at seed base 101 —
 seeds the fix was never tuned on — run once with the frozen post-fix
 system, no code changes. 49/50 completed; discrepancy-03 errored on
-a network timeout (recorded as an error, not a verdict)._
+a network timeout (recorded as an error, not a verdict). One limit
+on what this batch proves: it reuses the development sets' base
+person record — the new seeds vary noise, layout and stamps, not
+names — so it tests the fix's stability on new noise, not its
+generalization to new names._
 
 | Metric (Bangla sets) | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
 |---|---|---|---|
 | False flags on genuine sets (x/n) | 22/22 | 0/22 | 0/22 |
+| Genuine sets cleared as Consistent (x/n) | 0/22 | 22/22 | 21/22 |
 | Injected discrepancies caught (x/n) | 9/9 | 9/9 | 9/9 |
 | **Silent errors (count)** | **0** | **0** | **0** |
 | Degraded sets: recovered / recapture requested (x/n) | 0/8 / 0/8 | 8/8 / 0/8 | 8/8 / 0/8 |
@@ -159,8 +172,13 @@ Hindi sets.
 
 **Reading of this batch:** the post-fix behaviour replicates on
 unseen seeds — zero false flags, zero silent errors, every completed
-discrepancy caught. The development-set numbers were not an artefact
-of tuning on the test.
+discrepancy caught. The development-set numbers did not appear to
+be an artefact of tuning on the test — with the name caveat above:
+this is one synthetic batch over a single person record. Note also
+the caught row: with discrepancy-03 — the stamp-over-DOB set, and
+the one set where the agent alone beat the baselines in the
+development run — lost to the timeout, all three configurations
+tie at 9/9 here.
 
 ### Hindi-script sets (secondary, small n)
 
@@ -300,8 +318,10 @@ either route.
   noise, and are described as such. Zero observed events are not a
   zero rate: 0 false flags in 22 genuine sets still allows a true
   false-flag rate up to roughly 3/22 ≈ 14% (rule of three, 95%
-  bound), and the same caution applies to the zero silent-error
-  counts.
+  bound). Silent errors can only occur on injected-discrepancy
+  sets, so their denominator is smaller: 0 observed in 19 pooled
+  completed discrepancy sets (10 development + 9 held-out) still
+  allows a true silent-error rate up to roughly 3/19 ≈ 16%.
 - One document family (Bangladeshi NID / birth certificate / bank
   form, as synthetic approximations) and one base person record with
   variations, plus one Hindi persona. No claim extends beyond that.
