@@ -34,7 +34,7 @@ def test_agent_disagreement_marks_uncertain_and_investigates():
     dob = next(fr for fr in outcome.field_reads
                if fr.doc_type == "nid" and fr.field == "dob")
     assert dob.uncertain is True
-    assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
+    assert len(dob.reads) == 6  # 3 first-pass + 3 investigation views
     assert outcome.verdict == "CONSISTENT"
 
 
@@ -65,7 +65,7 @@ def test_agent_partial_unreadable_marks_uncertain_and_investigates():
     dob = next(fr for fr in outcome.field_reads
                if fr.doc_type == "birth_certificate" and fr.field == "dob")
     assert dob.uncertain is True
-    assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
+    assert len(dob.reads) == 6  # 3 first-pass + 3 investigation views
     assert dob.value == "12/03/1990"
     assert outcome.verdict == "CONSISTENT"
 
@@ -119,7 +119,7 @@ def test_agent_tied_reads_after_investigation_give_recapture():
     dob = next(fr for fr in outcome.field_reads
                if fr.doc_type == "nid" and fr.field == "dob")
     assert dob.uncertain is True
-    assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
+    assert len(dob.reads) == 6  # 3 first-pass + 3 investigation views
     assert dob.value is None
     assert outcome.verdict == "UNREADABLE"
 
@@ -130,12 +130,14 @@ def test_agent_scattered_probe_reads_give_recapture_not_flag():
     # correct] across the five views — the correct value and a wrong
     # value once each. The old tie-break picked an arbitrary winner
     # and falsely flagged the genuine set DISCREPANCY; scattered reads
-    # like these must end in a recapture request instead.
+    # like these must end in a recapture request instead. The sixth
+    # scripted read is the stamp_removed view failing too (opaque
+    # ink), keeping the reads scattered.
     script = _script()
     script[("birth_certificate", "name")] = ["Mohammad Abdul Rahman"]
     script[("birth_certificate", "dob")] = ["UNREADABLE", "১২/০৯/১৯৯০",
                                             "UNREADABLE", "UNREADABLE",
-                                            "১২/০৩/১৯৯০"]
+                                            "১২/০৩/১৯৯০", "UNREADABLE"]
     script[("birth_certificate", "father_name")] = ["Abdul Karim"]
     reader = MockReader(script)
     outcome = agent.run_review(reader, {"nid": "nid.png",
@@ -144,7 +146,7 @@ def test_agent_scattered_probe_reads_give_recapture_not_flag():
     dob = next(fr for fr in outcome.field_reads
                if fr.doc_type == "birth_certificate" and fr.field == "dob")
     assert dob.uncertain is True
-    assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
+    assert len(dob.reads) == 6  # 3 first-pass + 3 investigation views
     assert dob.value is None
     assert outcome.verdict == "UNREADABLE"
 
@@ -160,7 +162,7 @@ def test_agent_all_unreadable_investigates_and_stays_unreadable():
     dob = next(fr for fr in outcome.field_reads
                if fr.doc_type == "bank_form" and fr.field == "dob")
     assert dob.uncertain is True
-    assert len(dob.reads) == 5  # 3 first-pass + 2 investigation views
+    assert len(dob.reads) == 6  # 3 first-pass + 3 investigation views
     assert dob.value is None
     assert outcome.verdict == "UNREADABLE"
 
@@ -212,8 +214,8 @@ def test_planner_chosen_view_settles_field_in_one_step():
     assert call["doc_type"] == "birth_certificate"
     assert call["field"] == "dob"
     assert [r["view"] for r in call["reads"]] == agent.FIRST_PASS_VIEWS
-    assert set(call["actions"]) == {"stamp_masked", "zoom_tight",
-                                    "recapture"}
+    assert set(call["actions"]) == {"stamp_masked", "stamp_removed",
+                                    "zoom_tight", "recapture"}
     assert outcome.verdict == "CONSISTENT"
 
 
@@ -252,8 +254,9 @@ def test_planner_garbage_decision_falls_back_to_fixed_views():
                                         "birth_certificate": "bc.png",
                                         "bank_form": "form.png"})
     dob = _dob(outcome)
-    assert len(dob.reads) == 5  # fallback ran both fixed views
+    assert len(dob.reads) == 6  # fallback ran all three fixed views
     assert [e["source"] for e in dob.investigation] == ["fallback",
+                                                        "fallback",
                                                         "fallback"]
     assert [e["action"] for e in dob.investigation] == \
         agent.INVESTIGATION_VIEWS
@@ -272,8 +275,9 @@ def test_planner_exception_falls_back_to_fixed_views():
                                         "birth_certificate": "bc.png",
                                         "bank_form": "form.png"})
     dob = _dob(outcome)
-    assert len(dob.reads) == 5
+    assert len(dob.reads) == 6
     assert [e["source"] for e in dob.investigation] == ["fallback",
+                                                        "fallback",
                                                         "fallback"]
     assert dob.value == "১২/০৩/১৯৯০"
     assert outcome.verdict == "CONSISTENT"
