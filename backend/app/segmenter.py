@@ -71,6 +71,13 @@ class Segmenter(Protocol):
         or None if no region could be produced."""
         ...
 
+    def removed_image(self, image_path: str, prompt: str,
+                      out_path: str | None = None) -> str | None:
+        """Path to a copy of the image with the prompted region's ink
+        lifted (see remove_stamp_ink), or None if no region could be
+        produced."""
+        ...
+
 
 # --------------------------------------------------------------------------
 # Pillow helpers (shared by the fallback, the mock, and the Modal client
@@ -104,6 +111,56 @@ def apply_mask_png(image_path: str, mask_png: bytes,
     out = out_path or _sibling_out_path(image_path, "masked")
     Image.composite(cover, img, mask).save(out)
     return out
+
+
+def remove_stamp_ink(image_path: str, box: Box | None = None,
+                     mask_png: bytes | None = None,
+                     out_path: str | None = None) -> str:
+    """Write a copy of the image with stamp ink *lifted*, not covered.
+
+    Inside the stamp region (mask if given, else the box) each pixel
+    is replaced by its brightest channel as greyscale. Coloured stamp
+    ink is saturated — one channel stays bright — so it fades toward
+    the paper, while near-black print is dark in every channel and
+    survives. This recovers print the ink is translucent over; print
+    under fully opaque ink is gone from the pixels and stays gone —
+    lifting never invents strokes. Working copy only, like masking.
+    """
+    import io
+
+    from PIL import Image, ImageChops, ImageDraw
+
+    img = Image.open(image_path).convert("RGB")
+    r, g, b = img.split()
+    lifted = Image.merge(
+        "RGB", (ImageChops.lighter(ImageChops.lighter(r, g), b),) * 3)
+    if mask_png is not None:
+        region = Image.open(io.BytesIO(mask_png)).convert("L") \
+            .resize(img.size)
+    elif box is not None:
+        region = Image.new("L", img.size, 0)
+        ImageDraw.Draw(region).rectangle(box.as_list(), fill=255)
+    else:
+        region = Image.new("L", img.size, 255)
+    out = out_path or _sibling_out_path(image_path, "stamp_removed")
+    Image.composite(lifted, img, region).save(out)
+    return out
+
+
+def _removed_from_result(result: SegmentResult | None, image_path: str,
+                         out_path: str | None = None) -> str | None:
+    """Shared removed_image body: lift ink inside the segment result."""
+    if not result or not result.boxes:
+        return None
+    try:
+        if result.mask_path:
+            return remove_stamp_ink(
+                image_path, mask_png=Path(result.mask_path).read_bytes(),
+                out_path=out_path)
+        return remove_stamp_ink(image_path, box=result.boxes[0],
+                                out_path=out_path)
+    except Exception:
+        return None
 
 
 def _sibling_out_path(image_path: str, suffix: str) -> str:
@@ -173,6 +230,11 @@ class PillowFallbackSegmenter:
             return None
         return mask_region(image_path, result.boxes[0], out_path)
 
+    def removed_image(self, image_path: str, prompt: str,
+                      out_path: str | None = None) -> str | None:
+        return _removed_from_result(self.segment(image_path, prompt),
+                                    image_path, out_path)
+
 
 class MockSegmenter:
     """Scripted segmenter for tests: fixed boxes, real masked output."""
@@ -194,6 +256,14 @@ class MockSegmenter:
         if not self._boxes:
             return None
         return mask_region(image_path, self._boxes[0], out_path)
+
+    def removed_image(self, image_path: str, prompt: str,
+                      out_path: str | None = None) -> str | None:
+        self.calls.append((image_path, prompt))
+        if not self._boxes:
+            return None
+        return remove_stamp_ink(image_path, box=self._boxes[0],
+                                out_path=out_path)
 
 
 class ModalSegmenter:
@@ -276,6 +346,11 @@ class ModalSegmenter:
         except Exception:
             return None
         return None
+
+    def removed_image(self, image_path: str, prompt: str,
+                      out_path: str | None = None) -> str | None:
+        return _removed_from_result(self.segment(image_path, prompt),
+                                    image_path, out_path)
 
 
 META_SAM_URL = "https://api.meta.ai/v1/responses"
@@ -482,3 +557,8 @@ class MetaSAMSegmenter:
             return mask_region(image_path, result.boxes[0], out_path)
         except Exception:
             return None
+
+    def removed_image(self, image_path: str, prompt: str,
+                      out_path: str | None = None) -> str | None:
+        return _removed_from_result(self.segment(image_path, prompt),
+                                    image_path, out_path)

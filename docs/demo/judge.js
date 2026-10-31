@@ -191,6 +191,7 @@
     "what I suggest next.";
   var ACTION_PHRASES = {
     stamp_masked: "mask the stamp and re-read",
+    stamp_removed: "lift the stamp ink and re-read the print underneath",
     zoom_tight: "re-read a tighter zoomed crop",
     recapture: "stop here and request a recapture"
   };

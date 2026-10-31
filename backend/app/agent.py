@@ -43,7 +43,7 @@ FIELDS_BY_DOC = {
 }
 
 FIRST_PASS_VIEWS = ["original", "zoom", "contrast"]
-INVESTIGATION_VIEWS = ["stamp_masked", "zoom_tight"]
+INVESTIGATION_VIEWS = ["stamp_masked", "stamp_removed", "zoom_tight"]
 
 # The actions the investigation planner may choose from, with the
 # one-line descriptions it is shown. "stamp_masked" and "zoom_tight"
@@ -53,6 +53,12 @@ PLANNER_ACTIONS = {
     "stamp_masked": "Re-read the field from a copy of the document "
                     "with the located stamp region masked out — best "
                     "when a stamp or seal may be covering the field.",
+    "stamp_removed": "Re-read the field from a copy of the document "
+                     "with the stamp's ink lifted instead of covered: "
+                     "the coloured ink is faded so print underneath "
+                     "can show through. Prefer this over stamp_masked "
+                     "when the stamp covers the field itself, because "
+                     "masking hides the covered print too.",
     "zoom_tight": "Re-read the field from a tighter zoomed crop of "
                   "the document — best when the print is small, "
                   "faint or blurry.",
@@ -93,17 +99,23 @@ def _investigation_image(segmenter: Segmenter | None, image_path: str,
                            view: str) -> str:
     """Image to read an investigation view from.
 
-    Only "stamp_masked" changes the image, and only when a segmenter is
-    injected and actually produces a masked copy. Any failure returns
-    the original path: masking is an aid, never a gate on the review.
+    Only the stamp views change the image, and only when a segmenter
+    is injected and actually produces a transformed copy. Any failure
+    returns the original path: transformation is an aid, never a gate
+    on the review.
     """
-    if view != "stamp_masked" or segmenter is None:
+    if segmenter is None:
+        return image_path
+    producer = {"stamp_masked": getattr(segmenter, "masked_image", None),
+                "stamp_removed": getattr(segmenter, "removed_image",
+                                         None)}.get(view)
+    if producer is None:
         return image_path
     try:
-        masked = segmenter.masked_image(image_path, "stamp")
+        transformed = producer(image_path, "stamp")
     except Exception:
         return image_path
-    return masked or image_path
+    return transformed or image_path
 
 
 def _clean_reason(raw) -> str:

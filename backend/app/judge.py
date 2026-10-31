@@ -350,6 +350,24 @@ class _TracingSegmenter:
                           source_path=image_path)
         return masked
 
+    def removed_image(self, image_path, prompt, out_path=None):
+        producer = getattr(self._inner, "removed_image", None)
+        if producer is None:
+            return None
+        removed = producer(image_path, prompt, out_path)
+        if removed:
+            self.masked_by_source[image_path] = removed
+            provider = getattr(self._inner, "provider", "segmenter")
+            self._job.emit({
+                "type": "segment", "phase": "Segment",
+                "text": f"Lifted the {prompt} ink ({provider}) to "
+                        f"re-read the print underneath it.",
+                "image_path": image_path,
+            })
+            self._capture(None, "stamp_removed", removed,
+                          source_path=image_path)
+        return removed
+
 
 class _TracingReader:
     """Wraps the configured reader; resolves views to real image files,
@@ -371,9 +389,10 @@ class _TracingReader:
         if time.time() > self._deadline:
             raise TimeoutError("judge job exceeded its time budget")
         resolved = image_path
-        if perturbation == "stamp_masked":
-            # The agent passes the segmenter's masked copy directly when
-            # one was produced; otherwise fall back to the original.
+        if perturbation in ("stamp_masked", "stamp_removed"):
+            # The agent passes the segmenter's transformed copy
+            # directly when one was produced; otherwise fall back to
+            # the original.
             resolved = image_path
         elif perturbation in self._views_by_doc.get(doc_type, {}):
             resolved = self._views_by_doc[doc_type][perturbation]
