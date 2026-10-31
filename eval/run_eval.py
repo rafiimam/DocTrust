@@ -109,10 +109,11 @@ class SetSpec:
     stamp_style: str
     stamp_position: str
     script: str = "bangla"
-    # Multi-persona batch only (--persona-batch): which BANGLA_PERSONAS
-    # entry the set is generated for, the bank-form injection planted
-    # in it, and whether the degraded treatment is layered on top of
-    # the discrepancy variant. All defaults = the legacy batches.
+    # Multi-persona batches only (--persona-batch / --persona-genuine):
+    # which BANGLA_PERSONAS entry the set is generated for, the
+    # bank-form injection planted in it (discrepancy batch only), and
+    # whether the degraded treatment is layered on top of the
+    # discrepancy variant. All defaults = the legacy batches.
     persona_index: int | None = None
     injection: dict | None = None
     degrade: bool = False
@@ -271,9 +272,42 @@ def _persona_specs(persona_batch: int, seed_base: int,
     return specs
 
 
+def _persona_genuine_specs(persona_genuine: int, seed_base: int,
+                           index: int) -> list[SetSpec]:
+    """The genuine multi-persona specs (--persona-genuine), appended
+    after the persona discrepancy batch with seeds continuing the
+    caller's index sequence: the first ceil(n/2) are clean sets, the
+    rest variation sets (each persona's own spelling pair), personas
+    cycling 0..9 across the appended sets in order, every stamp in
+    the margin. The discrepancy batch cannot measure false flags —
+    this is the batch that does, across the same persona pool."""
+    n_clean = (persona_genuine + 1) // 2
+    specs: list[SetSpec] = []
+    for j in range(persona_genuine):
+        if j < n_clean:
+            category = "clean"
+            set_id = f"persona-clean-{j + 1:02d}"
+        else:
+            category = "variation"
+            set_id = f"persona-var-{j - n_clean + 1:02d}"
+        specs.append(SetSpec(
+            set_id=set_id,
+            category=category,
+            variant=category,
+            seed=seed_base + index,
+            stamp_style=_STAMP_STYLE_CYCLE[
+                index % len(_STAMP_STYLE_CYCLE)],
+            stamp_position="margin",
+            persona_index=j % len(BANGLA_PERSONAS),
+        ))
+        index += 1
+    return specs
+
+
 def build_dataset(counts: dict[str, int], seed_base: int = 7,
                   over_dob: int = 3, hindi: int = 0,
-                  persona_batch: int = 0) -> list[SetSpec]:
+                  persona_batch: int = 0,
+                  persona_genuine: int = 0) -> list[SetSpec]:
     """Deterministic set list: fixed category order, seeds seed_base+i,
     stamp styles cycled, the first `over_dob` discrepancy sets placing
     the stamp over the birth-certificate DOB. With hindi > 0, that many
@@ -281,9 +315,12 @@ def build_dataset(counts: dict[str, int], seed_base: int = 7,
     seeds; they are scored separately and never enter the headline
     pools (the Bangla comparison stays apples-to-apples). With
     persona_batch > 0, that many multi-persona discrepancy sets (see
-    _persona_specs) are appended last, again with continuing seeds;
+    _persona_specs) are appended next, again with continuing seeds;
     they are Bangla discrepancy sets and score in the headline pools
-    under their category like any other discrepancy set."""
+    under their category like any other discrepancy set. With
+    persona_genuine > 0, that many genuine multi-persona sets (see
+    _persona_genuine_specs) are appended last; they are Bangla clean
+    and variation sets and join the headline genuine pool."""
     specs: list[SetSpec] = []
     index = 0
     for category in CATEGORIES:
@@ -319,6 +356,11 @@ def build_dataset(counts: dict[str, int], seed_base: int = 7,
                 index += 1
     if persona_batch > 0:
         specs += _persona_specs(persona_batch, seed_base, index)
+    if persona_genuine > 0:
+        # len(specs) is the running index: every appended spec so
+        # far consumed exactly one seed/style slot.
+        specs += _persona_genuine_specs(persona_genuine, seed_base,
+                                        len(specs))
     return specs
 
 
@@ -991,6 +1033,13 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
             "(discrepancy sets planted across a pool of ten Bangla "
             "personas, not just the base person; scored in the "
             "headline tables as discrepancy sets)")
+    if meta.get("persona_genuine_sets"):
+        lines.append(
+            f"- Multi-persona genuine sets: "
+            f"{meta['persona_genuine_sets']} "
+            "(clean and variation sets across the same pool of ten "
+            "Bangla personas; scored in the headline tables as "
+            "genuine sets)")
     lines += [
         "",
         "**Counts (x/n) throughout — never bare percentages.**",
@@ -1129,7 +1178,7 @@ def _write_output(out_path: Path, meta: dict, records: dict[str, dict]) -> dict:
 
 def run_evaluation(*, counts: dict[str, int] | None = None,
                    seed_base: int = 7, over_dob: int = 3, hindi: int = 0,
-                   persona_batch: int = 0,
+                   persona_batch: int = 0, persona_genuine: int = 0,
                    data_dir: Path, out_path: Path,
                    reader=None, reader_factory=None, segmenter=None,
                    workers: int = 4, resume: bool = False,
@@ -1139,7 +1188,8 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
     plus, when `physical_dir` is given, every physically captured set
     discovered there. `hindi` > 0 appends that many Hindi-script sets,
     scored separately; `persona_batch` > 0 appends that many
-    multi-persona discrepancy sets (see build_dataset).
+    multi-persona discrepancy sets and `persona_genuine` > 0 that
+    many genuine multi-persona sets (see build_dataset).
 
     reader_factory(spec, phase, truth) -> Reader, phase in
     {"single", "agent"}. Without a factory, `reader` is shared by all
@@ -1147,7 +1197,8 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
     """
     counts = dict(counts or DEFAULT_COUNTS)
     specs = build_dataset(counts, seed_base=seed_base, over_dob=over_dob,
-                          hindi=hindi, persona_batch=persona_batch)
+                          hindi=hindi, persona_batch=persona_batch,
+                          persona_genuine=persona_genuine)
     truths = generate_dataset(specs, Path(data_dir))
 
     physical_specs: list[PhysicalSpec] = []
@@ -1174,7 +1225,10 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
         "physical_sets": len(physical_specs),
         "hindi_sets": sum(1 for s in specs if s.script == "hindi"),
         "persona_sets": sum(1 for s in specs
-                            if s.persona_index is not None),
+                            if s.set_id.startswith("persona-disc-")),
+        "persona_genuine_sets": sum(
+            1 for s in specs
+            if s.set_id.startswith(("persona-clean-", "persona-var-"))),
         "reader": type(reader).__name__ if reader is not None
                   else "factory",
         "segmenter": type(segmenter).__name__,
@@ -1269,6 +1323,13 @@ def main(argv: list[str] | None = None) -> int:
                          "(near-miss name and one-digit bank-form "
                          "injections; composed in thirds: stamp over "
                          "the DOB, plain, degraded — default 0)")
+    ap.add_argument("--persona-genuine", type=int, default=0,
+                    help="add N genuine multi-persona sets across "
+                         "the same persona pool (first half clean, "
+                         "rest variation, each persona's own spelling "
+                         "pair) — the false-flag direction the "
+                         "discrepancy persona batch cannot measure "
+                         "(default 0)")
     ap.add_argument("--seed-base", type=int, default=7)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--data-dir", default="eval/data")
@@ -1305,6 +1366,7 @@ def main(argv: list[str] | None = None) -> int:
     result = run_evaluation(
         counts=counts, seed_base=args.seed_base, over_dob=args.over_dob,
         hindi=args.hindi, persona_batch=args.persona_batch,
+        persona_genuine=args.persona_genuine,
         data_dir=Path(args.data_dir), out_path=Path(args.out),
         reader=reader, segmenter=judge.resolve_segmenter(),
         workers=args.workers, resume=args.resume,

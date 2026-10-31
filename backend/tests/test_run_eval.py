@@ -583,6 +583,81 @@ def test_persona_batch_run_end_to_end(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Genuine multi-persona sets (--persona-genuine): the false-flag
+# direction the discrepancy persona batch cannot measure
+# ---------------------------------------------------------------------------
+
+def test_build_dataset_persona_genuine_composition():
+    specs = run_eval.build_dataset(_counts(), seed_base=7,
+                                   persona_genuine=30)
+    assert [s.set_id for s in specs] == (
+        [f"persona-clean-{i + 1:02d}" for i in range(15)]
+        + [f"persona-var-{i + 1:02d}" for i in range(15)])
+    assert [s.category for s in specs] == ["clean"] * 15 \
+        + ["variation"] * 15
+    assert all(s.variant == s.category and s.script == "bangla"
+               for s in specs)
+    # Seeds continue the (empty) base sequence without collisions.
+    assert [s.seed for s in specs] == [7 + i for i in range(30)]
+    # Personas cycle 0..9 across the appended sets, clean group first.
+    assert [s.persona_index for s in specs] == \
+        [i % 10 for i in range(30)]
+    assert all(s.stamp_position == "margin" for s in specs)
+    assert all(s.injection is None and not s.degrade for s in specs)
+    # Odd counts: the extra set is clean (first ceil(n/2) are clean).
+    odd = run_eval.build_dataset(_counts(), seed_base=7,
+                                 persona_genuine=5)
+    assert [s.set_id for s in odd] == [
+        "persona-clean-01", "persona-clean-02", "persona-clean-03",
+        "persona-var-01", "persona-var-02"]
+    # Appended after regular and persona-disc sets, seeds continuing.
+    mixed = run_eval.build_dataset(_counts(clean=1), seed_base=100,
+                                   persona_batch=3, persona_genuine=2)
+    assert [s.set_id for s in mixed] == [
+        "clean-01", "persona-disc-01", "persona-disc-02",
+        "persona-disc-03", "persona-clean-01", "persona-var-01"]
+    assert [s.seed for s in mixed] == [100, 101, 102, 103, 104, 105]
+    # Default and explicit zero agree: no genuine persona sets.
+    assert run_eval.build_dataset(_counts(clean=1)) == \
+        run_eval.build_dataset(_counts(clean=1), persona_genuine=0)
+
+
+def test_persona_genuine_sets_score_consistent(tmp_path):
+    # Every genuine persona set's generated ground truth must agree
+    # under the same comparator the runner scores with — above all
+    # the variation sets, whose per-persona spelling pairs are where
+    # an over-strict name rule would manufacture a false flag.
+    specs = run_eval.build_dataset(_counts(), seed_base=7,
+                                   persona_genuine=30)
+    truths = run_eval.generate_dataset(specs, tmp_path / "data")
+    for spec in specs:
+        expected = run_eval.expected_from_truth(truths[spec.set_id])
+        assert expected["verdict"] == "CONSISTENT", spec.set_id
+        assert expected["injected_fields"] == []
+        assert truths[spec.set_id]["persona"] == \
+            run_eval.BANGLA_PERSONAS[spec.persona_index]["name_en"]
+        assert "injection" not in truths[spec.set_id]
+
+
+def test_persona_genuine_run_end_to_end(tmp_path):
+    factory = lambda spec, phase, truth: TruthReader(truth["documents"])  # noqa: E731
+    result = _run(tmp_path, _counts(), factory, persona_genuine=4)
+    assert [r["set_id"] for r in result.records] == [
+        "persona-clean-01", "persona-clean-02",
+        "persona-var-01", "persona-var-02"]
+    assert result.meta["persona_genuine_sets"] == 4
+    assert result.meta["persona_sets"] == 0
+    for record in result.records:
+        assert record["expected_verdict"] == "CONSISTENT"
+        assert record["configs"]["agent"]["verdict"] == "CONSISTENT"
+    # The genuine persona sets pool as genuine sets of the run.
+    agent = result.summary["configs"]["agent"]
+    assert (agent["genuine_n"], agent["false_flags"]) == (4, 0)
+    md = (tmp_path / "results.md").read_text()
+    assert "Multi-persona genuine sets: 4" in md
+
+
+# ---------------------------------------------------------------------------
 # Hindi-script sets (--hindi): separately scored, never in the headline
 # ---------------------------------------------------------------------------
 

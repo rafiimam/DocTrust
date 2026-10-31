@@ -111,16 +111,25 @@ BASE_PERSON = {
     "id_number": "1234567890",
     "id_bn_digits": "১২৩৪৫৬৭৮৯০",
     "address_en": "House 12, Rajshahi, Bangladesh",
+    # (NID spelling, bank-form spelling) for variation sets; exactly
+    # the legacy _VARIATION_NAMES["bangla"] pair (a test pins this).
+    "variation_names": ("Md. Abdul Rahman", "Mohammed Abdul Rahaman"),
 }
 
-# A pool of Bangla personas for the eval's multi-persona batch
-# (eval/run_eval.py --persona-batch). Every headline batch before it
-# reused BASE_PERSON alone, so the name comparator's transliteration
-# rules were only ever exercised on one name and one father's name;
-# the pool exists so discrepancy injections land on names the rules
-# were NOT tuned against. Persona 0 is BASE_PERSON itself, so the
-# pool includes the original identity unchanged. DOB days are all
-# <= 25 so the eval's day+1 DOB injection always stays a valid date.
+# A pool of Bangla personas for the eval's multi-persona batches
+# (eval/run_eval.py --persona-batch / --persona-genuine). Every
+# headline batch before it reused BASE_PERSON alone, so the name
+# comparator's transliteration rules were only ever exercised on one
+# name and one father's name; the pool exists so discrepancy
+# injections land on names the rules were NOT tuned against, and so
+# genuine sets can measure the false-flag rate across names. Persona
+# 0 is BASE_PERSON itself, so the pool includes the original identity
+# unchanged. DOB days are all <= 25 so the eval's day+1 DOB injection
+# always stays a valid date. Each entry also carries
+# "variation_names": the (NID, bank-form) spelling pair its
+# variation sets print — every pair is pinned by a test to score
+# CONSISTENT under the comparator, since a pair the comparator calls
+# a mismatch would plant a discrepancy in a genuine set.
 BANGLA_PERSONAS = [
     dict(BASE_PERSON),
     {
@@ -133,6 +142,8 @@ BANGLA_PERSONAS = [
         "id_number": "2345678901",
         "id_bn_digits": "২৩৪৫৬৭৮৯০১",
         "address_en": "House 8, Sylhet, Bangladesh",
+        "variation_names": ("Md. Sazzad Hossain",
+                            "Mohammed Sazzad Hussain"),
     },
     {
         "name_en": "Fatima Akter",
@@ -144,6 +155,7 @@ BANGLA_PERSONAS = [
         "id_number": "3456789012",
         "id_bn_digits": "৩৪৫৬৭৮৯০১২",
         "address_en": "House 21, Chattogram, Bangladesh",
+        "variation_names": ("Fatima Akter", "Fatema Akter"),
     },
     {
         "name_en": "Md. Tanvir Hasan",
@@ -155,6 +167,10 @@ BANGLA_PERSONAS = [
         "id_number": "4567890123",
         "id_bn_digits": "৪৫৬৭৮৯০১২৩",
         "address_en": "House 5, Khulna, Bangladesh",
+        # NOT "Mohammed Tanvir Hassan": Hasan/Hassan differ in
+        # consonant skeleton (hsn vs hssn), so the comparator calls
+        # them a mismatch — only the Md./Mohammed fold varies here.
+        "variation_names": ("Md. Tanvir Hasan", "Mohammed Tanvir Hasan"),
     },
     {
         "name_en": "Sharmin Akhtar",
@@ -166,6 +182,7 @@ BANGLA_PERSONAS = [
         "id_number": "5678901234",
         "id_bn_digits": "৫৬৭৮৯০১২৩৪",
         "address_en": "House 17, Barishal, Bangladesh",
+        "variation_names": ("Sharmin Akhtar", "Sharmin Akter"),
     },
     {
         "name_en": "Md. Ariful Islam",
@@ -177,6 +194,7 @@ BANGLA_PERSONAS = [
         "id_number": "6789012345",
         "id_bn_digits": "৬৭৮৯০১২৩৪৫",
         "address_en": "House 9, Mymensingh, Bangladesh",
+        "variation_names": ("Md. Ariful Islam", "Mohammed Ariful Islam"),
     },
     {
         "name_en": "Nusrat Jahan",
@@ -188,6 +206,7 @@ BANGLA_PERSONAS = [
         "id_number": "7890123456",
         "id_bn_digits": "৭৮৯০১২৩৪৫৬",
         "address_en": "House 25, Narayanganj, Bangladesh",
+        "variation_names": ("Nusrat Jahan", "Nusrat Jehan"),
     },
     {
         "name_en": "Md. Imran Hosen",
@@ -199,6 +218,9 @@ BANGLA_PERSONAS = [
         "id_number": "8901234567",
         "id_bn_digits": "৮৯০১২৩৪৫৬৭",
         "address_en": "House 7, Cumilla, Bangladesh",
+        # NOT "...Mohammed Imran Hossain": Hosen/Hossain differ in
+        # consonant skeleton (hsn vs hssn) — a comparator mismatch.
+        "variation_names": ("Md. Imran Hosen", "Mohammed Imran Hosen"),
     },
     {
         "name_en": "Rokeya Begum",
@@ -210,6 +232,10 @@ BANGLA_PERSONAS = [
         "id_number": "9012345678",
         "id_bn_digits": "৯০১২৩৪৫৬৭৮",
         "address_en": "House 14, Rangpur, Bangladesh",
+        # NOT "Rukaiya Begum": Rokeya/Rukaiya share a skeleton but
+        # sit at edit distance 3, outside the comparator's variant
+        # rule — a mismatch. Rukeya is distance 1.
+        "variation_names": ("Rokeya Begum", "Rukeya Begum"),
     },
     {
         "name_en": "Md. Fahim Rahman",
@@ -221,6 +247,8 @@ BANGLA_PERSONAS = [
         "id_number": "1023456789",
         "id_bn_digits": "১০২৩৪৫৬৭৮৯",
         "address_en": "House 20, Gazipur, Bangladesh",
+        "variation_names": ("Md. Fahim Rahman",
+                            "Mohammed Fahim Rahaman"),
     },
 ]
 
@@ -260,6 +288,19 @@ _VARIATION_NAMES = {
     "bangla": ("Md. Abdul Rahman", "Mohammed Abdul Rahaman"),
     "hindi": ("Rahul Sharama", "Rahul Sharmaa"),
 }
+
+
+def _variation_names(script: str,
+                     person: dict | None) -> tuple[str, str]:
+    """The (NID, bank-form) spelling pair a variation set prints: a
+    supplied persona's own "variation_names" when it carries one,
+    else the per-script legacy pair. With person=None the legacy
+    pair is always returned, so the default path is unchanged."""
+    if person is not None:
+        pair = person.get("variation_names")
+        if pair is not None:
+            return pair
+    return _VARIATION_NAMES[script]
 
 
 def _indic_font(script: str, size: int, bold: bool = False):
@@ -555,7 +596,10 @@ def build_person(variant: str, rng: random.Random,
     which is the ground truth the comparator is scored against.
 
     `person` is a renderer-shaped persona dict (see BANGLA_PERSONAS);
-    None keeps the legacy per-script base persona. `injection`
+    None keeps the legacy per-script base persona. For the variation
+    variant, a supplied persona's own "variation_names" pair is what
+    the NID and bank form print, exactly where the legacy path uses
+    the per-script pair. `injection`
     ({"field", "value"}) replaces the legacy form-DOB swap for the
     discrepancy variant: the named field on the bank form — and only
     there — takes the injected value, in the ground truth here and
@@ -576,7 +620,7 @@ def build_person(variant: str, rng: random.Random,
     if variant == "variation":
         # Legitimate inconsistency: transliteration + digit systems differ,
         # the underlying facts are the same. Must NOT be flagged.
-        nid["name"], form["name"] = _VARIATION_NAMES[script]
+        nid["name"], form["name"] = _variation_names(script, person)
     elif variant == "discrepancy":
         if injection is None:
             # Legacy: one-digit DOB swap on the form — the demo's catch.
@@ -630,7 +674,7 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
 
     render_person = dict(person_out)
     if variant == "variation":
-        render_person["name_en"] = _VARIATION_NAMES[script][0]
+        render_person["name_en"] = _variation_names(script, person)[0]
     if variant == "discrepancy" and injection is None:
         render_person["dob"] = "12/03/1990"  # NID + certificate stay true…
 
@@ -647,7 +691,7 @@ def generate_set(out_dir, variant: str = "clean", seed: int = 7,
             form_person[_FORM_RENDER_KEYS[injection["field"]]] = \
                 injection["value"]
     if variant == "variation":
-        form_person["name_en"] = _VARIATION_NAMES[script][1]
+        form_person["name_en"] = _variation_names(script, person)[1]
     form_img = render_bank_form(form_person, script=script)
 
     images = {"nid": nid_img, "birth_certificate": birth_img, "bank_form": form_img}

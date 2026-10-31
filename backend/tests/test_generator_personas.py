@@ -10,6 +10,7 @@ the persona work landed.
 """
 
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -19,7 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from app import comparator, normalize  # noqa: E402
 from generator.generate import (  # noqa: E402
-    BANGLA_PERSONAS, BASE_PERSON, generate_set)
+    _VARIATION_NAMES, BANGLA_PERSONAS, BASE_PERSON, build_person,
+    generate_set)
 
 # Captured from the pre-persona generator: seed 7, clean, all
 # defaults. If a change alters legacy output in any way, this fails.
@@ -44,7 +46,7 @@ LEGACY_CLEAN_TRUTH = {
 
 PERSON_KEYS = {"name_en", "name_bn", "father_en", "father_bn", "dob",
                "dob_bn_digits", "id_number", "id_bn_digits",
-               "address_en"}
+               "address_en", "variation_names"}
 
 
 def test_persona_pool_shape():
@@ -164,3 +166,51 @@ def test_unknown_injection_field_is_rejected(tmp_path):
         generate_set(tmp_path / "s", "discrepancy", 7,
                      person=BANGLA_PERSONAS[0],
                      injection={"field": "address", "value": "Elsewhere"})
+
+
+# ---------------------------------------------------------------------------
+# Genuine persona sets (--persona-genuine): each persona's own
+# variation pair must stay a legitimate spelling difference, never a
+# planted discrepancy
+# ---------------------------------------------------------------------------
+
+def test_persona_zero_variation_pair_is_the_legacy_pair():
+    # Persona 0 is the legacy identity; its pair must be exactly the
+    # pair the legacy path has always used, byte for byte.
+    assert BANGLA_PERSONAS[0]["variation_names"] == \
+        _VARIATION_NAMES["bangla"]
+    assert BASE_PERSON["variation_names"] == _VARIATION_NAMES["bangla"]
+
+
+def test_every_persona_genuine_truth_agrees():
+    # Clean and variation ground truth for EVERY persona, checked
+    # with the comparator the runner scores with. The variation
+    # check is the load-bearing one: a pair the comparator calls a
+    # mismatch (Hasan/Hassan and Hosen/Hossain differ in consonant
+    # skeleton; Rokeya/Rukaiya sit at edit distance 3) would plant a
+    # discrepancy inside a genuine set and fake a false flag.
+    for persona in BANGLA_PERSONAS:
+        for variant in ("clean", "variation"):
+            _p, docs, _ = build_person(variant, random.Random(7),
+                                       person=persona)
+            assert comparator.compare(docs).verdict == "CONSISTENT", \
+                (persona["name_en"], variant)
+        nid_name, form_name = persona["variation_names"]
+        _p, docs, _ = build_person("variation", random.Random(7),
+                                   person=persona)
+        assert docs["nid"]["name"] == nid_name
+        assert docs["bank_form"]["name"] == form_name
+        # The certificate keeps the persona's base name — all three
+        # spellings of the name must agree, not just the pair.
+        assert docs["birth_certificate"]["name"] == persona["name_en"]
+
+
+def test_every_persona_variation_set_generated_truth_agrees(tmp_path):
+    # Same guarantee at the generate_set level — the ground truth
+    # the eval runner actually generates and scores.
+    for i, persona in enumerate(BANGLA_PERSONAS):
+        truth = generate_set(tmp_path / f"s{i}", "variation", 7,
+                             person=persona)
+        assert truth["persona"] == persona["name_en"]
+        assert comparator.compare(truth["documents"]).verdict == \
+            "CONSISTENT", persona["name_en"]
