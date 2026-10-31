@@ -1,6 +1,6 @@
 # DocTrust
 
-**An open-weight reviewer agent that cross-examines a person's whole document set — and shows the human reviewer the evidence.**
+**A reviewer agent that cross-examines a person's whole document set — and shows the human reviewer the evidence. It runs on hosted Muse Spark or Muse Spark Open (open weights).**
 
 *Do these documents tell a coherent story, and what evidence is missing before you can trust it?*
 

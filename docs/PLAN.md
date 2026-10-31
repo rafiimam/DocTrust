@@ -4,7 +4,7 @@ Meta Global AI Developer Hackathon · Indie Developer track · "Build for Your W
 Written 27 Oct 2026 by Rafi. Supersedes the earlier plan (DocTrust-Updated-Plan-2026-10-27.md).
 
 ## One line
-DocTrust is an open-weight reviewer agent that cross-examines a person's whole document set (NID, birth certificate, bank form), re-reads anything it is unsure about, and shows the human reviewer the exact regions that agree or disagree. It never auto-rejects.
+DocTrust is a reviewer agent that cross-examines a person's whole document set (NID, birth certificate, bank form), re-reads anything it is unsure about, and shows the human reviewer the exact regions that agree or disagree. It runs on hosted Muse Spark or Muse Spark Open (open weights). It never auto-rejects.
 
 ## Status note (27 Oct 2026) — what is verified, what is pending
 - **Verified live:** the reader running on the hosted Meta Model API (`muse-spark-1.3`) — the Bangla gate test passed 4/4, and the judge-mode pipeline was verified publicly end-to-end against the Modal deployment (fresh case pack downloaded, uploaded back, streamed investigation trace including `stamp_masked` re-read views, correct DISCREPANCY verdict; 27 Oct 2026). Billing resolved via the $150 credit.
@@ -12,6 +12,7 @@ DocTrust is an open-weight reviewer agent that cross-examines a person's whole d
 - **Segmentation route:** SAM 3.1 is called through the Meta Model API (Meta-hosted, same weights), and that is the segmenter the deployed backend uses. The self-hosted Modal SAM app is implemented but not deployed — the owner's Modal workspace cannot add the payment method its GPU functions require. Measured so far: the box-IoU stage of the stamp comparison (`eval/SAM_TEST.md`) — SAM box IoU 0.99 on all four stamp styles under two pre-registered prompts, the Pillow heuristic 0.98 on purple and nothing on the other three. Still unproven: whether that localization improves recovered reads and verdicts — the recovered-read stage and the full evaluation run remain pending (protocol in `eval/EVALUATION.md`).
 - The open-weights point throughout this plan is a **design property** — a deployment *can* run entirely inside the institution — not a claim about which route the current demo runs.
 - **Update (29 Oct 2026):** investigation is now model-directed — when a field is uncertain, the reader is consulted as a planner (max 2 consultations per field) to choose the next step (mask the stamp / tighter zoom / stop for recapture) with its reason logged per field; any planner failure falls back to the previous fixed mask-then-zoom sequence, and the comparator keeps sole verdict authority. Implemented and covered by offline tests; the full evaluation now runs against this agent.
+- **Update (31 Oct 2026):** the open-weight Baseten route has since been verified across the full evaluation (42/50 sets completed; results in `eval/EVALUATION.md`), a fresh-seed held-out batch replicated the post-fix results, and the one-liner above now names both reader routes to match the evidence. Still pending at this update: the physical-capture batch and the verdict-level SAM-vs-heuristic hard batch.
 
 ## What changed from v1, and why
 - Re-reads are triggered by perturbation disagreement, not model self-confidence — principled uncertainty, and it puts the noise-robustness research at the core.
