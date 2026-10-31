@@ -217,6 +217,8 @@
   function resetRun() {
     stopFallbackPolling();
     runSeq += 1;
+    lastResult = null;
+    closeLightbox();
     traceEl.innerHTML = "";
     clearStages();
     setStatus("Starting…");
@@ -273,7 +275,10 @@
     });
   }
 
+  var lastResult = null;
+
   function renderResult(result) {
+    lastResult = result;
     // Fields table
     var docs = result.documents || {};
     var docNames = Object.keys(docs);
@@ -313,11 +318,13 @@
       fieldsTable.innerHTML = html;
       fieldsPanel.hidden = false;
     }
-    // Evidence images
+    // Evidence images — click any view to open it full size with the
+    // agent's read on that document alongside (see the lightbox code).
     var evidence = result.evidence || [];
     if (evidence.length) {
-      evidenceGrid.innerHTML = evidence.map(function (e) {
-        return "<figure class='evidence-item'><img src='" +
+      evidenceGrid.innerHTML = evidence.map(function (e, i) {
+        return "<figure class='evidence-item' data-evidence-idx='" + i +
+          "' tabindex='0' role='button' aria-label='View full size'><img src='" +
           escapeHtml(e.data_url) +
           "' alt=''><figcaption>" +
           escapeHtml(DOC_LABELS[e.doc_type] || e.doc_type) + " · " +
@@ -514,5 +521,183 @@
           ". No live run was simulated. Check the Backend URL above, or " +
           "switch back to the cached cases.", "tone-warn");
       });
+  });
+
+  // --- Evidence lightbox ---------------------------------------------------
+  // Clicking an evidence view opens it full size; the sidebar shows
+  // the agent's read on that document — its field values, the
+  // comparator findings it takes part in, any planner decisions about
+  // it, and reviewer guidance derived deterministically from those
+  // results (an explicit all-clear when nothing is wrong). Everything
+  // is built with textContent: result strings are untrusted model
+  // output and are never interpolated into HTML here.
+  var lightbox = document.getElementById("evidenceLightbox");
+  var lightboxImg = document.getElementById("lightboxImg");
+  var lightboxCaption = document.getElementById("lightboxCaption");
+  var lightboxAdvice = document.getElementById("lightboxAdvice");
+
+  var FINDING_LABELS = {
+    match: "Agrees with the set",
+    variant: "Variant — same person, different spelling",
+    mismatch: "DISAGREES with the set",
+    unreadable: "Could not be read",
+    single_source: "Only readable source in the set"
+  };
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text != null) { n.textContent = text; }
+    return n;
+  }
+
+  function closeLightbox() {
+    if (lightbox) { lightbox.hidden = true; }
+    if (lightboxImg) { lightboxImg.removeAttribute("src"); }
+  }
+
+  function buildAdvice(docType, viewName) {
+    var box = lightboxAdvice;
+    box.innerHTML = "";
+    var result = lastResult || {};
+    var docLabel = DOC_LABELS[docType] || docType;
+
+    // Overall verdict for the set this evidence belongs to.
+    if (result.verdict) {
+      var v = el("div", "lb-verdict lb-verdict-" +
+        (VERDICT_KIND[result.verdict] || "consistent"));
+      v.appendChild(el("span", "lb-verdict-label",
+        result.verdict_label || result.verdict));
+      v.appendChild(el("span", "lb-verdict-sub",
+        " — overall verdict for this document set"));
+      box.appendChild(v);
+    }
+    box.appendChild(el("p", "lb-context",
+      "You are viewing the " + viewName + " view of the " + docLabel +
+      " — one of the views the agent actually read."));
+
+    // What the agent read on this document, with the comparator's
+    // finding for each field it shares with the set.
+    var fields = (result.documents || {})[docType] || {};
+    var findings = result.findings || [];
+    function findingFor(field) {
+      for (var i = 0; i < findings.length; i++) {
+        var f = findings[i];
+        if (f.field !== field) { continue; }
+        if (f.values && !(docType in f.values)) { continue; }
+        return f;
+      }
+      return null;
+    }
+    var fieldNames = Object.keys(fields);
+    if (fieldNames.length) {
+      box.appendChild(el("h4", "lb-h", "What the agent read here"));
+      fieldNames.forEach(function (field) {
+        var fr = fields[field];
+        var row = el("div", "lb-field");
+        var head = el("div", "lb-field-head");
+        head.appendChild(el("span", "lb-field-name", field));
+        var f = findingFor(field);
+        if (f) {
+          head.appendChild(el("span",
+            "lb-finding lb-finding-" + f.status,
+            FINDING_LABELS[f.status] || f.status));
+        } else if (fr.uncertain) {
+          head.appendChild(el("span", "lb-finding lb-finding-unreadable",
+            "Uncertain reads"));
+        }
+        row.appendChild(head);
+        row.appendChild(el("div", "lb-field-value",
+          fr.value || "— unreadable —"));
+        (fr.investigation || []).forEach(function (d) {
+          row.appendChild(el("div", "lb-investigation",
+            (d.source === "planner" ? "Agent decision" : "Fallback step") +
+            " → " + d.action + (d.reason ? " — " + d.reason : "")));
+        });
+        box.appendChild(row);
+      });
+    }
+
+    // Reviewer guidance, derived from this document's findings.
+    var mismatched = findings.filter(function (f) {
+      return f.status === "mismatch" &&
+        (!f.values || docType in f.values) && fields[f.field];
+    });
+    var unreadable = findings.filter(function (f) {
+      return f.status === "unreadable" &&
+        (!f.values || docType in f.values) && fields[f.field];
+    });
+    var docGaps = (result.evidence_gaps || []).filter(function (g) {
+      return (g.detail || "").indexOf(docLabel) !== -1;
+    });
+    var advice = el("div", "lb-advice");
+    if (mismatched.length) {
+      advice.classList.add("lb-advice-bad");
+      advice.appendChild(el("strong", null, "Reviewer guidance: "));
+      advice.appendChild(document.createTextNode(
+        "this document disagrees with the rest of the set on " +
+        mismatched.map(function (f) { return f.field; }).join(", ") +
+        ". Compare the values side by side in “What the agent read” " +
+        "before deciding — the set is flagged for human review, " +
+        "never auto-rejected."));
+    } else if (unreadable.length || fieldNames.some(function (n) {
+      return fields[n].uncertain;
+    })) {
+      advice.classList.add("lb-advice-warn");
+      advice.appendChild(el("strong", null, "Reviewer guidance: "));
+      advice.appendChild(document.createTextNode(
+        "some fields on this document could not be read reliably. " +
+        "That is a capture problem, not evidence against the " +
+        "applicant — the next step is a clearer re-capture of this " +
+        "document."));
+    } else if (docGaps.length) {
+      advice.classList.add("lb-advice-warn");
+      advice.appendChild(el("strong", null, "Reviewer guidance: "));
+      advice.appendChild(document.createTextNode(
+        docGaps[0].detail + " Next step: " + docGaps[0].next_step));
+    } else {
+      advice.classList.add("lb-advice-good");
+      advice.appendChild(el("strong", null, "All clear on this document: "));
+      advice.appendChild(document.createTextNode(
+        "every shared fact read here agrees with the rest of the set " +
+        "after normalization. Nothing on the " + docLabel +
+        " needs reviewer action."));
+    }
+    box.appendChild(advice);
+  }
+
+  function openLightbox(evidenceItem) {
+    if (!evidenceItem) { return; }
+    lightboxImg.src = evidenceItem.data_url;
+    lightboxCaption.textContent =
+      (DOC_LABELS[evidenceItem.doc_type] || evidenceItem.doc_type) +
+      " · " + evidenceItem.view + " view — as read by the agent";
+    buildAdvice(evidenceItem.doc_type, evidenceItem.view);
+    lightbox.hidden = false;
+    var closeBtn = document.getElementById("lightboxClose");
+    if (closeBtn) { closeBtn.focus(); }
+  }
+
+  evidenceGrid.addEventListener("click", function (ev) {
+    var fig = ev.target.closest("[data-evidence-idx]");
+    if (!fig || !lastResult) { return; }
+    openLightbox((lastResult.evidence || [])[
+      Number(fig.getAttribute("data-evidence-idx"))]);
+  });
+  evidenceGrid.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Enter") { return; }
+    var fig = ev.target.closest("[data-evidence-idx]");
+    if (!fig || !lastResult) { return; }
+    openLightbox((lastResult.evidence || [])[
+      Number(fig.getAttribute("data-evidence-idx"))]);
+  });
+  document.getElementById("lightboxClose")
+    .addEventListener("click", closeLightbox);
+  document.getElementById("lightboxBackdrop")
+    .addEventListener("click", closeLightbox);
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && lightbox && !lightbox.hidden) {
+      closeLightbox();
+    }
   });
 })();
