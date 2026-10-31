@@ -253,16 +253,25 @@ Planner activity: SAM run — 19 fields investigated, 27 steps, all
 planner-chosen (zoom_tight ×13, stamp_masked ×8, recapture ×6);
 Pillow run — 18 fields, 25 steps, all planner-chosen.
 
-The agent's misses split into two kinds. Verdict-level: under SAM,
-persona-disc-01 (black stamp over DOB) was unreadable to every
-configuration, and persona-disc-25 was unreadable to the agent
-alone — the conservative failure again; against that, the agent
-caught persona-disc-08, where single-pass returned Unreadable
-(red-orange stamp over DOB, recovered by investigation). The
-remaining missed sets in each run returned a Discrepancy verdict
-that flagged a field other than the injected one — a real catch of
-a real disagreement, scored as a miss because the planted field was
-not the one flagged.
+The agent's misses, at field level (from the run records): under
+SAM, persona-disc-01 (black stamp over DOB) was unreadable to
+every configuration, and persona-disc-25 was unreadable to the
+agent alone — the conservative failure again (the Pillow run
+caught it; one set, segmenter-level noise). Against those, the
+agent caught persona-disc-08, where single-pass returned
+Unreadable (red-orange stamp over DOB, recovered by
+investigation). The other two SAM misses — and two of the three
+Pillow misses — are **wrong-field flags**: persona-disc-05 and -09
+(both black stamp over DOB) were flagged on father_name, a field
+where the documents agree; the disagreement existed only in the
+reads (the certificate's Bangla father name, read inconsistently
+next to the stamp). The same noise appears inside caught sets: in
+7 of 30 SAM sets (4 of 30 Pillow) the agent flagged at least one
+agreeing field alongside the planted one, again almost always
+father_name. Verdicts were unaffected — those sets are
+discrepancies — but on *genuine* sets for these personas the same
+channel would produce false flags, which is exactly the direction
+this batch does not measure (below).
 
 **Reading of this batch:** the catch rate on ten unseen names
 (26–27/30) matches the single-persona batches, and the near-miss
