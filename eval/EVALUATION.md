@@ -314,6 +314,11 @@ either route.
   hosted reader needed the transliteration fix for Bangla names; the
   open-weights reader's reasoning exceeds practical completion
   budgets on a majority of Devanagari sets.
+- Cost per set is not reported, deliberately. The run records carry
+  token/cost fields, but neither reader route surfaced usage into
+  them, so every cost cell is "—". Reads per set (11.0 single-pass,
+  ~33.5 full agent) is the reported cost proxy; estimating a dollar
+  figure from assumed token counts would be inventing a number.
 - **No real-world accuracy claim is made anywhere from this
   evaluation.** It measures the pipeline against its own ground
   truth, on synthetic data, at small sample size.

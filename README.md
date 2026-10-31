@@ -10,6 +10,8 @@ Built for the **Meta Global AI Developer Hackathon 2026** (Indie Developer track
 
 KYC and onboarding systems built around Latin names and clean scans fail people in non-Latin-script markets. In Bangladesh, the same person appears as Mohammad, Md. or Muhammed across documents; Bangla digits (০১২৩) sit next to 0123; dates change format from one document to the next; and applicants submit folded, glare-lit photos from low-end phones. Exact-match pipelines silently reject genuine customers, and tired human reviewers miss the subtle inconsistencies — a one-digit date-of-birth difference — that actually matter.
 
+The scale is not hypothetical. Bangladesh's Election Commission has received **6.57 million applications to correct NID records** — 6.44 million disposed of, 1.36 million rejected, and roughly 80,000–90,000 new requests still arriving every month (Election Commission National Identity Registration Wing figures to 18 Oct 2026, [reported by the Daily Observer](https://observerbd.com/news/601634)). A person's own documents disagreeing with each other is a mass phenomenon in this market, and every disagreement lands in front of a reviewer who has to decide what the evidence actually says.
+
 ## Results at a glance
 
 Full agent vs the baselines it has to beat — Meta route (muse-spark-1.3), 40 synthetic Bangla sets, post-fix system, 2026-10-30. Full tables, the second reader route, the Hindi sets, and every failure: [Results](#results) and [`eval/EVALUATION.md`](eval/EVALUATION.md).
@@ -33,6 +35,12 @@ DocTrust reviews a document set (national ID, birth certificate, bank form) the 
 6. **Reports a verdict with evidence** — *Consistent* / *Discrepancy, needs human review* / *Unreadable, request recapture* — every flag linked to the exact regions on the exact documents.
 
 DocTrust never auto-approves or auto-rejects. It is decision support for a human reviewer. All documents used in development and evaluation are synthetic and watermarked SPECIMEN.
+
+## Quick start
+
+- **See it (30 seconds):** open the [live demo](https://rafiimam.github.io/DocTrust/demo/) and press Play. Cases A–D replay real review traces — a discrepancy caught under a stamp, a degraded set asking for recapture, and a Hindi (Devanagari) set. Nothing to install, nothing uploaded.
+- **Run it live:** in the same page, switch to Judge mode and upload your own documents (synthetic only, please), or download a specimen case pack — including the Hindi pack — and run it through.
+- **Run it locally:** `pip install -r backend/requirements.txt`, set `MODEL_API_KEY` and `JUDGE_READER=meta`, then serve `backend/app/main.py` — full steps under [Judge mode](#judge-mode--run-it-yourself-live) below. The test suite is 152 tests: `python -m pytest backend/tests -q`.
 
 ## Live demo
 
@@ -93,6 +101,15 @@ SAM 3.1 is wired into the agent as a tool, not a preprocessing step:
 - **Still unproven:** whether SAM's localization improves recovered field readings and final verdicts across a broader test set. The full three-configuration evaluation ([eval/EVALUATION.md](eval/EVALUATION.md)) has now run with SAM 3.1 (hosted) as the segmenter in every run, but a controlled SAM-vs-heuristic comparison of final verdicts — the recovered-read stage of the SAM protocol — has not been run, so no verdict-level claim is made for SAM.
 
 All development documents are synthetic and watermarked SPECIMEN.
+
+## What we learned about Meta's models
+
+Findings from building on the Meta Model API and Baseten's Muse Spark Open route — each one cost us a debugging session, and each one is the kind of thing we would want to know before starting:
+
+- **Reasoning models eat small budgets silently.** At `max_tokens` 128, `muse-spark-1.3` returned null content on every call — the budget went entirely to reasoning. Field reads need real headroom (1024 + `reasoning_effort: "minimal"` on the hosted route). Muse Spark Open reasons at full depth with no effort control: a minority of sets returned no content at 4096 or 8192 tokens, and 7 of 50 sets — almost all Devanagari — returned none even at 16,384.
+- **Reader bias is systematic, not noisy.** The hosted reader back-transliterated the Bangla করিম as "Abdul Karami" in 26 of 29 genuine sets and never once as "Abdul Karim"; the open-weights build read "Abdul Karim" on the identical images. One biased field produced 18/21 false flags. Lesson: evaluate vision readers per script and per field — an aggregate accuracy number would have hidden this completely.
+- **SAM 3.1 is prompt-sensitive in a specific way.** "stamp" and "circular ink stamp" localized the stamp at box IoU 0.99 across all four ink styles; "rubber stamp" returned zero boxes in every style. The hosted route returns boxes and masks but no confidence score, so downstream code cannot threshold on certainty — plan for that.
+- **The route is a variable, not a detail.** Same model family, two routes: the hosted API answered a full agent review in ~58 s per set; the open-weights route took ~195–213 s and completed 42 of 50 sets within the token budgets we could give it. Report the route with every number.
 
 ## Future work — directions, not capabilities
 

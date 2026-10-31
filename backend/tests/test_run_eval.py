@@ -97,6 +97,49 @@ def test_agent_recovers_over_dob_discrepancy_after_disagreement(tmp_path):
     assert result.summary["configs"]["agent"]["silent_errors"] == 0
 
 
+def test_agent_investigations_recorded_and_no_planner_ablation(tmp_path):
+    # The agent record must carry the per-field investigation logs
+    # (planner stats are computed from them), and --no-planner must
+    # turn a planning reader into the deterministic fallback sequence
+    # without changing the verdict.
+    misread = "১২/০৮/১৯৯০"
+    truth_dob = "১২/০৩/১৯৯০"
+
+    class PlanningTruthReader(TruthReader):
+        def plan_investigation(self, image_path, doc_type, field,
+                               reads, actions):
+            return {"action": "zoom_tight",
+                    "reason": "test planner choice"}
+
+    def factory(spec, phase, truth):
+        docs = truth["documents"]
+        if phase == "single":
+            return TruthReader(
+                docs, {("birth_certificate", "dob"): [misread]})
+        return PlanningTruthReader(
+            docs, {("birth_certificate", "dob"): [
+                misread, truth_dob, "UNREADABLE", truth_dob, truth_dob]})
+
+    result = _run(tmp_path, _counts(discrepancy=1), factory, over_dob=1)
+    record = result.records[0]
+    inv = record["configs"]["agent"]["investigations"]
+    assert "birth_certificate.dob" in inv
+    assert inv["birth_certificate.dob"][0]["source"] == "planner"
+    assert inv["birth_certificate.dob"][0]["action"] == "zoom_tight"
+    assert result.meta["no_planner"] is False
+
+    ablated = _run(tmp_path, _counts(discrepancy=1), factory,
+                   over_dob=1, no_planner=True)
+    arec = ablated.records[0]
+    ainv = arec["configs"]["agent"]["investigations"]
+    assert "birth_certificate.dob" in ainv
+    assert all(e["source"] == "fallback"
+               for e in ainv["birth_certificate.dob"])
+    assert ainv["birth_certificate.dob"][0]["action"] == "stamp_masked"
+    assert arec["configs"]["agent"]["verdict"] == "DISCREPANCY"
+    assert ablated.meta["no_planner"] is True
+
+
 def test_metrics_counting_on_tiny_fixture(tmp_path):
     # Four sets: clean, variation (both genuine), one discrepancy the
     # reader silently "corrects" (reads the true DOB on the form), one

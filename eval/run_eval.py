@@ -406,6 +406,27 @@ class CountingReader:
         return decision
 
 
+class PlannerSuppressingReader:
+    """Reader wrapper for the --no-planner ablation: reads delegate
+    to the wrapped reader, but `plan_investigation` is hidden, so
+    the agent runs its deterministic fallback investigation sequence
+    — the same code path as a reader with no planner at all. Every
+    other attribute (including `last_usage`) passes through."""
+
+    def __init__(self, inner):
+        self._inner = inner
+
+    def read_field(self, image_path: str, doc_type: str, field: str,
+                   perturbation: str) -> str:
+        return self._inner.read_field(image_path, doc_type, field,
+                                      perturbation)
+
+    def __getattr__(self, name):
+        if name == "plan_investigation":
+            raise AttributeError(name)
+        return getattr(self._inner, name)
+
+
 def _cost_usd(input_tokens: int, output_tokens: int) -> float:
     pin = float(os.environ.get("EVAL_PRICE_INPUT_PER_MTOK",
                                _DEFAULT_PRICES[0]))
@@ -476,7 +497,8 @@ def _usage_cells(reader: CountingReader, latency: float) -> dict:
 
 
 def _run_configs(images: dict[str, str], truth: dict, spec,
-                 reader_factory, segmenter) -> dict:
+                 reader_factory, segmenter, no_planner: bool = False
+                 ) -> dict:
     """Run all three configurations over one set's images and return
     the per-configuration results. Shared by synthetic and physically
     captured sets — the configurations do not know which they are
@@ -499,7 +521,10 @@ def _run_configs(images: dict[str, str], truth: dict, spec,
         }
 
     # Configuration 3: the full agent, its own reader.
-    agent_reader = CountingReader(reader_factory(spec, "agent", truth))
+    raw_agent_reader = reader_factory(spec, "agent", truth)
+    if no_planner:
+        raw_agent_reader = PlannerSuppressingReader(raw_agent_reader)
+    agent_reader = CountingReader(raw_agent_reader)
     start = time.perf_counter()
     outcome = agent.run_review(agent_reader, images, segmenter=segmenter)
     agent_latency = time.perf_counter() - start
@@ -511,13 +536,20 @@ def _run_configs(images: dict[str, str], truth: dict, spec,
         "documents": outcome.documents,
         "uncertain_fields": [f"{fr.doc_type}.{fr.field}"
                              for fr in outcome.field_reads if fr.uncertain],
+        # The planner's measured activity: per-field investigation
+        # logs ({action, reason, source} entries). Absent from runs
+        # made before this field existed; renderers must tolerate it.
+        "investigations": {
+            f"{fr.doc_type}.{fr.field}": fr.investigation
+            for fr in outcome.field_reads if fr.investigation},
         **_usage_cells(agent_reader, agent_latency),
     }
     return configs
 
 
 def evaluate_set(spec: SetSpec, truth: dict, expected: dict,
-                 data_dir: Path, reader_factory, segmenter) -> dict:
+                 data_dir: Path, reader_factory, segmenter,
+                 no_planner: bool = False) -> dict:
     """Run all three configurations over one synthetic set. Never
     raises for reader errors — the caller records them as set
     errors."""
@@ -536,13 +568,14 @@ def evaluate_set(spec: SetSpec, truth: dict, expected: dict,
         "configs": {},
     }
     record["configs"] = _run_configs(images, truth, spec,
-                                     reader_factory, segmenter)
+                                     reader_factory, segmenter,
+                                     no_planner=no_planner)
     record["status"] = "ok"
     return record
 
 
 def evaluate_physical_set(spec: PhysicalSpec, reader_factory,
-                          segmenter) -> dict:
+                          segmenter, no_planner: bool = False) -> dict:
     """Run all three configurations over one physically captured set.
     Expectations derive from the manifest's documents via the same
     comparator as synthetic ground truth; for a discrepancy set the
@@ -567,7 +600,8 @@ def evaluate_physical_set(spec: PhysicalSpec, reader_factory,
         "configs": {},
     }
     record["configs"] = _run_configs(spec.images, truth, spec,
-                                     reader_factory, segmenter)
+                                     reader_factory, segmenter,
+                                     no_planner=no_planner)
     record["status"] = "ok"
     return record
 
@@ -740,6 +774,37 @@ def _split_row(label: str, cells: dict, pool: str) -> str:
         f"{_xn(cells['recapture'], cells['degraded_n'])} |")
 
 
+def _planner_activity(records: list[dict]) -> list[str]:
+    """Planner-activity lines for the run summary, computed from the
+    agent records' investigation logs. Empty when no record carries
+    logs (runs made before the field existed, or no field was ever
+    uncertain)."""
+    fields = 0
+    by_action: dict[str, int] = {}
+    by_source: dict[str, int] = {}
+    for record in records:
+        agent_cfg = (record.get("configs") or {}).get("agent") or {}
+        for entries in (agent_cfg.get("investigations") or {}).values():
+            fields += 1
+            for entry in entries:
+                by_action[entry.get("action", "?")] = \
+                    by_action.get(entry.get("action", "?"), 0) + 1
+                by_source[entry.get("source", "?")] = \
+                    by_source.get(entry.get("source", "?"), 0) + 1
+    if not fields:
+        return []
+    actions = ", ".join(f"{k} ×{v}" for k, v in sorted(by_action.items()))
+    sources = ", ".join(f"{k} ×{v}" for k, v in sorted(by_source.items()))
+    return [
+        "",
+        "### Investigation planner activity (full agent)",
+        "",
+        f"- Fields investigated: {fields}",
+        f"- Steps by action: {actions}",
+        f"- Steps by source: {sources}",
+    ]
+
+
 def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
     lines = [
         "# DocTrust evaluation — run summary",
@@ -752,6 +817,10 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
         f"- Sets completed: {summary['sets_ok']} "
         f"(errors: {summary['sets_error']})",
     ]
+    if meta.get("no_planner"):
+        lines.append(
+            "- Planner: DISABLED for configuration 3 (ablation run — "
+            "deterministic fallback investigation sequence)")
     if meta.get("physical_sets"):
         lines.append(
             f"- Physically captured sets: {meta['physical_sets']} "
@@ -779,6 +848,7 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
     for category in CATEGORIES:
         pool = "genuine" if category in GENUINE_CATEGORIES else category
         lines.append(_split_row(category, bc[category], pool))
+    lines += _planner_activity(records)
     if any(r["category"] == "physical" for r in records):
         lines += [
             "",
@@ -901,7 +971,8 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
                    data_dir: Path, out_path: Path,
                    reader=None, reader_factory=None, segmenter=None,
                    workers: int = 4, resume: bool = False,
-                   physical_dir: Path | None = None) -> RunResult:
+                   physical_dir: Path | None = None,
+                   no_planner: bool = False) -> RunResult:
     """Build the dataset and evaluate every set — the synthetic sets
     plus, when `physical_dir` is given, every physically captured set
     discovered there. `hindi` > 0 appends that many Hindi-script sets,
@@ -942,6 +1013,7 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
         "reader": type(reader).__name__ if reader is not None
                   else "factory",
         "segmenter": type(segmenter).__name__,
+        "no_planner": no_planner,
     }
 
     records: dict[str, dict] = {}
@@ -960,7 +1032,8 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
         try:
             return evaluate_set(spec, truths[spec.set_id],
                                 expected_from_truth(truths[spec.set_id]),
-                                Path(data_dir), reader_factory, segmenter)
+                                Path(data_dir), reader_factory, segmenter,
+                                no_planner=no_planner)
         except Exception:
             return _error_record({
                 "set_id": spec.set_id, "category": spec.category,
@@ -972,7 +1045,8 @@ def run_evaluation(*, counts: dict[str, int] | None = None,
 
     def work_physical(spec: PhysicalSpec) -> dict:
         try:
-            return evaluate_physical_set(spec, reader_factory, segmenter)
+            return evaluate_physical_set(spec, reader_factory, segmenter,
+                                         no_planner=no_planner)
         except Exception:
             return _error_record({
                 "set_id": spec.set_id, "category": "physical",
@@ -1035,6 +1109,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default="eval/results/results.json")
     ap.add_argument("--resume", action="store_true",
                     help="skip sets already completed in the out file")
+    ap.add_argument("--no-planner", action="store_true",
+                    help="ablation: hide the reader's investigation "
+                         "planner from configuration 3, so it runs "
+                         "the deterministic fallback sequence — "
+                         "planner vs fixed-sequence comparison")
     args = ap.parse_args(argv)
 
     counts = {}
@@ -1058,7 +1137,8 @@ def main(argv: list[str] | None = None) -> int:
         data_dir=Path(args.data_dir), out_path=Path(args.out),
         reader=reader, segmenter=judge.resolve_segmenter(),
         workers=args.workers, resume=args.resume,
-        physical_dir=Path(args.physical_dir))
+        physical_dir=Path(args.physical_dir),
+        no_planner=args.no_planner)
     print(render_markdown(result.summary, result.meta, result.records))
     print(f"\nWrote {args.out} (+ .md summary alongside)")
     return 0
