@@ -224,6 +224,57 @@ occlusion is a safe recapture request, never a silent pass, in
 every configuration and both segmenters. No verdict-level claim
 is made for SAM or for the planner from this batch.
 
+### Multi-persona batch — name generalization (seed base 303), Meta route, 2026-10-31
+
+_The headline and held-out batches share one base person record,
+so they cannot show whether the transliteration fix generalizes to
+names it was not tuned on. This batch can: 30 discrepancy sets
+planted across a pool of **ten Bangla personas**, in three groups
+of ten — stamp over the birth-certificate DOB; margin stamp with
+near-miss name and digit injections; and degraded-plus-discrepancy.
+Injections sit on the bank form: a father's name replaced by a
+genuinely different near-miss (Karim → Rahim, Rahman → Rahim,
+Hossain → Hasan), the person's surname likewise, one ID digit, or
+one DOB day digit. Every injection was verified at build time to
+be a true mismatch under the comparator — two plausible pairs were
+rejected by that check and are disclosed here rather than planted:
+Akter ↔ Akhtar (a fold-equivalence in the comparator) and Hosen →
+Hasan (a skeleton variant) are treated as the *same* name by
+design, so they cannot serve as discrepancies._
+
+| Metric | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
+|---|---|---|---|
+| Injected discrepancies caught, SAM (x/n) | 24/30 | 26/30 | 26/30 |
+| Injected discrepancies caught, Pillow (x/n) | 25/30 | 27/30 | 27/30 |
+| **Silent errors (count, both runs)** | **0** | **0** | **0** |
+| Agent reads / latency per set (SAM) | 11.0 / 19.6 s | — | 34.6 / 61.4 s |
+
+Planner activity: SAM run — 19 fields investigated, 27 steps, all
+planner-chosen (zoom_tight ×13, stamp_masked ×8, recapture ×6);
+Pillow run — 18 fields, 25 steps, all planner-chosen.
+
+The agent's misses split into two kinds. Verdict-level: under SAM,
+persona-disc-01 (black stamp over DOB) was unreadable to every
+configuration, and persona-disc-25 was unreadable to the agent
+alone — the conservative failure again; against that, the agent
+caught persona-disc-08, where single-pass returned Unreadable
+(red-orange stamp over DOB, recovered by investigation). The
+remaining missed sets in each run returned a Discrepancy verdict
+that flagged a field other than the injected one — a real catch of
+a real disagreement, scored as a miss because the planted field was
+not the one flagged.
+
+**Reading of this batch:** the catch rate on ten unseen names
+(26–27/30) matches the single-persona batches, and the near-miss
+name injections were caught at the same rate as the digit ones —
+the skeleton rule does not over-forgive on new names. SAM vs
+Pillow again produced no verdict-level difference worth claiming
+(26 vs 27, one set, within noise). Pooled across the development,
+held-out and multi-persona batches, silent errors are 0 in 50
+injected-discrepancy sets (bound ≈ 6%, rule of three). What this
+batch does not measure: false flags across the persona pool — the
+genuine-set evidence remains single-persona.
+
 ### Hindi-script sets (secondary, small n)
 
 _The second script is deliberately cheap: the same document family
@@ -363,12 +414,16 @@ either route.
   zero rate: 0 false flags in 22 genuine sets still allows a true
   false-flag rate up to roughly 3/22 ≈ 14% (rule of three, 95%
   bound). Silent errors can only occur on injected-discrepancy
-  sets, so their denominator is smaller: 0 observed in 20 pooled
-  completed discrepancy sets (10 development + 10 held-out) still
-  allows a true silent-error rate up to roughly 3/20 = 15%.
+  sets, so their denominator is smaller: 0 observed in 50 pooled
+  completed discrepancy sets (10 development + 10 held-out + 30
+  multi-persona) still allows a true silent-error rate up to
+  roughly 3/50 = 6%.
 - One document family (Bangladeshi NID / birth certificate / bank
   form, as synthetic approximations) and one base person record with
   variations, plus one Hindi persona. No claim extends beyond that.
+  The multi-persona batch widens the name evidence on the
+  discrepancy side only; false-flag rates across different persons
+  are not yet measured.
 - Cover-masking limit: the `stamp_masked` investigation view replaces
   the stamp region with a cover; it cannot reveal print underneath a
   stamp. Fields under a stamp are recovered, when they are recovered,
