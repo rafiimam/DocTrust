@@ -25,6 +25,7 @@ import io
 import json
 import sys
 import tempfile
+import threading
 import zipfile
 from pathlib import Path
 
@@ -105,7 +106,6 @@ async def _read_upload(upload: UploadFile, doc_type: str) -> bytes:
 
 @app.post("/api/review", status_code=202)
 async def create_review(
-    background: BackgroundTasks,
     nid: UploadFile | None = File(None),
     birth_certificate: UploadFile | None = File(None),
     bank_form: UploadFile | None = File(None),
@@ -143,8 +143,15 @@ async def create_review(
     job.reader_configured = reader is not None
     job.emit({"type": "queued", "phase": "Intake",
               "text": "Upload accepted; review queued."})
-    background.add_task(judge_module.process_job, job, uploads,
-                        reader, segmenter)
+    # Run the review on its own thread, NOT as a Starlette background
+    # task: behind Modal's proxy the client does not see the 202 until
+    # the whole request cycle — background task included — finishes,
+    # so the UI sat on "Uploading…" for the entire 2-3 minute review
+    # and the trace only appeared at the end. A daemon thread lets
+    # this response return at once and the events stream live.
+    threading.Thread(target=judge_module.process_job,
+                     args=(job, uploads, reader, segmenter),
+                     daemon=True).start()
     return {"job_id": job.id, "state": job.state,
             "reader_configured": reader is not None,
             "events_url": f"/api/review/{job.id}/events",
