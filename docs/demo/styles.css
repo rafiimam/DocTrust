@@ -546,6 +546,8 @@ h1 {
 .lb-finding-unreadable, .lb-finding-single_source { color: var(--warn); }
 .lb-field-value { font-size: 15px; font-weight: 600; margin-top: 2px; word-break: break-word; }
 .lb-investigation { color: var(--violet); font-size: 12.5px; font-style: italic; margin-top: 3px; }
+.lb-reads { margin-top: 5px; display: grid; gap: 2px; }
+.lb-read { color: var(--muted); font-size: 12.5px; }
 .lb-advice {
   border: 1.5px solid; border-radius: 11px; padding: 10px 13px;
   font-size: 13.5px; margin-top: 14px;

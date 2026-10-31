@@ -749,6 +749,17 @@
         row.appendChild(head);
         row.appendChild(el("div", "lb-field-value",
           fr.value || "— unreadable —"));
+        // The per-view reads behind that value: the journey is the
+        // evidence — above all the stamp_removed read, which is
+        // where a covered field gets recovered (or honestly doesn't).
+        if ((fr.reads || []).length) {
+          var readsBox = el("div", "lb-reads");
+          fr.reads.forEach(function (r) {
+            readsBox.appendChild(el("div", "lb-read",
+              r.view + " → " + (r.value || "UNREADABLE")));
+          });
+          row.appendChild(readsBox);
+        }
         (fr.investigation || []).forEach(function (d) {
           row.appendChild(el("div", "lb-investigation",
             (d.source === "planner" ? "Agent decision" : "Fallback step") +
