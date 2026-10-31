@@ -18,7 +18,7 @@ from generator.generate import (BASE_PERSON, BC_FIRST_ROW_Y,
                                 FONT_LATIN, ROW_STEP, STAMP_BOX,
                                 STAMP_BOX_OVER_DOB, STAMP_CENTER,
                                 STAMP_CENTER_OVER_DOB, STAMP_RADIUS,
-                                STAMP_STYLES, VALUE_X, generate_set)
+                                STAMP_STYLES, VALUE_X, _font, generate_set)
 
 
 @pytest.mark.parametrize("style", sorted(STAMP_STYLES))
@@ -103,7 +103,9 @@ def test_over_dob_renders_for_every_style(tmp_path, style):
 def _text_ink_bbox(text, font_path, size, xy):
     scratch = Image.new("RGB", (1000, 640), "white")
     d = ImageDraw.Draw(scratch)
-    return d.textbbox(xy, text, font=ImageFont.truetype(font_path, size))
+    # _font resolves the platform path by filename — the FONT_*
+    # constants are Debian paths and do not exist on macOS.
+    return d.textbbox(xy, text, font=_font(font_path, size))
 
 
 def test_over_dob_stamp_covers_born_value_not_label(tmp_path):

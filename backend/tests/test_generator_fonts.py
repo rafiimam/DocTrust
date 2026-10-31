@@ -14,7 +14,12 @@ import pytest
 
 import generator.generate as gen
 
-REAL_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+# A real TTF to copy around, wherever this platform keeps it: the
+# hardcoded Debian path does not exist on macOS, so resolve through
+# the generator's own search (which finds the Homebrew copy there).
+_resolved_real_font = gen._resolve_font("DejaVuSans.ttf")
+REAL_FONT = (str(_resolved_real_font) if _resolved_real_font
+             else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 BANGLA_BOLD = "NotoSansBengali-Bold.ttf"
 
 
