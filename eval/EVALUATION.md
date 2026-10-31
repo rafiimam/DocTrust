@@ -21,23 +21,22 @@
 - Reader calibration (the Bangla gate): before any evaluation,
   `muse-spark-1.3` had to read all four fields of a clean synthetic
   NID exactly (4/4), the Bangla-digit ID preserved digit-for-digit.
-  That gate produced the working configuration — `max_tokens` 1024
-  with `reasoning_effort` "minimal"; at a 128-token budget every
-  call returned null content, the budget consumed by reasoning.
+  That gate produced the working Meta-route configuration —
+  `max_tokens` 1024 with `reasoning_effort` "minimal"; at a
+  128-token budget every call returned null content, the budget
+  entirely consumed by reasoning (Muse Spark is a reasoning
+  model). The Baseten route sends no reasoning-effort parameter —
+  Spark Open always reasons at full depth — and needed a much
+  larger completion budget: `BASETEN_MAX_TOKENS` 4096 for the
+  first run's re-run, 8192 for the post-fix run, and a final
+  mop-up pass at 16384 for the sets that still returned no
+  content (see Failure analysis).
 - Repo commits: first run at the pre-fix head (before `484e013b`);
   post-fix re-run at `21c54143`.
 - Reader(s): Muse Spark — route A: `muse-spark-1.3` via the Meta Model
   API (hosted); route B: Muse Spark Open (`meta-models/muse-spark-open-1026`)
   via Baseten (open weights). Results are reported per route, never
   blended.
-- Reader calibration: Meta route `max_tokens` 1024,
-  `reasoning_effort` "minimal" (Muse Spark is a reasoning model; a
-  small budget is consumed by reasoning and returns null content).
-  Baseten route sends no reasoning-effort parameter — Spark Open
-  always reasons at full depth — and needed a much larger completion
-  budget: `BASETEN_MAX_TOKENS` 4096 for the first run's re-run, 8192
-  for the post-fix run, and a final mop-up pass at 16384 for the sets
-  that still returned no content (see Failure analysis).
 - Segmenter: SAM 3.1 hosted on the Meta Model API
   (`MetaSAMSegmenter`) in all reported runs. (A self-hosted Modal SAM
   app also exists in the repo but was not used: the owner's Modal
