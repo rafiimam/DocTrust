@@ -213,7 +213,13 @@ def case_pack(variant: str):
     from generator.generate import generate_set
 
     with tempfile.TemporaryDirectory(prefix="doctrust_pack_") as tmp:
-        generate_set(tmp, variant)
+        if variant == "hindi":
+            # The Hindi pack is a clean set rendered from the Hindi
+            # persona (Devanagari) — the secondary script, same
+            # document family. Its ground truth records script="hindi".
+            generate_set(tmp, "clean", script="hindi")
+        else:
+            generate_set(tmp, variant)
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             for name in ("nid.png", "birth_certificate.png",

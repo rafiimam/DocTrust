@@ -98,6 +98,7 @@
       <a class="pack-btn" data-pack="variation" href="#" download>Variation set</a>
       <a class="pack-btn" data-pack="discrepancy" href="#" download>Discrepancy set</a>
       <a class="pack-btn" data-pack="degraded" href="#" download>Degraded set</a>
+      <a class="pack-btn" data-pack="hindi" href="#" download>Hindi set (Devanagari)</a>
     </div>
     <p class="upload-hint">Each ZIP holds <code>nid.png</code>,
     <code>birth_certificate.png</code>, <code>bank_form.png</code> and the
@@ -176,6 +177,21 @@
     </div>
   </aside>
 </section>
+
+<div class="lightbox" id="evidenceLightbox" hidden role="dialog" aria-modal="true" aria-label="Evidence viewer">
+  <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+  <div class="lightbox-panel">
+    <figure class="lightbox-media">
+      <img id="lightboxImg" alt="Evidence view, full size">
+      <figcaption id="lightboxCaption"></figcaption>
+    </figure>
+    <aside class="lightbox-side">
+      <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Close viewer">×</button>
+      <h3 class="lightbox-side-h">Agent's read on this evidence</h3>
+      <div id="lightboxAdvice"></div>
+    </aside>
+  </div>
+</div>
 
 <footer class="site-footer">
   <p>DocTrust is decision support for a human reviewer — it never auto-approves or

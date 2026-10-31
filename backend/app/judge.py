@@ -60,7 +60,7 @@ from .segmenter import (MetaSAMSegmenter, ModalSegmenter,
                         PillowFallbackSegmenter, Segmenter)
 
 DOC_TYPES = ("nid", "birth_certificate", "bank_form")
-CASE_VARIANTS = ("clean", "variation", "discrepancy", "degraded")
+CASE_VARIANTS = ("clean", "variation", "discrepancy", "degraded", "hindi")
 
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024          # per file
 ALLOWED_SUFFIXES = {".png", ".jpg", ".jpeg"}

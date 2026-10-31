@@ -315,5 +315,105 @@ window.DOCTRUST_CASES = [
         }
       }
     ]
+  },
+
+  {
+    id: "hindi",
+    tab: "Case D — Hindi set (Devanagari)",
+    summary: "The same document family from the Hindi persona: Devanagari on the " +
+      "birth certificate, Devanagari digits for the ID number and the birth date, " +
+      "Latin on the bank form. A genuine set — the second script DocTrust reads, " +
+      "evaluated separately as the secondary script (Bangla is primary).",
+    documents: [
+      {
+        id: "nid", type: "National Identity Card (sample)", bn: "राष्ट्रीय पहचान पत्र",
+        tone: "green", photo: true,
+        fields: [
+          { id: "name", label: "Name", value: "Rahul Sharma" },
+          { id: "father_name", label: "Father", value: "Rajesh Sharma" },
+          { id: "dob", label: "Date of Birth", value: "12/03/1990" },
+          { id: "id_number", label: "ID No", value: "१२३४५६७८९०", bn: true }
+        ]
+      },
+      {
+        id: "birth_certificate", type: "Birth Certificate (sample)", bn: "जन्म प्रमाण पत्र",
+        tone: "cream",
+        fields: [
+          { id: "name", label: "Name", value: "Rahul Sharma" },
+          { id: "father_name", label: "Father", value: "राजेश शर्मा", bn: true },
+          { id: "dob", label: "Born", value: "१२/०३/१९९०", bn: true },
+          { id: "address", label: "Address", value: "House 12, Lucknow, India" }
+        ]
+      },
+      {
+        id: "bank_form", type: "Account Opening Form (sample)", bn: "खाता खोलने का आवेदन",
+        tone: "blue",
+        fields: [
+          { id: "name", label: "Applicant", value: "Rahul Sharma" },
+          { id: "father_name", label: "Father's Name", value: "Rajesh Sharma" },
+          { id: "dob", label: "DOB (DD/MM/YYYY)", value: "12/03/1990" },
+          { id: "id_number", label: "NID Number", value: "1234567890" },
+          { id: "address", label: "Address", value: "House 12, Lucknow, India" }
+        ]
+      }
+    ],
+    steps: [
+      {
+        phase: "Segment",
+        text: "SAM 3.1 locates the stamp region on the certificate — the region the " +
+          "agent masks if an occluded field needs an investigation re-read. The " +
+          "reader reads named fields from each document view. Three documents, " +
+          "13 fields — with two scripts and two digit systems in play.",
+        highlights: ["nid", "birth_certificate", "bank_form"], hl: "focus"
+      },
+      {
+        phase: "Read · original + perturbations",
+        text: "Muse Spark reads every field three times (original, zoom, contrast). " +
+          "The certificate's Devanagari name and father's name are read in Latin " +
+          "transliteration — <code>Rahul Sharma</code>, <code>Rajesh Sharma</code> — and " +
+          "within each document the reads agree, so no field is marked uncertain " +
+          "and no investigation views are needed.",
+        highlights: ["birth_certificate:name", "birth_certificate:father_name"], hl: "focus"
+      },
+      {
+        phase: "Normalize · digits and dates",
+        text: "Devanagari digits convert to Latin exactly as Bangla digits do: the " +
+          "ID number <code>१२३४५६७८९०</code> becomes <code>1234567890</code>, matching " +
+          "the bank form digit for digit, and the certificate's birth date " +
+          "<code>१२/०३/१९९०</code> parses day-first to <code>1990-03-12</code>.",
+        highlights: ["nid:id_number", "bank_form:id_number", "birth_certificate:dob"],
+        hl: "good", tone: "good"
+      },
+      {
+        phase: "Normalize · names",
+        text: "Names are compared after transliteration-aware folding, not by raw " +
+          "string equality: the certificate's Devanagari father's name, read back " +
+          "in Latin, canonicalizes to the same tokens as the NID and the form — " +
+          "<code>rajesh sharma</code>.",
+        highlights: ["nid:father_name", "birth_certificate:father_name", "bank_form:father_name"],
+        hl: "good", tone: "good"
+      },
+      {
+        phase: "Cross-examine",
+        text: "After normalization every shared fact agrees across the set. An " +
+          "exact-match baseline would have flagged the ID's digit system and " +
+          "every Devanagari field on this genuine set.",
+        highlights: ["nid:id_number", "birth_certificate:father_name"], hl: "good", tone: "good"
+      },
+      {
+        phase: "Verdict",
+        text: "No discrepancy findings. The cross-script reads stay visible in " +
+          "the evidence so the reviewer can see exactly why the set passed.",
+        highlights: [], hl: "good",
+        verdict: {
+          kind: "consistent",
+          title: "Consistent",
+          body: "Devanagari names, Devanagari digits, and Latin print all resolve " +
+            "to the same underlying facts after deterministic normalization. Hindi " +
+            "is DocTrust's secondary script — evaluated separately on a small set " +
+            "(10 sets; see EVALUATION.md) — with Bangla as the primary claim."
+        }
+      }
+    ]
   }
 ];

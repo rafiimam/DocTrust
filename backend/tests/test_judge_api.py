@@ -94,6 +94,19 @@ def test_case_pack_zip_contents_and_ground_truth(generated):
         assert zf.getinfo(name).file_size > 1000
 
 
+def test_case_pack_hindi_is_clean_hindi_set(generated):
+    with _client(MockReader({})) as client:
+        resp = client.get("/api/case-pack/hindi")
+    assert resp.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(resp.content))
+    truth = json.loads(zf.read("ground_truth.json"))
+    # A clean set from the Hindi persona: script recorded, facts agree.
+    assert truth["script"] == "hindi"
+    assert truth["variant"] == "clean"
+    assert truth["documents"]["nid"]["id_number"] == "१२३४५६७८९०"
+    assert truth["documents"]["bank_form"]["id_number"] == "1234567890"
+
+
 def test_case_pack_unknown_variant_404(generated):
     with _client(MockReader({})) as client:
         assert client.get("/api/case-pack/bogus").status_code == 404
