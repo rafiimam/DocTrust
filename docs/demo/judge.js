@@ -631,25 +631,70 @@
     box.innerHTML = "";
     var result = lastResult || {};
     var docLabel = DOC_LABELS[docType] || docType;
+    var fields = (result.documents || {})[docType] || {};
+    var findings = result.findings || [];
 
-    // Overall verdict for the set this evidence belongs to.
-    if (result.verdict) {
-      var v = el("div", "lb-verdict lb-verdict-" +
-        (VERDICT_KIND[result.verdict] || "consistent"));
-      v.appendChild(el("span", "lb-verdict-label",
-        result.verdict_label || result.verdict));
-      v.appendChild(el("span", "lb-verdict-sub",
-        " — overall verdict for this document set"));
-      box.appendChild(v);
+    // This document's role in one finding: "minority" (its value is
+    // the odd one out), "unreadable" (its own value could not be
+    // read), "fine" (it sits with the consensus / read normally), or
+    // null when the finding does not involve this document. A
+    // mismatch finding lists every document's value, so membership
+    // alone must never mark a document as the problem — only being
+    // the minority value (or unreadable) does.
+    function docRole(f) {
+      var vals = f.canonical || f.values || {};
+      if (!(docType in vals)) { return null; }
+      if (f.status === "unreadable") {
+        return (fields[f.field] || {}).value ? "fine" : "unreadable";
+      }
+      if (f.status !== "mismatch") { return null; }
+      var counts = {}, mode = null, best = 0;
+      Object.keys(vals).forEach(function (d) {
+        var val = vals[d];
+        if (val == null) { return; }
+        counts[val] = (counts[val] || 0) + 1;
+        if (counts[val] > best) { best = counts[val]; mode = val; }
+      });
+      if (best < 2) { return "minority"; }  // no consensus at all
+      return vals[docType] === mode ? "fine" : "minority";
     }
+    var implicatedMismatch = findings.filter(function (f) {
+      return docRole(f) === "minority";
+    });
+    var implicatedUnreadable = findings.filter(function (f) {
+      return docRole(f) === "unreadable";
+    });
+
+    // Per-document banner: the set's alarm shows only on the
+    // document(s) actually implicated. A clean document gets the
+    // green line, not the set's red one.
+    var banner;
+    if (implicatedMismatch.length) {
+      banner = el("div", "lb-verdict lb-verdict-discrepancy");
+      banner.appendChild(el("span", "lb-verdict-label",
+        result.verdict_label || "Discrepancy"));
+      banner.appendChild(el("span", "lb-verdict-sub",
+        " — this document is part of the disagreement"));
+    } else if (implicatedUnreadable.length) {
+      banner = el("div", "lb-verdict lb-verdict-unreadable");
+      banner.appendChild(el("span", "lb-verdict-label",
+        "Unreadable, request recapture"));
+      banner.appendChild(el("span", "lb-verdict-sub",
+        " — this document could not be read reliably"));
+    } else {
+      banner = el("div", "lb-verdict lb-verdict-consistent");
+      banner.appendChild(el("span", "lb-verdict-label",
+        "This document agrees with the set"));
+      banner.appendChild(el("span", "lb-verdict-sub",
+        " — every field read here matches after normalization"));
+    }
+    box.appendChild(banner);
     box.appendChild(el("p", "lb-context",
       "You are viewing the " + viewName + " view of the " + docLabel +
       " — one of the views the agent actually read."));
 
     // What the agent read on this document, with the comparator's
     // finding for each field it shares with the set.
-    var fields = (result.documents || {})[docType] || {};
-    var findings = result.findings || [];
     function findingFor(field) {
       for (var i = 0; i < findings.length; i++) {
         var f = findings[i];
@@ -669,9 +714,34 @@
         head.appendChild(el("span", "lb-field-name", field));
         var f = findingFor(field);
         if (f) {
+          // The chip describes THIS document's part in the finding:
+          // a majority document inside a mismatch finding agrees,
+          // and a readable document inside an unreadable finding
+          // read fine — neither is the problem.
+          var role = docRole(f);
+          var chipLabel, chipKind;
+          if (f.status === "mismatch") {
+            if (role === "minority") {
+              chipLabel = "DISAGREES with the set"; chipKind = "mismatch";
+            } else {
+              chipLabel = "Agrees with the set"; chipKind = "match";
+            }
+          } else if (f.status === "unreadable") {
+            if (role === "unreadable") {
+              chipLabel = "Could not be read"; chipKind = "unreadable";
+            } else {
+              var readableCount = Object.keys(f.values || {})
+                .filter(function (d) { return f.values[d]; }).length;
+              chipLabel = readableCount <= 1
+                ? "Only readable source in the set" : "Read fine here";
+              chipKind = "match";
+            }
+          } else {
+            chipLabel = FINDING_LABELS[f.status] || f.status;
+            chipKind = f.status;
+          }
           head.appendChild(el("span",
-            "lb-finding lb-finding-" + f.status,
-            FINDING_LABELS[f.status] || f.status));
+            "lb-finding lb-finding-" + chipKind, chipLabel));
         } else if (fr.uncertain) {
           head.appendChild(el("span", "lb-finding lb-finding-unreadable",
             "Uncertain reads"));
@@ -688,15 +758,11 @@
       });
     }
 
-    // Reviewer guidance, derived from this document's findings.
-    var mismatched = findings.filter(function (f) {
-      return f.status === "mismatch" &&
-        (!f.values || docType in f.values) && fields[f.field];
-    });
-    var unreadable = findings.filter(function (f) {
-      return f.status === "unreadable" &&
-        (!f.values || docType in f.values) && fields[f.field];
-    });
+    // Reviewer guidance, derived from this document's OWN part in
+    // the findings — the alarm text belongs only to the document
+    // that is actually the odd one out or unreadable.
+    var mismatched = implicatedMismatch;
+    var unreadable = implicatedUnreadable;
     var docGaps = (result.evidence_gaps || []).filter(function (g) {
       return (g.detail || "").indexOf(docLabel) !== -1;
     });
@@ -728,10 +794,17 @@
     } else {
       advice.classList.add("lb-advice-good");
       advice.appendChild(el("strong", null, "All clear on this document: "));
-      advice.appendChild(document.createTextNode(
-        "every shared fact read here agrees with the rest of the set " +
-        "after normalization. Nothing on the " + docLabel +
-        " needs reviewer action."));
+      if (result.verdict === "DISCREPANCY") {
+        advice.appendChild(document.createTextNode(
+          "the set's discrepancy is on another document — every fact " +
+          "read here agrees with the majority after normalization. " +
+          "Nothing on the " + docLabel + " needs reviewer action."));
+      } else {
+        advice.appendChild(document.createTextNode(
+          "every shared fact read here agrees with the rest of the set " +
+          "after normalization. Nothing on the " + docLabel +
+          " needs reviewer action."));
+      }
     }
     box.appendChild(advice);
   }
