@@ -24,6 +24,41 @@
   var resetBtn = document.getElementById("resetBtn");
   var progressEl = document.getElementById("progress");
 
+  // --- Pipeline stage tracker + live status ------------------------------
+  var stageBar = document.getElementById("stageBarCached");
+  var statusText = document.getElementById("agentStatusTextCached");
+  var STAGE_ORDER = ["locate", "read", "investigate", "normalize", "cross", "verdict"];
+
+  function stageForPhase(phase) {
+    var p = (phase || "").split("·")[0].trim().toLowerCase();
+    if (p === "segment" || p === "intake" || p === "preprocess") { return "locate"; }
+    if (p.indexOf("read") === 0 || p.indexOf("re-read") === 0 || p === "uncertainty") { return "read"; }
+    if (p.indexOf("investigate") === 0) { return "investigate"; }
+    if (p.indexOf("normalize") === 0) { return "normalize"; }
+    if (p.indexOf("cross") === 0 || p === "compare") { return "cross"; }
+    if (p === "verdict") { return "verdict"; }
+    return null;
+  }
+
+  function setStage(stage) {
+    if (!stageBar || !stage) { return; }
+    var idx = STAGE_ORDER.indexOf(stage);
+    Array.prototype.forEach.call(stageBar.children, function (li) {
+      var i = STAGE_ORDER.indexOf(li.getAttribute("data-stage"));
+      li.classList.toggle("done", i < idx || (stage === "verdict" && i === idx));
+      li.classList.toggle("active", i === idx && stage !== "verdict");
+    });
+  }
+
+  function clearStages() {
+    if (!stageBar) { return; }
+    Array.prototype.forEach.call(stageBar.children, function (li) {
+      li.classList.remove("done", "active");
+    });
+  }
+
+  function setStatus(text) { if (statusText) { statusText.textContent = text; } }
+
   function currentCase() { return cases[state.caseIndex]; }
 
   function fieldHTML(field) {
@@ -117,6 +152,9 @@
     li.appendChild(phase);
     li.appendChild(p);
     traceEl.appendChild(li);
+    traceEl.scrollTop = traceEl.scrollHeight;
+    setStage(stageForPhase(step.phase));
+    setStatus(step.phase);
 
     if (step.verdict) {
       verdictTitleEl.textContent = step.verdict.title;
@@ -151,6 +189,8 @@
       "Press Play (or Step) to replay the agent's cross-examination of this set.</li>";
     verdictEl.hidden = true;
     clearHighlights();
+    clearStages();
+    setStatus("Idle — press Play to replay the run");
     setStamp(false);
     updateProgress();
   }

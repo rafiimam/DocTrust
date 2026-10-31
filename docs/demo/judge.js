@@ -56,6 +56,7 @@
     cachedBtn.setAttribute("aria-selected", upload ? "false" : "true");
     uploadBtn.setAttribute("aria-selected", upload ? "true" : "false");
     badge.textContent = upload ? "Judge mode" : "Demo mode";
+    badge.classList.toggle("badge-live", upload);
     if (upload) { checkBackend(); }
   }
   cachedBtn.addEventListener("click", function () { setMode(false); });
@@ -136,6 +137,41 @@
   var evidenceGrid = document.getElementById("evidenceGrid");
   var gapsPanel = document.getElementById("gapsPanel");
   var gapsList = document.getElementById("gapsList");
+  // --- Pipeline stage tracker + live status ------------------------------
+  var stageBar = document.getElementById("stageBarLive");
+  var statusText = document.getElementById("agentStatusTextLive");
+  var STAGE_ORDER = ["locate", "read", "investigate", "normalize", "cross", "verdict"];
+
+  function stageForPhase(phase) {
+    var p = (phase || "").split("·")[0].trim().toLowerCase();
+    if (p === "segment" || p === "intake" || p === "preprocess") { return "locate"; }
+    if (p.indexOf("read") === 0 || p.indexOf("re-read") === 0 || p === "uncertainty") { return "read"; }
+    if (p.indexOf("investigate") === 0) { return "investigate"; }
+    if (p.indexOf("normalize") === 0) { return "normalize"; }
+    if (p.indexOf("cross") === 0 || p === "compare") { return "cross"; }
+    if (p === "verdict") { return "verdict"; }
+    return null;
+  }
+
+  function setStage(stage) {
+    if (!stageBar || !stage) { return; }
+    var idx = STAGE_ORDER.indexOf(stage);
+    Array.prototype.forEach.call(stageBar.children, function (li) {
+      var i = STAGE_ORDER.indexOf(li.getAttribute("data-stage"));
+      li.classList.toggle("done", i < idx || (stage === "verdict" && i === idx));
+      li.classList.toggle("active", i === idx && stage !== "verdict");
+    });
+  }
+
+  function clearStages() {
+    if (!stageBar) { return; }
+    Array.prototype.forEach.call(stageBar.children, function (li) {
+      li.classList.remove("done", "active");
+    });
+  }
+
+  function setStatus(text) { if (statusText) { statusText.textContent = text; } }
+
   var eventSource = null;
   // Fallback polling state (see the onerror handler in the run flow):
   // if the SSE stream drops before 'done', the client polls the job's
@@ -172,6 +208,7 @@
     li.appendChild(phase);
     li.appendChild(p);
     traceEl.appendChild(li);
+    traceEl.scrollTop = traceEl.scrollHeight;
   }
   function setTraceStatus(text, tone) {
     traceEl.innerHTML = "";
@@ -181,6 +218,8 @@
     stopFallbackPolling();
     runSeq += 1;
     traceEl.innerHTML = "";
+    clearStages();
+    setStatus("Starting…");
     verdictEl.hidden = true;
     fieldsPanel.hidden = true;
     evidencePanel.hidden = true;
@@ -199,6 +238,16 @@
     if (event.type === "reader_not_configured" || event.type === "error") {
       li.className = "tone-warn";
     }
+    // Investigation decisions are the agent thinking out loud — the
+    // planner (or the deterministic fallback) choosing what to do
+    // next, with its reason. Give them a distinct decision card.
+    if (event.type === "investigation") {
+      li.classList.add("decision-card");
+      var chip = document.createElement("span");
+      chip.className = "decision-chip";
+      chip.textContent = "Agent decision";
+      li.appendChild(chip);
+    }
     var phase = document.createElement("span");
     phase.className = "phase";
     phase.textContent = event.phase || event.type;
@@ -207,6 +256,9 @@
     li.appendChild(phase);
     li.appendChild(p);
     traceEl.appendChild(li);
+    traceEl.scrollTop = traceEl.scrollHeight;
+    setStage(stageForPhase(event.phase));
+    setStatus(event.phase || event.type);
   }
 
   // Job-result strings are untrusted text: field readings and gap
@@ -309,6 +361,8 @@
   // or the polled result provided one).
   function showFinalResult(result, done) {
     refreshRunBtn();
+    setStatus(!done.state || done.state === "done"
+      ? "Complete" : "Finished — " + done.state);
     if (done.state === "reader_not_configured" ||
         result.state === "reader_not_configured") {
       runStatus.textContent = "Finished — reader not configured.";

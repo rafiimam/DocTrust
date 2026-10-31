@@ -9,11 +9,24 @@
 <body>
 <header class="site-header">
   <div class="header-inner">
-    <div>
-      <h1>DocTrust</h1>
-      <p class="one-liner">An open-weight reviewer agent that cross-examines a person's
-      whole document set, re-reads anything it is unsure about, and shows the human
-      reviewer the exact regions that agree or disagree. It never auto-rejects.</p>
+    <div class="brand">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+          <path d="M12 2.5 20 6v6c0 5-3.4 8.1-8 9.5C7.4 20.1 4 17 4 12V6l8-3.5Z"
+                stroke="url(#lg)" stroke-width="1.8"/>
+          <path d="m8.8 12.2 2.3 2.3 4.2-4.6" stroke="url(#lg)" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <defs><linearGradient id="lg" x1="0" y1="0" x2="24" y2="24">
+            <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/>
+          </linearGradient></defs>
+        </svg>
+      </span>
+      <div>
+        <h1>DocTrust</h1>
+        <p class="one-liner">An open-weight reviewer agent that cross-examines a person's
+        whole document set, re-reads anything it is unsure about, and shows the human
+        reviewer the exact regions that agree or disagree. It never auto-rejects.</p>
+      </div>
     </div>
     <span class="badge badge-demo" id="modeBadge">Demo mode</span>
   </div>
@@ -35,13 +48,27 @@
   </section>
 
   <aside class="trace-column">
+    <div class="console-head">
+      <h2>Agent console</h2>
+      <div class="agent-status" id="agentStatusCached">
+        <span class="pulse-dot"></span>
+        <span class="agent-status-text" id="agentStatusTextCached">Idle — press Play to replay the run</span>
+      </div>
+    </div>
+    <ol class="stagebar" id="stageBarCached" aria-label="Agent pipeline stages">
+      <li data-stage="locate"><span class="stage-dot"></span><span class="stage-label">Locate</span></li>
+      <li data-stage="read"><span class="stage-dot"></span><span class="stage-label">Read</span></li>
+      <li data-stage="investigate"><span class="stage-dot"></span><span class="stage-label">Investigate</span></li>
+      <li data-stage="normalize"><span class="stage-dot"></span><span class="stage-label">Normalize</span></li>
+      <li data-stage="cross"><span class="stage-dot"></span><span class="stage-label">Cross-examine</span></li>
+      <li data-stage="verdict"><span class="stage-dot"></span><span class="stage-label">Verdict</span></li>
+    </ol>
     <div class="controls">
       <button id="playBtn" type="button">▶ Play</button>
       <button id="stepBtn" type="button">Step →</button>
       <button id="resetBtn" type="button">Reset</button>
       <span class="progress" id="progress"></span>
     </div>
-    <h2>Agent trace</h2>
     <ol class="trace" id="trace"></ol>
     <div class="verdict" id="verdict" hidden>
       <h3 id="verdictTitle"></h3>
@@ -122,7 +149,21 @@
   </div>
 
   <aside class="trace-column">
-    <h2>Live agent trace</h2>
+    <div class="console-head">
+      <h2>Live agent console</h2>
+      <div class="agent-status" id="agentStatusLive">
+        <span class="pulse-dot"></span>
+        <span class="agent-status-text" id="agentStatusTextLive">Waiting for a run</span>
+      </div>
+    </div>
+    <ol class="stagebar" id="stageBarLive" aria-label="Agent pipeline stages">
+      <li data-stage="locate"><span class="stage-dot"></span><span class="stage-label">Locate</span></li>
+      <li data-stage="read"><span class="stage-dot"></span><span class="stage-label">Read</span></li>
+      <li data-stage="investigate"><span class="stage-dot"></span><span class="stage-label">Investigate</span></li>
+      <li data-stage="normalize"><span class="stage-dot"></span><span class="stage-label">Normalize</span></li>
+      <li data-stage="cross"><span class="stage-dot"></span><span class="stage-label">Cross-examine</span></li>
+      <li data-stage="verdict"><span class="stage-dot"></span><span class="stage-label">Verdict</span></li>
+    </ol>
     <ol class="trace" id="liveTrace">
       <li class="trace-empty" style="border:none;background:none;">Upload a
       synthetic set and press Run — the agent's steps stream here live from
