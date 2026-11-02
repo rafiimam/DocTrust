@@ -1,0 +1,33 @@
+{
+  "variant": "variation",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Md. Sazzad Hossain",
+      "dob": "15/06/1988",
+      "id_number": "২৩৪৫৬৭৮৯০১",
+      "father_name": "Abdul Kader"
+    },
+    "birth_certificate": {
+      "name": "Md. Sazzad Hossain",
+      "dob": "১৫/০৬/১৯৮৮",
+      "father_name": "Abdul Kader"
+    },
+    "bank_form": {
+      "name": "Mohammed Sazzad Hussain",
+      "dob": "15/06/1988",
+      "id_number": "2345678901",
+      "father_name": "Abdul Kader"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "faded_grey",
+  "stamp_position": "margin",
+  "persona": "Md. Sazzad Hossain"
+}

@@ -1,0 +1,33 @@
+{
+  "variant": "variation",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Rokeya Begum",
+      "dob": "14/01/1989",
+      "id_number": "৯০১২৩৪৫৬৭৮",
+      "father_name": "Abdus Salam"
+    },
+    "birth_certificate": {
+      "name": "Rokeya Begum",
+      "dob": "১৪/০১/১৯৮৯",
+      "father_name": "Abdus Salam"
+    },
+    "bank_form": {
+      "name": "Rukeya Begum",
+      "dob": "14/01/1989",
+      "id_number": "9012345678",
+      "father_name": "Abdus Salam"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "purple",
+  "stamp_position": "margin",
+  "persona": "Rokeya Begum"
+}

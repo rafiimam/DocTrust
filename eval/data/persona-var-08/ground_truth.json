@@ -1,0 +1,33 @@
+{
+  "variant": "variation",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Fatima Akter",
+      "dob": "22/11/1995",
+      "id_number": "৩৪৫৬৭৮৯০১২",
+      "father_name": "Md. Nurul Islam"
+    },
+    "birth_certificate": {
+      "name": "Fatima Akter",
+      "dob": "২২/১১/১৯৯৫",
+      "father_name": "Md. Nurul Islam"
+    },
+    "bank_form": {
+      "name": "Fatema Akter",
+      "dob": "22/11/1995",
+      "id_number": "3456789012",
+      "father_name": "Md. Nurul Islam"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "purple",
+  "stamp_position": "margin",
+  "persona": "Fatima Akter"
+}

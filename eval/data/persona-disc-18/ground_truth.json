@@ -1,0 +1,37 @@
+{
+  "variant": "discrepancy",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Md. Imran Hosen",
+      "dob": "07/07/1991",
+      "id_number": "৮৯০১২৩৪৫৬৭",
+      "father_name": "Abdul Aziz"
+    },
+    "birth_certificate": {
+      "name": "Md. Imran Hosen",
+      "dob": "০৭/০৭/১৯৯১",
+      "father_name": "Abdul Aziz"
+    },
+    "bank_form": {
+      "name": "Md. Imran Hosen",
+      "dob": "08/07/1991",
+      "id_number": "8901234567",
+      "father_name": "Abdul Aziz"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "faded_grey",
+  "stamp_position": "margin",
+  "persona": "Md. Imran Hosen",
+  "injection": {
+    "field": "dob",
+    "value": "08/07/1991"
+  }
+}

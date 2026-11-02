@@ -1,0 +1,32 @@
+{
+  "variant": "clean",
+  "script": "hindi",
+  "documents": {
+    "nid": {
+      "name": "Rahul Sharma",
+      "dob": "12/03/1990",
+      "id_number": "१२३४५६७८९०",
+      "father_name": "Rajesh Sharma"
+    },
+    "birth_certificate": {
+      "name": "Rahul Sharma",
+      "dob": "१२/०३/१९९०",
+      "father_name": "Rajesh Sharma"
+    },
+    "bank_form": {
+      "name": "Rahul Sharma",
+      "dob": "12/03/1990",
+      "id_number": "1234567890",
+      "father_name": "Rajesh Sharma"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "black",
+  "stamp_position": "margin"
+}

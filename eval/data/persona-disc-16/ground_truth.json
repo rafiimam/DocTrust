@@ -1,0 +1,37 @@
+{
+  "variant": "discrepancy",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Md. Ariful Islam",
+      "dob": "09/04/1985",
+      "id_number": "৬৭৮৯০১২৩৪৫",
+      "father_name": "Shamsul Haque"
+    },
+    "birth_certificate": {
+      "name": "Md. Ariful Islam",
+      "dob": "০৯/০৪/১৯৮৫",
+      "father_name": "Shamsul Haque"
+    },
+    "bank_form": {
+      "name": "Md. Ariful Islam",
+      "dob": "10/04/1985",
+      "id_number": "6789012345",
+      "father_name": "Shamsul Haque"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "red_orange",
+  "stamp_position": "margin",
+  "persona": "Md. Ariful Islam",
+  "injection": {
+    "field": "dob",
+    "value": "10/04/1985"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "variant": "discrepancy",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Nusrat Jahan",
+      "dob": "25/12/1993",
+      "id_number": "৭৮৯০১২৩৪৫৬",
+      "father_name": "Abdul Rahim"
+    },
+    "birth_certificate": {
+      "name": "Nusrat Jahan",
+      "dob": "২৫/১২/১৯৯৩",
+      "father_name": "Abdul Rahim"
+    },
+    "bank_form": {
+      "name": "Nusrat Jahan",
+      "dob": "25/12/1993",
+      "id_number": "7890223456",
+      "father_name": "Abdul Rahim"
+    }
+  },
+  "stamp_box": [
+    298,
+    223,
+    448,
+    373
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "purple",
+  "stamp_position": "over_dob",
+  "persona": "Nusrat Jahan",
+  "injection": {
+    "field": "id_number",
+    "value": "7890223456"
+  }
+}

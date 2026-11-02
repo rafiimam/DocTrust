@@ -1,0 +1,33 @@
+{
+  "variant": "variation",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Sharmin Akhtar",
+      "dob": "18/09/1997",
+      "id_number": "৫৬৭৮৯০১২৩৪",
+      "father_name": "Md. Rafiqul Islam"
+    },
+    "birth_certificate": {
+      "name": "Sharmin Akhtar",
+      "dob": "১৮/০৯/১৯৯৭",
+      "father_name": "Md. Rafiqul Islam"
+    },
+    "bank_form": {
+      "name": "Sharmin Akter",
+      "dob": "18/09/1997",
+      "id_number": "5678901234",
+      "father_name": "Md. Rafiqul Islam"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "black",
+  "stamp_position": "margin",
+  "persona": "Sharmin Akhtar"
+}

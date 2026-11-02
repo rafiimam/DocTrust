@@ -1,0 +1,37 @@
+{
+  "variant": "discrepancy",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Md. Tanvir Hasan",
+      "dob": "05/02/1992",
+      "id_number": "৪৫৬৭৮৯০১২৩",
+      "father_name": "Abdul Malek"
+    },
+    "birth_certificate": {
+      "name": "Md. Tanvir Hasan",
+      "dob": "০৫/০২/১৯৯২",
+      "father_name": "Abdul Malek"
+    },
+    "bank_form": {
+      "name": "Md. Tanvir Hossain",
+      "dob": "05/02/1992",
+      "id_number": "4567890123",
+      "father_name": "Abdul Malek"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "red_orange",
+  "stamp_position": "margin",
+  "persona": "Md. Tanvir Hasan",
+  "injection": {
+    "field": "name",
+    "value": "Md. Tanvir Hossain"
+  }
+}

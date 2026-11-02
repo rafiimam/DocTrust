@@ -1,0 +1,33 @@
+{
+  "variant": "clean",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Mohammad Abdul Rahman",
+      "dob": "12/03/1990",
+      "id_number": "১২৩৪৫৬৭৮৯০",
+      "father_name": "Abdul Karim"
+    },
+    "birth_certificate": {
+      "name": "Mohammad Abdul Rahman",
+      "dob": "১২/০৩/১৯৯০",
+      "father_name": "Abdul Karim"
+    },
+    "bank_form": {
+      "name": "Mohammad Abdul Rahman",
+      "dob": "12/03/1990",
+      "id_number": "1234567890",
+      "father_name": "Abdul Karim"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "purple",
+  "stamp_position": "margin",
+  "persona": "Mohammad Abdul Rahman"
+}

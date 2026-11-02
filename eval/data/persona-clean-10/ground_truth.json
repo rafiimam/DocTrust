@@ -1,0 +1,33 @@
+{
+  "variant": "clean",
+  "script": "bangla",
+  "documents": {
+    "nid": {
+      "name": "Md. Fahim Rahman",
+      "dob": "20/10/1994",
+      "id_number": "১০২৩৪৫৬৭৮৯",
+      "father_name": "Habibur Rahman"
+    },
+    "birth_certificate": {
+      "name": "Md. Fahim Rahman",
+      "dob": "২০/১০/১৯৯৪",
+      "father_name": "Habibur Rahman"
+    },
+    "bank_form": {
+      "name": "Md. Fahim Rahman",
+      "dob": "20/10/1994",
+      "id_number": "1023456789",
+      "father_name": "Habibur Rahman"
+    }
+  },
+  "stamp_box": [
+    750,
+    440,
+    900,
+    590
+  ],
+  "stamp_document": "birth_certificate",
+  "stamp_style": "faded_grey",
+  "stamp_position": "margin",
+  "persona": "Md. Fahim Rahman"
+}
