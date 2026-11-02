@@ -351,6 +351,106 @@ set completed on this route, so no caught/recovered count exists for
 it. The Hindi claim above rests on the Meta route; the Baseten Hindi
 column is reported as a route limitation, not a result.
 
+### Re-run after the review round — planner-chosen segment prompts, script-agreement rescue, advisory visual pass (2026-11-02)
+
+_Three changes were made after an external review of the frozen
+system, and the affected batches were re-run the same day (Meta
+route, SAM segmenter, same seeds and compositions as the runs
+above; the earlier runs stand as the comparison). (1) When the
+planner chooses a stamp investigation view, it now also names the
+phrase SAM should segment, from a validated menu ("stamp",
+"circular ink stamp", "seal", "signature", "handwriting";
+anything else falls back to "stamp"); the choice is logged per
+field. (2) When a name mismatches in Latin transliteration, the
+agent re-reads that name in its original script (Bangla or
+Devanagari) and the comparator downgrades the finding to a variant
+when the script spellings agree exactly — downgrade-only, names
+only, and single-pass inherits the identical rule through the
+shared comparator, with the extra reads counted. (3) One advisory
+visual pass over the whole set reports visual concerns (stamp
+overlap, print inconsistency, edited region); it is attached to
+the case for the human reviewer and never feeds the verdict._
+
+**Development batch (seed base 7), 50/50 completed:**
+
+| Metric (Bangla sets) | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
+|---|---|---|---|
+| False flags on genuine sets (x/n) | 22/22 | 0/22 | 0/22 |
+| Genuine sets cleared as Consistent (x/n) | 0/22 | 22/22 | 21/22 |
+| Injected discrepancies caught (x/n) | 9/10 | 9/10 | 9/10 |
+| **Silent errors (count)** | **0** | **0** | **0** |
+| Degraded sets: recovered / recapture requested (x/n) | 0/8 / 0/8 | 8/8 / 0/8 | 8/8 / 0/8 |
+| Reads per set (mean) | 11.0 | 11.0 | 34.4 |
+
+Hindi sets, full agent: false flags 0/7, caught 2/2, silent
+errors 0 (single-pass false-flagged 1/7 this run).
+
+**Held-out batch (seed base 101), 50/50 completed:**
+
+| Metric (Bangla sets) | 1. Exact-match | 2. Single-pass + norm. | 3. Full agent |
+|---|---|---|---|
+| False flags on genuine sets (x/n) | 22/22 | 0/22 | 0/22 |
+| Genuine sets cleared as Consistent (x/n) | 0/22 | 22/22 | 18/22 |
+| Injected discrepancies caught (x/n) | 9/10 | 9/10 | 8/10 |
+| **Silent errors (count)** | **0** | **0** | **0** |
+| Degraded sets: recovered / recapture requested (x/n) | 0/8 / 0/8 | 8/8 / 0/8 | 8/8 / 0/8 |
+| Reads per set (mean) | 11.0 | 11.0 | 34.8 |
+
+Pooled across the two batches, the full agent caught 17/20
+against 19/20 in the earlier runs of the same seeds. Both
+additional misses are stamp-over-the-injected-field sets whose
+reads never settled and which ended as recapture requests
+(discrepancy-03 in both batches; discrepancy-01 on held-out,
+where single-pass's catch rests on a misread that happened to
+differ from the form) — silent errors stayed 0 in every
+configuration on every batch. Individual sets flip between runs
+of the same code (the hosted reader is stochastic), so no
+improvement or regression is claimed on the caught row; the
+lines that must not move — 0 false flags on the base persona and
+0 silent errors — held on both batches.
+
+**Genuine multi-persona batch (seed base 404) re-run, 30/30
+completed:** cleared as Consistent — exact-match 0/30,
+single-pass 24/30, full agent 20/30 (7 flagged, 3 recapture);
+the earlier run cleared 23/30 in both normalized configurations.
+Every flag is again on `father_name`, in the same transliteration
+families (Rafiqul/Rafikul, Haque/Haq, Habibur/Habbibur).
+
+**The script-agreement rescue measured zero effect, and the
+reason is structural, not a tuning miss.** The rescue did run —
+single-pass reads per set rose from 11.0 to 11.6 on the persona
+batch, the extra reads being exactly the script reads on flagged
+fields — but it downgraded nothing. A direct probe of a flagged
+set (persona-clean-05, father_name) shows why: the birth
+certificate prints the name in Bangla and its script read returns
+a Bangla spelling, but the NID and the bank form print names in
+Latin only, and their script reads return UNREADABLE — the reader
+correctly refuses to invent a transcription of a Latin-printed
+field. Agreement needs two documents printed in the same script;
+this document family has one. The certificate's own script read
+is also noisy (রফকিকুল, with an extra syllable, for রফিকুল). The
+mechanism is implemented, tested, and safe (it can only downgrade
+a mismatch to a variant, never create a match), and on a document
+family where two documents share script printing it would have
+something to compare; on this family its measured effect is zero,
+reported as such. The Latin variance itself is concentrated in
+the reader's transliteration of the one Bangla-printed document.
+
+**Advisory visual pass, pooled across the three re-run batches:**
+concerns fired on 8 of 24 discrepancy sets and **0 of 88 genuine
+sets**. All 8 concerns are the same observation — `stamp_overlap`
+on the birth certificate's date-of-birth field, on sets whose
+stamp sits over that field. At this sample size that is a
+discriminating signal, not a verdict input: it stays advisory,
+and it has not been run on the multi-persona discrepancy batch.
+
+**Planner-chosen segment prompts:** across the development and
+held-out re-runs the planner chose "circular ink stamp" on 7
+stamp-investigation steps and "stamp" on the rest; every choice
+is in the per-field investigation logs. No verdict-level effect
+is claimed for the choice, consistent with the earlier SAM and
+planner ablations.
+
 ## Failure analysis
 
 _Every failure of the full-agent configuration, and every run error,
@@ -452,10 +552,11 @@ either route.
   zero rate: 0 false flags in 22 genuine sets still allows a true
   false-flag rate up to roughly 3/22 ≈ 14% (rule of three, 95%
   bound). Silent errors can only occur on injected-discrepancy
-  sets, so their denominator is smaller: 0 observed in 50 pooled
-  completed discrepancy sets (10 development + 10 held-out + 30
-  multi-persona) still allows a true silent-error rate up to
-  roughly 3/50 = 6%.
+  sets, so their denominator is smaller: 0 observed in 74 pooled
+  completed discrepancy sets (development + held-out across both
+  rounds, the Hindi discrepancy sets, and the 30 multi-persona
+  sets) still allows a true silent-error rate up to roughly
+  3/74 ≈ 4%.
 - One document family (Bangladeshi NID / birth certificate / bank
   form, as synthetic approximations) and one base person record with
   variations, plus one Hindi persona. No claim extends beyond that.
@@ -473,6 +574,15 @@ either route.
   stamp. Fields under a stamp are recovered, when they are recovered,
   by zoom reads of the surrounding print — discrepancy-03 on the
   Baseten route shows the failure end of that limit.
+- Script-agreement coverage: the original-script name rescue needs
+  two documents that print the name in the same script. In this
+  document family only the birth certificate prints names in Bangla
+  (or Devanagari); the NID and bank form print Latin only, so the
+  rescue has no pair to compare and measured zero effect on the
+  genuine multi-persona batch (see the 2026-11-02 re-run section).
+  Real Bangladeshi NID cards print names in Bangla as well as
+  English; the synthetic NID here does not, and the limitation is
+  the synthetic family's, stated rather than engineered around.
 - Route behaviour differs and is reported, not averaged away: the
   hosted reader needed the transliteration fix for Bangla names; the
   open-weights reader's reasoning exceeds practical completion
