@@ -1,0 +1,4156 @@
+{
+  "meta": {
+    "tool": "eval.run_eval",
+    "started_at": "2026-10-31T13:11:48.190210+00:00",
+    "seed_base": 303,
+    "counts": {
+      "clean": 0,
+      "variation": 0,
+      "discrepancy": 0,
+      "degraded": 0
+    },
+    "over_dob": 3,
+    "workers": 4,
+    "physical_dir": "eval/physical",
+    "physical_sets": 0,
+    "hindi_sets": 0,
+    "persona_sets": 30,
+    "reader": "MetaReader",
+    "segmenter": "MetaSAMSegmenter",
+    "no_planner": false
+  },
+  "summary": {
+    "sets_ok": 30,
+    "sets_error": 0,
+    "physical_sets": 0,
+    "hindi_sets": 0,
+    "configs": {
+      "exact": {
+        "genuine_n": 0,
+        "false_flags": 0,
+        "discrepancy_n": 30,
+        "caught": 24,
+        "silent_errors": 0,
+        "degraded_n": 0,
+        "recovered": 0,
+        "recapture": 0,
+        "degraded_false_flags": 0,
+        "reads_mean": 11.0,
+        "latency_mean_s": 19.6,
+        "cost_mean_usd": null
+      },
+      "single": {
+        "genuine_n": 0,
+        "false_flags": 0,
+        "discrepancy_n": 30,
+        "caught": 26,
+        "silent_errors": 0,
+        "degraded_n": 0,
+        "recovered": 0,
+        "recapture": 0,
+        "degraded_false_flags": 0,
+        "reads_mean": 11.0,
+        "latency_mean_s": 19.6,
+        "cost_mean_usd": null
+      },
+      "agent": {
+        "genuine_n": 0,
+        "false_flags": 0,
+        "discrepancy_n": 30,
+        "caught": 26,
+        "silent_errors": 0,
+        "degraded_n": 0,
+        "recovered": 0,
+        "recapture": 0,
+        "degraded_false_flags": 0,
+        "reads_mean": 34.6,
+        "latency_mean_s": 61.44,
+        "cost_mean_usd": null
+      }
+    },
+    "by_category": {
+      "exact": {
+        "clean": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "variation": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "discrepancy": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 30,
+          "caught": 24,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 11.0,
+          "latency_mean_s": 19.6,
+          "cost_mean_usd": null
+        },
+        "degraded": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        }
+      },
+      "single": {
+        "clean": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "variation": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "discrepancy": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 30,
+          "caught": 26,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 11.0,
+          "latency_mean_s": 19.6,
+          "cost_mean_usd": null
+        },
+        "degraded": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        }
+      },
+      "agent": {
+        "clean": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "variation": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "discrepancy": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 30,
+          "caught": 26,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 34.6,
+          "latency_mean_s": 61.44,
+          "cost_mean_usd": null
+        },
+        "degraded": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        }
+      }
+    },
+    "physical": {
+      "configs": {
+        "exact": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "single": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "agent": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        }
+      },
+      "by_expectation": {
+        "exact": {
+          "genuine": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "single": {
+          "genuine": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "agent": {
+          "genuine": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        }
+      }
+    },
+    "hindi": {
+      "configs": {
+        "exact": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "single": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "agent": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        }
+      },
+      "by_category": {
+        "exact": {
+          "clean": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "variation": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "single": {
+          "clean": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "variation": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "agent": {
+          "clean": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "variation": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        }
+      }
+    }
+  },
+  "sets": [
+    {
+      "set_id": "persona-disc-01",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 303,
+      "stamp_style": "black",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "13/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.191,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "13/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.191,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": null,
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "13/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "An office stamp is directly covering the Born date field.",
+                "source": "planner"
+              },
+              {
+                "action": "recapture",
+                "reason": "Stamp obscures the field and all enhancements including stamp masking failed.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 36,
+          "latency_s": 68.969,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-02",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 304,
+      "stamp_style": "faded_grey",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kamal"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.712,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kamal"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.712,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kamal"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 58.122,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-03",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 305,
+      "stamp_style": "purple",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "id_number"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "UNREADABLE",
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.985,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "UNREADABLE",
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.985,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": null,
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "The Born date is obscured by a blue office stamp.",
+                "source": "planner"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Tighter zoom is the only untried enhancement that might resolve small print under the stamp.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 37,
+          "latency_s": 71.193,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-04",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 306,
+      "stamp_style": "red_orange",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name",
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/03/1992",
+              "father_name": "Abdul Maleke"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "reads": 11,
+          "latency_s": 22.152,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name",
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/03/1992",
+              "father_name": "Abdul Maleke"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "reads": 11,
+          "latency_s": 22.152,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name",
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/03/1992",
+              "father_name": "Abdul Maleke"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "An office stamp overlays the date of birth field.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 64.592,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-05",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 307,
+      "stamp_style": "black",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "UNREADABLE",
+              "father_name": "Md Rafikul Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "19/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.181,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "UNREADABLE",
+              "father_name": "Md Rafikul Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "19/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.181,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": null,
+              "father_name": "Md Rafikul Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "19/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Islam"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob",
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "An office stamp is directly covering the Born date field.",
+                "source": "planner"
+              },
+              {
+                "action": "recapture",
+                "reason": "Stamp obscures dob and all reads including masked failed.",
+                "source": "planner"
+              }
+            ],
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Reads differ only by a period so a tighter crop will clarify punctuation.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 38,
+          "latency_s": 73.293,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-06",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 308,
+      "stamp_style": "faded_grey",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haque"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Hasan"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.868,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haque"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Hasan"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.868,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haq"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Hasan"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Reads differ only by final e suggesting small faint print needs tighter crop.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 64.236,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-07",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 309,
+      "stamp_style": "purple",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "id_number"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Rahim"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 22.049,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Rahim"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 22.049,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "০৫/০৮/১৯৯৩",
+              "father_name": "Abdul Rahim"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "Blue office stamp directly overlays the Born date field.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 61.579,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-08",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 310,
+      "stamp_style": "red_orange",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Aziz"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.164,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Aziz"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.164,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "09/09/১৯৯১",
+              "father_name": "Abdul Aziz"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob",
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "An office stamp overlays the birth date obscuring the digits.",
+                "source": "planner"
+              }
+            ],
+            "birth_certificate.father_name": [
+              {
+                "action": "stamp_masked",
+                "reason": "Office stamp overlaps the father field obscuring the final letter.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 37,
+          "latency_s": 73.968,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-09",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 311,
+      "stamp_style": "black",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "UNREADABLE",
+              "father_name": "Abdus Samam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "15/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Salam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.492,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "UNREADABLE",
+              "father_name": "Abdus Samam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "15/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Salam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.492,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": null,
+              "father_name": "Abdus Samam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "15/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Salam"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "The Born date is obscured by an office stamp covering the field.",
+                "source": "planner"
+              },
+              {
+                "action": "recapture",
+                "reason": "Stamp obscures the dob and stamp_masked already failed.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 36,
+          "latency_s": 67.263,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-10",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 312,
+      "stamp_style": "faded_grey",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.879,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.879,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 58.449,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-11",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 313,
+      "stamp_style": "purple",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.365,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.365,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 55.729,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-12",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 314,
+      "stamp_style": "red_orange",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "16/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kader"
+            }
+          },
+          "reads": 11,
+          "latency_s": 17.612,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "16/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kader"
+            }
+          },
+          "reads": 11,
+          "latency_s": 17.612,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "16/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kader"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 57.271,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-13",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 315,
+      "stamp_style": "black",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "id_number"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "২২/১১/১৯৯৫",
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.674,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "২২/১১/১৯৯৫",
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.674,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "২২/১১/১৯৯৫",
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Reads differ only on punctuation and stamp is far from field.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 59.851,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-14",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 316,
+      "stamp_style": "faded_grey",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name",
+            "dob",
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "০৫/০২/১৯৯২",
+              "father_name": "Abdul Malek"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.51,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "০৫/০২/১৯৯২",
+              "father_name": "Abdul Malek"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.51,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "০৫/০২/১৯৯২",
+              "father_name": "Abdul Malke"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Stamp is far from the field while reads differ by one letter.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 64.124,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-15",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 317,
+      "stamp_style": "purple",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "১৮/০৯/১৯৯৭",
+              "father_name": "Md Rafkikul Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.957,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "১৮/০৯/১৯৯৭",
+              "father_name": "Md Rafkikul Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.957,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "১৮/০৯/১৯৯৭",
+              "father_name": "Md Rafikul Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Rahim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Stamp is far from father field while zoom dropped a letter suggesting small print needs tighter crop.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 64.729,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-16",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 318,
+      "stamp_style": "red_orange",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haq"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "10/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Haque"
+            }
+          },
+          "reads": 11,
+          "latency_s": 17.738,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haq"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "10/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Haque"
+            }
+          },
+          "reads": 11,
+          "latency_s": 17.738,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haq"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "10/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Haque"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 53.774,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-17",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 319,
+      "stamp_style": "black",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "id_number"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "২৫/১২/১৯৯৩",
+              "father_name": "Abdul Rahmi"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.885,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "২৫/১২/১৯৯৩",
+              "father_name": "Abdul Rahmi"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.885,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "২৫/১২/১৯৯৩",
+              "father_name": "Abdul Rahmi"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 57.039,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-18",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 320,
+      "stamp_style": "faded_grey",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "০৭/০৭/১৯৯১",
+              "father_name": "Abdul Azizi"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.205,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "০৭/০৭/১৯৯১",
+              "father_name": "Abdul Azizi"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.205,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "০৭/০৭/১৯৯১",
+              "father_name": "Abdul Azizi"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 51.455,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-19",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 321,
+      "stamp_style": "purple",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "১৪/০১/১৯৮৯",
+              "father_name": "Abdus Salam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Kamal"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.937,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "১৪/০১/১৯৮৯",
+              "father_name": "Abdus Salam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Kamal"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.937,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "১৪/০১/১৯৮৯",
+              "father_name": "Abdus Salam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Kamal"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 52.423,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-20",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 322,
+      "stamp_style": "red_orange",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "21/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahman"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.654,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "21/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahman"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.654,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbibur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "21/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahman"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Stamp is far from the father field, so the single-letter difference needs a tighter crop.",
+                "source": "planner"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Stamp is far from father field so tighter crop best resolves bb versus b difference.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 37,
+          "latency_s": 64.494,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-21",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 323,
+      "stamp_style": "black",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.672,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.672,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 56.562,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-22",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 324,
+      "stamp_style": "faded_grey",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "16/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kader"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.955,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "16/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kader"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.955,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "15/06/1988",
+              "id_number": "২৩৪৫৬৭৮৯০১",
+              "father_name": "Abdul Kader"
+            },
+            "birth_certificate": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "১৫/০৬/১৯৮৮",
+              "father_name": "Abdul Kadere"
+            },
+            "bank_form": {
+              "name": "Md. Sazzad Hossain",
+              "dob": "16/06/1988",
+              "id_number": "2345678901",
+              "father_name": "Abdul Kader"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 56.311,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-23",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 325,
+      "stamp_style": "purple",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "id_number"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "২২/১১/১৯৯৫",
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.324,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "২২/১১/১৯৯৫",
+              "father_name": "Md Nurul Islam"
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.324,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "৩৪৫৬৭৮৯০১২",
+              "father_name": "Md. Nurul Islam"
+            },
+            "birth_certificate": {
+              "name": "Fatima Akter",
+              "dob": "২২/১১/১৯৯৫",
+              "father_name": null
+            },
+            "bank_form": {
+              "name": "Fatima Akter",
+              "dob": "22/11/1995",
+              "id_number": "3456889012",
+              "father_name": "Md. Nurul Islam"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Reads differ only on the period, so a tighter crop can resolve the small punctuation.",
+                "source": "planner"
+              },
+              {
+                "action": "recapture",
+                "reason": "Reads consistently agree except punctuation and stamp is far from field.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 36,
+          "latency_s": 63.312,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-24",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 326,
+      "stamp_style": "red_orange",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name",
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "০৫/০২/১৯৯২",
+              "father_name": "Abdul Malke"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.503,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "০৫/০২/১৯৯২",
+              "father_name": "Abdul Malke"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.503,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "05/02/1992",
+              "id_number": "৪৫৬৭৮৯০১২৩",
+              "father_name": "Abdul Malek"
+            },
+            "birth_certificate": {
+              "name": "Md. Tanvir Hasan",
+              "dob": "০৫/০২/১৯৯২",
+              "father_name": "Abdul Malke"
+            },
+            "bank_form": {
+              "name": "Md. Tanvir Hossain",
+              "dob": "05/02/1992",
+              "id_number": "4567890123",
+              "father_name": "Abdul Malek"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Stamp is far from father field so tighter zoom best resolves small spelling difference.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 62.048,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-25",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 327,
+      "stamp_style": "black",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "১৮/০৯/১৯৯৭",
+              "father_name": "Md Rafkil Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.484,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "১৮/০৯/১৯৯৭",
+              "father_name": "Md Rafkil Islam"
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.484,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "৫৬৭৮৯০১২৩৪",
+              "father_name": "Md. Rafiqul Islam"
+            },
+            "birth_certificate": {
+              "name": "Sharmin Akhtar",
+              "dob": "১৮/০৯/১৯৯৭",
+              "father_name": null
+            },
+            "bank_form": {
+              "name": "Sharmin Akhtar",
+              "dob": "18/09/1997",
+              "id_number": "5678901234",
+              "father_name": "Md. Rafiqul Rahim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Reads differ by one letter suggesting small blurry print needing tighter crop.",
+                "source": "planner"
+              },
+              {
+                "action": "recapture",
+                "reason": "Zoom reads are split and stamp is far from field so no crop will help.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 36,
+          "latency_s": 65.186,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-26",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 328,
+      "stamp_style": "faded_grey",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haq"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "10/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Haque"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.364,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haq"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "10/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Haque"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.364,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Ariful Islam",
+              "dob": "09/04/1985",
+              "id_number": "৬৭৮৯০১২৩৪৫",
+              "father_name": "Shamsul Haque"
+            },
+            "birth_certificate": {
+              "name": "Md. Ariful Islam",
+              "dob": "০৯/০৪/১৯৮৫",
+              "father_name": "Shamsul Haq"
+            },
+            "bank_form": {
+              "name": "Md. Ariful Islam",
+              "dob": "10/04/1985",
+              "id_number": "6789012345",
+              "father_name": "Shamsul Haque"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 57.74,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-27",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 329,
+      "stamp_style": "purple",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "id_number"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "২৫/১২/১৯৯৩",
+              "father_name": "Abdul Rahmi"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.189,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "২৫/১২/১৯৯৩",
+              "father_name": "Abdul Rahmi"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.189,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "৭৮৯০১২৩৪৫৬",
+              "father_name": "Abdul Rahim"
+            },
+            "birth_certificate": {
+              "name": "Nusrat Jahan",
+              "dob": "২৫/১২/১৯৯৩",
+              "father_name": "Abdul Rahmi"
+            },
+            "bank_form": {
+              "name": "Nusrat Jahan",
+              "dob": "25/12/1993",
+              "id_number": "7890223456",
+              "father_name": "Abdul Rahim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 52.997,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-28",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 330,
+      "stamp_style": "red_orange",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "০৭/০৭/১৯৯১",
+              "father_name": "Abdul Azizi"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.728,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "০৭/০৭/১৯৯১",
+              "father_name": "Abdul Azizi"
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.728,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Imran Hosen",
+              "dob": "07/07/1991",
+              "id_number": "৮৯০১২৩৪৫৬৭",
+              "father_name": "Abdul Aziz"
+            },
+            "birth_certificate": {
+              "name": "Md. Imran Hosen",
+              "dob": "০৭/০৭/১৯৯১",
+              "father_name": null
+            },
+            "bank_form": {
+              "name": "Md. Imran Hosen",
+              "dob": "08/07/1991",
+              "id_number": "8901234567",
+              "father_name": "Abdul Aziz"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Stamp is far from father field so tighter zoom best resolves final-letter difference.",
+                "source": "planner"
+              },
+              {
+                "action": "recapture",
+                "reason": "Stamp is far from field and zoom reads already tried without consensus.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 36,
+          "latency_s": 61.524,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-29",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 331,
+      "stamp_style": "black",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "father_name"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "১৪/০১/১৯৮৯",
+              "father_name": "Abdus Salam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Kamal"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.104,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "১৪/০১/১৯৮৯",
+              "father_name": "Abdus Salam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Kamal"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.104,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "৯০১২৩৪৫৬৭৮",
+              "father_name": "Abdus Salam"
+            },
+            "birth_certificate": {
+              "name": "Rokeya Begum",
+              "dob": "১৪/০১/১৯৮৯",
+              "father_name": "Abdus Salam"
+            },
+            "bank_form": {
+              "name": "Rokeya Begum",
+              "dob": "14/01/1989",
+              "id_number": "9012345678",
+              "father_name": "Abdus Kamal"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 59.368,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "persona-disc-30",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 332,
+      "stamp_style": "faded_grey",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "21/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahman"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.359,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habbur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "21/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahman"
+            }
+          },
+          "reads": 11,
+          "latency_s": 21.359,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Md. Fahim Rahman",
+              "dob": "20/10/1994",
+              "id_number": "১০২৩৪৫৬৭৮৯",
+              "father_name": "Habibur Rahman"
+            },
+            "birth_certificate": {
+              "name": "Md. Fahim Rahman",
+              "dob": "২০/১০/১৯৯৪",
+              "father_name": "Habibur Rahman"
+            },
+            "bank_form": {
+              "name": "Md. Fahim Rahman",
+              "dob": "21/10/1994",
+              "id_number": "1023456789",
+              "father_name": "Habibur Rahman"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "zoom_tight",
+                "reason": "Reads differ by one letter suggesting small blurry print needing tighter crop.",
+                "source": "planner"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 65.667,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    }
+  ]
+}

@@ -1,0 +1,2706 @@
+{
+  "meta": {
+    "tool": "eval.run_eval",
+    "started_at": "2026-10-31T13:00:29.782079+00:00",
+    "seed_base": 202,
+    "counts": {
+      "clean": 0,
+      "variation": 0,
+      "discrepancy": 10,
+      "degraded": 8
+    },
+    "over_dob": 10,
+    "workers": 4,
+    "physical_dir": "eval/physical",
+    "physical_sets": 0,
+    "hindi_sets": 0,
+    "reader": "MetaReader",
+    "segmenter": "MetaSAMSegmenter",
+    "no_planner": true
+  },
+  "summary": {
+    "sets_ok": 18,
+    "sets_error": 0,
+    "physical_sets": 0,
+    "hindi_sets": 0,
+    "configs": {
+      "exact": {
+        "genuine_n": 0,
+        "false_flags": 0,
+        "discrepancy_n": 10,
+        "caught": 7,
+        "silent_errors": 0,
+        "degraded_n": 8,
+        "recovered": 0,
+        "recapture": 0,
+        "degraded_false_flags": 8,
+        "reads_mean": 11.0,
+        "latency_mean_s": 18.54,
+        "cost_mean_usd": null
+      },
+      "single": {
+        "genuine_n": 0,
+        "false_flags": 0,
+        "discrepancy_n": 10,
+        "caught": 7,
+        "silent_errors": 0,
+        "degraded_n": 8,
+        "recovered": 8,
+        "recapture": 0,
+        "degraded_false_flags": 0,
+        "reads_mean": 11.0,
+        "latency_mean_s": 18.54,
+        "cost_mean_usd": null
+      },
+      "agent": {
+        "genuine_n": 0,
+        "false_flags": 0,
+        "discrepancy_n": 10,
+        "caught": 7,
+        "silent_errors": 0,
+        "degraded_n": 8,
+        "recovered": 8,
+        "recapture": 0,
+        "degraded_false_flags": 0,
+        "reads_mean": 34.11,
+        "latency_mean_s": 59.52,
+        "cost_mean_usd": null
+      }
+    },
+    "by_category": {
+      "exact": {
+        "clean": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "variation": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "discrepancy": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 10,
+          "caught": 7,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 11.0,
+          "latency_mean_s": 18.85,
+          "cost_mean_usd": null
+        },
+        "degraded": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 8,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 8,
+          "reads_mean": 11.0,
+          "latency_mean_s": 18.15,
+          "cost_mean_usd": null
+        }
+      },
+      "single": {
+        "clean": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "variation": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "discrepancy": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 10,
+          "caught": 7,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 11.0,
+          "latency_mean_s": 18.85,
+          "cost_mean_usd": null
+        },
+        "degraded": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 8,
+          "recovered": 8,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 11.0,
+          "latency_mean_s": 18.15,
+          "cost_mean_usd": null
+        }
+      },
+      "agent": {
+        "clean": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "variation": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "discrepancy": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 10,
+          "caught": 7,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 34.6,
+          "latency_mean_s": 60.69,
+          "cost_mean_usd": null
+        },
+        "degraded": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 8,
+          "recovered": 8,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": 33.5,
+          "latency_mean_s": 58.06,
+          "cost_mean_usd": null
+        }
+      }
+    },
+    "physical": {
+      "configs": {
+        "exact": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "single": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "agent": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        }
+      },
+      "by_expectation": {
+        "exact": {
+          "genuine": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "single": {
+          "genuine": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "agent": {
+          "genuine": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        }
+      }
+    },
+    "hindi": {
+      "configs": {
+        "exact": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "single": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        },
+        "agent": {
+          "genuine_n": 0,
+          "false_flags": 0,
+          "discrepancy_n": 0,
+          "caught": 0,
+          "silent_errors": 0,
+          "degraded_n": 0,
+          "recovered": 0,
+          "recapture": 0,
+          "degraded_false_flags": 0,
+          "reads_mean": null,
+          "latency_mean_s": null,
+          "cost_mean_usd": null
+        }
+      },
+      "by_category": {
+        "exact": {
+          "clean": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "variation": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "single": {
+          "clean": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "variation": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        },
+        "agent": {
+          "clean": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "variation": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "discrepancy": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          },
+          "degraded": {
+            "genuine_n": 0,
+            "false_flags": 0,
+            "discrepancy_n": 0,
+            "caught": 0,
+            "silent_errors": 0,
+            "degraded_n": 0,
+            "recovered": 0,
+            "recapture": 0,
+            "degraded_false_flags": 0,
+            "reads_mean": null,
+            "latency_mean_s": null,
+            "cost_mean_usd": null
+          }
+        }
+      }
+    }
+  },
+  "sets": [
+    {
+      "set_id": "degraded-01",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 212,
+      "stamp_style": "purple",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.904,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.904,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 63.227,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "degraded-02",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 213,
+      "stamp_style": "red_orange",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.024,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.024,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 59.93,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "degraded-03",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 214,
+      "stamp_style": "black",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.057,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.057,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 55.242,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "degraded-04",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 215,
+      "stamp_style": "faded_grey",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 17.315,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 17.315,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 52.898,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "degraded-05",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 216,
+      "stamp_style": "purple",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.384,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.384,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 55.906,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "degraded-06",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 217,
+      "stamp_style": "red_orange",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.402,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.402,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 55.758,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "degraded-07",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 218,
+      "stamp_style": "black",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.375,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 20.375,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 58.448,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "degraded-08",
+      "category": "degraded",
+      "variant": "degraded",
+      "seed": 219,
+      "stamp_style": "faded_grey",
+      "stamp_position": "margin",
+      "script": "bangla",
+      "expected_verdict": "CONSISTENT",
+      "injected_fields": [],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.723,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.723,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "CONSISTENT",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karami"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 63.064,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-01",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 202,
+      "stamp_style": "black",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.56,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.56,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": null,
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 63.078,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-02",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 203,
+      "stamp_style": "faded_grey",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.41,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.41,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 59.95,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-03",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 204,
+      "stamp_style": "purple",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৬/১৯৯০",
+              "father_name": "Abdul Karimi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.662,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৬/১৯৯০",
+              "father_name": "Abdul Karimi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.662,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৬/১৯৯০",
+              "father_name": "Abdul Karimi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 64.92,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-04",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 205,
+      "stamp_style": "red_orange",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.843,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.843,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karimi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 52.643,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-05",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 206,
+      "stamp_style": "black",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.271,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.271,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": null,
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 64.431,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-06",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 207,
+      "stamp_style": "faded_grey",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.573,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.573,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.father_name": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 60.97,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-07",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 208,
+      "stamp_style": "purple",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৬/১৯৯০",
+              "father_name": "Abdul Karimi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.747,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৬/১৯৯০",
+              "father_name": "Abdul Karimi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 16.747,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৬/১৯৯০",
+              "father_name": "Abdul Karimi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 57.105,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-08",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 209,
+      "stamp_style": "red_orange",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.492,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 19.492,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": null
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob",
+            "birth_certificate.father_name"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ],
+            "birth_certificate.father_name": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 37,
+          "latency_s": 71.637,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-09",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 210,
+      "stamp_style": "black",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.328,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "UNREADABLE",
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.328,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "UNREADABLE",
+          "flagged_fields": [],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": null,
+              "father_name": "Abdul Karim"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [
+            "birth_certificate.dob"
+          ],
+          "investigations": {
+            "birth_certificate.dob": [
+              {
+                "action": "stamp_masked",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              },
+              {
+                "action": "zoom_tight",
+                "reason": "Planner unavailable — ran the standard investigation sequence.",
+                "source": "fallback"
+              }
+            ]
+          },
+          "reads": 35,
+          "latency_s": 59.831,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "set_id": "discrepancy-10",
+      "category": "discrepancy",
+      "variant": "discrepancy",
+      "seed": 211,
+      "stamp_style": "faded_grey",
+      "stamp_position": "over_dob",
+      "script": "bangla",
+      "expected_verdict": "DISCREPANCY",
+      "injected_fields": [
+        "dob"
+      ],
+      "configs": {
+        "exact": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob",
+            "id_number",
+            "father_name"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.626,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "single": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "reads": 11,
+          "latency_s": 18.626,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        },
+        "agent": {
+          "verdict": "DISCREPANCY",
+          "flagged_fields": [
+            "dob"
+          ],
+          "documents": {
+            "nid": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1990",
+              "id_number": "১২৩৪৫৬৭৮৯০",
+              "father_name": "Abdul Karim"
+            },
+            "birth_certificate": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "১২/০৩/১৯৯০",
+              "father_name": "Abdul Karmi"
+            },
+            "bank_form": {
+              "name": "Mohammad Abdul Rahman",
+              "dob": "12/03/1991",
+              "id_number": "1234567890",
+              "father_name": "Abdul Karim"
+            }
+          },
+          "uncertain_fields": [],
+          "investigations": {},
+          "reads": 33,
+          "latency_s": 52.375,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_usd": null
+        }
+      },
+      "status": "ok"
+    }
+  ]
+}
