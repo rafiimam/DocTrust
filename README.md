@@ -78,14 +78,6 @@ Then open the demo, switch to Upload mode — the demo's default backend URL is 
 
 **Reader provider is configuration, not code.** The vision reader can be the **Meta Model API** (`MODEL_API_KEY`, model `muse-spark-1.3` by default) or **Baseten** hosting Muse Spark Open (`BASETEN_API_KEY`). Which one is used is chosen purely by environment — `JUDGE_READER=meta` or `JUDGE_READER=baseten` — and the Modal deployment stores the key as a secret (`meta-secret` or `baseten-secret`); see [`modal_backend/README.md`](modal_backend/README.md). Verification status, stated plainly: the **Meta Model API route is verified live** (Bangla gate test and a full judge-mode run, 27 Oct 2026, plus the full evaluation). The **Baseten / Muse Spark Open route is also verified** — it ran the complete evaluation on 2026-10-29/30 (see Results); its known quirk is completion budget: Spark Open always reasons at full depth, so it needs a much larger `max_tokens` budget than the hosted route, and on most Devanagari sets its reasoning exceeded even a 16384-token budget. A public backend also has a daily cap on live runs (`JUDGE_DAILY_RUN_CAP`, default 100) so the endpoint cannot spend the reader budget unbounded.
 
-## How a reviewer team would use it
-
-DocTrust sits in front of the human queue, not instead of it. Each application arrives as a job, and the verdict routes it: *Consistent* sets pass to a fast human confirm with the evidence attached; *Discrepancy* sets reach the reviewer with the disagreeing fields and regions already marked; *Unreadable* sets go back for recapture before a human spends time on them. The reviewer always makes the call — the agent's job is to make sure the call is made on evidence, not on a first glance. In a regulated deployment, the open-weights route (Muse Spark Open plus the self-hosted SAM app) keeps every document inside the institution's own infrastructure; in this hosted demo, jobs are in-memory only and uploaded files are deleted with the job's temporary directory.
-
-## Status
-
-Feature-complete; final evaluation and submission polish (31 Oct 2026). The full three-configuration evaluation has run on both reader routes, a fresh-seed held-out batch replicated the post-fix results (50/50 after a same-day retry of the one timed-out set), and the demo (cached cases + live judge mode on Modal) is public. Completed 31 Oct: the stamp-over-field hard batch — SAM vs Pillow vs planner ablation, no verdict-level differences, failures all safe recaptures — and the multi-persona name-generalization batch (30 discrepancy sets, ten personas; agent 26/30 SAM, 27/30 Pillow, zero silent errors; pooled silent-error bound now ≈ 6%). Still pending: the physically-captured specimen batch. Reader calibration detail — the Bangla gate test and the reasoning-budget configuration it produced — lives in [`eval/EVALUATION.md`](eval/EVALUATION.md); the plan is in [docs/PLAN.md](docs/PLAN.md).
-
 ## Results
 
 **The full evaluation has run** (2026-10-29/30, both reader routes, protocol and complete tables in [`eval/EVALUATION.md`](eval/EVALUATION.md)). 40 synthetic Bangla sets (12 clean, 10 genuine variation, 10 injected discrepancy, 8 degraded) plus 10 Hindi-script sets reported separately, three configurations (exact-match baseline, single-pass + normalization, full agent), all results as counts (x/n), never bare percentages. Headline, full agent, post-fix system:
@@ -138,7 +130,7 @@ Two directions are recorded here as future research to build on the investigatio
 - `frontend/` — reviewer UI (documents left, live agent trace with evidence links right)
 - `generator/` — synthetic document set generator (SPECIMEN-watermarked)
 - `eval/` — synthetic evaluation sets and baseline/agent comparisons
-- `docs/` — plan and notes; `docs/demo/` is the GitHub Pages reviewer-UI demo
+- `docs/demo/` — the GitHub Pages reviewer-UI demo
 
 ## License
 
