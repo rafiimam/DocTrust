@@ -188,6 +188,27 @@ def _token_lists_equivalent(ta: list[str], tb: list[str]) -> bool:
                for x, y in zip(sorted(ta), sorted(tb)))
 
 
+_ZERO_WIDTH = dict.fromkeys(
+    [0x200B, 0x200C, 0x200D, 0xFEFF], None)
+
+
+def normalize_script_name(text: str) -> str:
+    """Canonical form of a name read in its original script.
+
+    Used to compare Bangla/Devanagari name reads directly, without
+    transliteration: NFC composition (so decomposed ড়/য় sequences
+    equal their precomposed forms), zero-width characters removed,
+    whitespace collapsed. Deliberately light — no folding of distinct
+    letters — so two genuinely different names in script never
+    canonicalize to the same string.
+    """
+    import unicodedata
+
+    s = unicodedata.normalize("NFC", text or "")
+    s = s.translate(_ZERO_WIDTH)
+    return " ".join(s.split())
+
+
 def names_match(a: str, b: str) -> str:
     """'match' if canonical tokens are identical, 'variant' if they share
     every token but differ in order/spelling residue, else 'mismatch'.

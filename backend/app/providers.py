@@ -47,10 +47,72 @@ READ_PROMPT = (
     "return exactly: UNREADABLE"
 )
 
+SCRIPT_READ_PROMPT = (
+    "You are transcribing one name field from a Bangladeshi identity "
+    "document image. Return the name EXACTLY as printed, in its "
+    "original script (Bangla or Devanagari). Do NOT transliterate "
+    "into Latin letters. If the field is not visible or not legible, "
+    "return exactly: UNREADABLE"
+)
+
 
 class Reader(Protocol):
     def read_field(self, image_path: str, doc_type: str, field: str,
                    perturbation: str) -> str:
+        ...
+
+
+VISUAL_PROMPT = (
+    "You are the visual examiner for a document-review agent. You "
+    "are shown a set of identity documents belonging to one "
+    "applicant. Examine them VISUALLY, as images — do not compare "
+    "the text values across documents (deterministic code does "
+    "that, and it is not your job). Report only visual concerns a "
+    "text reader cannot see: (1) a stamp or seal overlapping a "
+    "printed field; (2) a field whose print looks pasted over or "
+    "altered — different font, ink or rendering inside one field; "
+    "(3) a region that looks edited or composited. Do not assess "
+    "photographs or faces, and do not decide whether the documents "
+    "agree. Reply with ONLY a JSON object of the form "
+    "{\"concerns\": [{\"doc\": \"<document type>\", \"area\": "
+    "\"<field or region>\", \"type\": \"stamp_overlap | "
+    "print_inconsistency | edited_region | other_visual\", "
+    "\"detail\": \"<one short sentence>\"}], \"summary\": \"<one "
+    "short sentence>\"} — an empty concerns list when nothing "
+    "visual stands out. No prose, no code fences, nothing else."
+)
+
+VISUAL_TYPES = ("stamp_overlap", "print_inconsistency",
+                "edited_region", "other_visual")
+VISUAL_MAX_CONCERNS = 8
+VISUAL_DETAIL_MAX_CHARS = 200
+
+
+class VisualReviewer(Protocol):
+    """Optional reader capability: one visual pass over the whole
+    document set, reporting concerns that text comparison cannot
+    see (a stamp over a field, print that looks pasted over).
+
+    Advisory only, by design: the result is attached to the review
+    for the human reviewer and NEVER feeds the comparator — the
+    deterministic code keeps sole verdict authority. Returns
+    {"concerns": [...], "summary": str}, or None when the pass
+    produced nothing usable."""
+
+    def visual_cross_check(self, images: dict[str, str]) -> dict | None:
+        ...
+
+
+class ScriptReader(Protocol):
+    """Optional reader capability: transcribe a name field in its
+    original script (no transliteration). The comparator uses these
+    reads for its script-agreement rule — transliteration variance
+    is where Latin reads disagree on names that are spelled
+    identically on the documents themselves. A reader without this
+    capability simply means the rule never fires."""
+
+    def read_field_script(self, image_path: str, doc_type: str,
+                          field: str) -> str:
         ...
 
 
@@ -79,11 +141,25 @@ PLANNER_PROMPT = (
     "listed below. Choose the single most useful next investigation "
     "step from the offered actions. You choose where to look next — "
     "you never decide the field's value or whether documents agree; "
-    "a deterministic comparator makes every verdict. Reply with ONLY "
-    "a JSON object of the form {\"action\": \"<action name>\", "
-    "\"reason\": \"<one short sentence>\"} — no prose, no code "
-    "fences, nothing else."
+    "a deterministic comparator makes every verdict. If the action "
+    "is \"stamp_masked\" or \"stamp_removed\", also choose "
+    "\"segment_prompt\": the phrase the segmentation model should "
+    "locate, one of \"stamp\", \"circular ink stamp\", \"seal\", "
+    "\"signature\", \"handwriting\" — pick what is actually "
+    "obscuring the field. Reply with ONLY a JSON object of the "
+    "form {\"action\": \"<action name>\", \"reason\": \"<one short "
+    "sentence>\", \"segment_prompt\": \"<phrase, stamp actions "
+    "only>\"} — no prose, no code fences, nothing else."
 )
+
+# The segmentation phrases the planner may choose from when it picks
+# a stamp investigation view. SAM is prompt-sensitive — "stamp" and
+# "circular ink stamp" localized at IoU 0.99 in the fixed protocol,
+# "rubber stamp" returned nothing — so the list is explicit and the
+# agent validates against it; anything else falls back to "stamp".
+SEGMENT_PROMPTS = ["stamp", "circular ink stamp", "seal",
+                   "signature", "handwriting"]
+DEFAULT_SEGMENT_PROMPT = "stamp"
 
 
 def _plan_payload(model: str, image_path: str, doc_type: str, field: str,
@@ -142,7 +218,8 @@ def _parse_plan(content: str) -> dict:
         raise ValueError(
             f"planner reply has no action: {text[:120]!r}")
     return {"action": str(decision["action"]),
-            "reason": str(decision.get("reason") or "")}
+            "reason": str(decision.get("reason") or ""),
+            "segment_prompt": str(decision.get("segment_prompt") or "")}
 
 
 def _post_planner(url: str, headers: dict, payload: dict,
@@ -183,7 +260,8 @@ def _post_planner(url: str, headers: dict, payload: dict,
 
 def _read_payload(model: str, image_path: str, doc_type: str, field: str,
                   perturbation: str, max_tokens: int = 128,
-                  reasoning_effort: str | None = None) -> dict:
+                  reasoning_effort: str | None = None,
+                  prompt: str = READ_PROMPT) -> dict:
     """The chat-completions payload shared by both live providers.
 
     Both endpoints are OpenAI-compatible and accept the same image
@@ -191,6 +269,8 @@ def _read_payload(model: str, image_path: str, doc_type: str, field: str,
     only the URL, auth header, model id and generation knobs differ
     between them. ``reasoning_effort`` is only included when set —
     BasetenReader leaves it unset but passes its own max_tokens.
+    ``prompt`` swaps the instruction text (the script read uses
+    SCRIPT_READ_PROMPT); everything else is identical.
     """
     image_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
     payload = {
@@ -199,7 +279,7 @@ def _read_payload(model: str, image_path: str, doc_type: str, field: str,
             "role": "user",
             "content": [
                 {"type": "text",
-                 "text": f"{READ_PROMPT}\nField: {field} "
+                 "text": f"{prompt}\nField: {field} "
                          f"(document: {doc_type}, view: {perturbation})"},
                 {"type": "image_url",
                  "image_url": {"url": f"data:image/png;base64,{image_b64}"}},
@@ -211,6 +291,142 @@ def _read_payload(model: str, image_path: str, doc_type: str, field: str,
     if reasoning_effort:
         payload["reasoning_effort"] = reasoning_effort
     return payload
+
+
+def _visual_payload(model: str, images: dict[str, str],
+                    max_tokens: int = 2048,
+                    reasoning_effort: str | None = None) -> dict:
+    """The visual cross-check payload: the prompt, then each
+    document image preceded by a label part naming its type, so a
+    concern can be attributed to a document."""
+    content: list[dict] = [{"type": "text", "text": VISUAL_PROMPT}]
+    for doc_type, image_path in images.items():
+        image_b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
+        content.append({"type": "text", "text": f"Document: {doc_type}"})
+        content.append({"type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{image_b64}"}})
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": content}],
+        "max_tokens": max_tokens,
+        "temperature": 0.0,
+    }
+    if reasoning_effort:
+        payload["reasoning_effort"] = reasoning_effort
+    return payload
+
+
+def _parse_visual(content: str) -> dict:
+    """Parse a visual cross-check reply into
+    {"concerns": [...], "summary": str}.
+
+    Strict about the envelope (a JSON object with a concerns list),
+    lenient about individual entries: a malformed concern is dropped
+    rather than failing the pass, an unlisted type is recorded as
+    other_visual, and counts/lengths are capped — the output is
+    advisory evidence for a human, and a verbose model must not
+    bloat it. An unparseable envelope raises ValueError; the agent
+    treats that as no visual review.
+    """
+    text = content.strip()
+    if text.startswith("```"):
+        text = "\n".join(line for line in text.splitlines()
+                         if not line.strip().startswith("```")).strip()
+    try:
+        data = json.loads(text[text.index("{"):text.rindex("}") + 1])
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            f"visual reply was not a JSON object: {text[:120]!r}") from exc
+    if not isinstance(data, dict) or \
+            not isinstance(data.get("concerns"), list):
+        raise ValueError(
+            f"visual reply has no concerns list: {text[:120]!r}")
+    concerns: list[dict] = []
+    for raw in data["concerns"][:VISUAL_MAX_CONCERNS]:
+        if not isinstance(raw, dict):
+            continue
+        ctype = str(raw.get("type") or "")
+        if ctype not in VISUAL_TYPES:
+            ctype = "other_visual"
+        concerns.append({
+            "doc": " ".join(str(raw.get("doc") or "").split())[:40],
+            "area": " ".join(str(raw.get("area") or "").split())[:60],
+            "type": ctype,
+            "detail": " ".join(
+                str(raw.get("detail") or "").split()
+            )[:VISUAL_DETAIL_MAX_CHARS],
+        })
+    return {"concerns": concerns,
+            "summary": " ".join(
+                str(data.get("summary") or "").split()
+            )[:VISUAL_DETAIL_MAX_CHARS]}
+
+
+def _post_visual(url: str, headers: dict, payload: dict,
+                 label: str) -> dict:
+    """POST one visual cross-check call and parse its result.
+
+    Mirrors _post_planner's contract: every transport/HTTP/shape
+    failure raises RuntimeError, an unparseable reply ValueError —
+    the agent treats any of them as no visual review.
+    """
+    import httpx  # deferred so tests never need the network stack
+
+    try:
+        resp = httpx.post(url, headers=headers, json=payload, timeout=90)
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"{label} visual request failed: {exc}") from exc
+    if resp.status_code >= 400:
+        excerpt = " ".join((resp.text or "").split())[:200]
+        raise RuntimeError(
+            f"{label} visual returned HTTP {resp.status_code}: {excerpt}")
+    data = resp.json()
+    choices = data.get("choices") or []
+    if not choices:
+        raise RuntimeError(
+            f"{label} visual returned no choices — unexpected "
+            f"response shape: {str(data)[:200]}")
+    choice = choices[0]
+    content = (choice.get("message") or {}).get("content")
+    if content is None or not content.strip():
+        raise RuntimeError(
+            f"{label} visual returned no content "
+            f"(finish_reason={choice.get('finish_reason')!r}); the "
+            "completion budget was likely consumed by reasoning.")
+    return _parse_visual(content)
+
+
+def _post_read(url: str, headers: dict, payload: dict, label: str) -> str:
+    """POST one read-shaped chat call and return the stripped content.
+
+    Used by the script reads (the field reads keep their own
+    provider-specific error wording). Every failure raises
+    RuntimeError with the provider label, in the readers' style; the
+    agent treats a failed script read as no script read at all.
+    """
+    import httpx  # deferred so tests never need the network stack
+
+    try:
+        resp = httpx.post(url, headers=headers, json=payload, timeout=60)
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"{label} script read failed: {exc}") from exc
+    if resp.status_code >= 400:
+        excerpt = " ".join((resp.text or "").split())[:200]
+        raise RuntimeError(
+            f"{label} script read returned HTTP {resp.status_code}: "
+            f"{excerpt}")
+    choices = resp.json().get("choices") or []
+    if not choices:
+        raise RuntimeError(f"{label} script read returned no choices")
+    choice = choices[0]
+    content = (choice.get("message") or {}).get("content")
+    if content is None or not content.strip():
+        raise RuntimeError(
+            f"{label} script read returned no content "
+            f"(finish_reason={choice.get('finish_reason')!r}); the "
+            "completion budget was likely consumed by reasoning.")
+    return content.strip()
 
 
 class MockReader:
@@ -226,12 +442,16 @@ class MockReader:
     """
 
     def __init__(self, script: dict[tuple[str, str], list[str]],
-                 planner=None):
+                 planner=None, script_reads=None, visual=None):
         self._script = {k: list(v) for k, v in script.items()}
         self._planner = list(planner) if isinstance(planner, list) \
             else planner
+        self._script_reads = dict(script_reads or {})
+        self._visual = visual
         self.calls: list[tuple[str, str, str]] = []
         self.planner_calls: list[dict] = []
+        self.script_calls: list[tuple[str, str]] = []
+        self.visual_calls: list[dict] = []
 
     def read_field(self, image_path: str, doc_type: str, field: str,
                    perturbation: str) -> str:
@@ -242,6 +462,24 @@ class MockReader:
         if len(queue) > 1:
             return queue.pop(0)
         return queue[0]
+
+    def read_field_script(self, image_path: str, doc_type: str,
+                          field: str) -> str:
+        self.script_calls.append((doc_type, field))
+        return self._script_reads.get((doc_type, field), "UNREADABLE")
+
+    def visual_cross_check(self, images: dict[str, str]) -> dict | None:
+        """Scripted visual pass: the ``visual`` value given at
+        construction — a dict to return, an Exception to raise, a
+        callable to invoke, or None (the default: no visual review,
+        which is also what an unscripted mock means)."""
+        self.visual_calls.append(dict(images))
+        visual = self._visual
+        if callable(visual):
+            return visual(images)
+        if isinstance(visual, BaseException):
+            raise visual
+        return visual
 
     def plan_investigation(self, image_path: str, doc_type: str,
                            field: str, reads: list[dict],
@@ -352,6 +590,28 @@ class BasetenReader:
             self.url, {"Authorization": f"Api-Key {self.api_key}"},
             payload, "Baseten")
 
+    def read_field_script(self, image_path: str, doc_type: str,
+                          field: str) -> str:
+        """Original-script name transcription on the same endpoint
+        and budget as the reads (no reasoning_effort)."""
+        payload = _read_payload(self.model, image_path, doc_type, field,
+                                "script", max_tokens=self.max_tokens,
+                                prompt=SCRIPT_READ_PROMPT)
+        return _post_read(
+            self.url, {"Authorization": f"Api-Key {self.api_key}"},
+            payload, "Baseten")
+
+    def visual_cross_check(self, images: dict[str, str]) -> dict | None:
+        """Visual pass over the set on the same endpoint. The token
+        budget is raised to at least 4096: three images plus full-
+        depth reasoning is exactly the shape that starved at 1024
+        in the field reads (see the class docstring)."""
+        payload = _visual_payload(self.model, images,
+                                  max_tokens=max(self.max_tokens, 4096))
+        return _post_visual(
+            self.url, {"Authorization": f"Api-Key {self.api_key}"},
+            payload, "Baseten")
+
 
 class MetaReader:
     """Muse Spark via the Meta Model API (https://api.meta.ai/v1).
@@ -437,5 +697,29 @@ class MetaReader:
             max_tokens=self.max_tokens,
             reasoning_effort=self.reasoning_effort)
         return _post_planner(
+            META_URL, {"Authorization": f"Bearer {self.api_key}"},
+            payload, "Meta Model API")
+
+    def read_field_script(self, image_path: str, doc_type: str,
+                          field: str) -> str:
+        """Original-script name transcription on the same endpoint
+        and reasoning calibration as the reads."""
+        payload = _read_payload(
+            self.model, image_path, doc_type, field, "script",
+            max_tokens=self.max_tokens,
+            reasoning_effort=self.reasoning_effort,
+            prompt=SCRIPT_READ_PROMPT)
+        return _post_read(
+            META_URL, {"Authorization": f"Bearer {self.api_key}"},
+            payload, "Meta Model API")
+
+    def visual_cross_check(self, images: dict[str, str]) -> dict | None:
+        """Visual pass over the set on the same endpoint and
+        reasoning calibration as the reads, with the budget raised
+        to at least 2048 for the multi-image call."""
+        payload = _visual_payload(
+            self.model, images, max_tokens=max(self.max_tokens, 2048),
+            reasoning_effort=self.reasoning_effort)
+        return _post_visual(
             META_URL, {"Authorization": f"Bearer {self.api_key}"},
             payload, "Meta Model API")

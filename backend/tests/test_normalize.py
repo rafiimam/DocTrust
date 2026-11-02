@@ -70,3 +70,16 @@ def test_transliteration_skeleton_non_equivalences():
     assert normalize.names_match("Abdul Karim", "Karim") == "mismatch"
     # Short tokens get no skeleton slack.
     assert normalize.names_match("Ali", "Aly") == "mismatch"
+
+
+def test_normalize_script_name_unifies_composition_and_zero_width():
+    # Whitespace runs and zero-width joiners do not split a name,
+    # and NFC composition unifies decomposed sequences.
+    a = normalize.normalize_script_name("মোহাম্মদ রফিকুল")
+    b = normalize.normalize_script_name("মোহাম্মদ  রফিকুল\u200d")
+    assert a == b
+    dev = normalize.normalize_script_name("विजय  कुमार")
+    assert dev == "विजय कुमार"
+    assert normalize.normalize_script_name("") == ""
+    assert normalize.normalize_script_name("করিম") != \
+        normalize.normalize_script_name("কামাল")

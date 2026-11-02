@@ -728,3 +728,23 @@ def test_hindi_sets_scored_separately_from_headline(tmp_path):
                                   result.records)
     assert "Hindi-script sets (secondary, small n)" in md
     assert "Bangla primary" in md
+
+
+def test_visual_cells_split_by_expectation():
+    def _rec(category, concerns):
+        return {"category": category, "status": "ok",
+                "configs": {"agent": {"visual_concerns": concerns}}}
+
+    records = [
+        _rec("discrepancy", [{"type": "stamp_overlap"}]),
+        _rec("discrepancy", []),
+        _rec("clean", [{"type": "other_visual"}]),
+        _rec("variation", []),
+        _rec("degraded", None),  # no pass ran — excluded
+    ]
+    cells = run_eval._visual_cells(records)
+    assert cells["measured_sets"] == 4
+    assert cells["discrepancy"] == {"sets": 2, "with_concerns": 1,
+                                    "concerns_total": 1}
+    assert cells["genuine"] == {"sets": 2, "with_concerns": 1,
+                                "concerns_total": 1}

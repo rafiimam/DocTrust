@@ -27,6 +27,7 @@ class FieldFinding:
     status: str  # match | variant | mismatch | unreadable | single_source
     values: dict[str, str]  # doc_type -> raw value as read
     canonical: dict[str, str]  # doc_type -> canonical value compared
+    note: str = ""  # e.g. script-agreement rescue (see compare)
 
 
 @dataclass
@@ -57,8 +58,39 @@ def _canonical(field: str, raw) -> str | None:
     return str(raw).strip()
 
 
-def compare(documents: dict[str, dict[str, str]]) -> ComparisonResult:
-    """documents: {doc_type: {field: raw_value_as_read}}."""
+def _script_pair_agrees(script_documents, field: str,
+                        doc_a: str, doc_b: str) -> bool:
+    """True when both documents have an original-script read of the
+    field and the two reads canonicalize to the same non-empty string.
+
+    This is the script-agreement rescue: transliteration into Latin
+    letters is where reader variance lives ("Rafiqul" vs "Rafikul"),
+    while the Bangla/Devanagari spelling on the documents either
+    agrees or it does not. Agreement can only *downgrade* a Latin
+    mismatch to a variant — it never upgrades, never touches a match,
+    and requires a script read from both documents.
+    """
+    if not script_documents:
+        return False
+    a = script_documents.get(doc_a, {}).get(field)
+    b = script_documents.get(doc_b, {}).get(field)
+    if not a or not b:
+        return False
+    na = normalize.normalize_script_name(a)
+    nb = normalize.normalize_script_name(b)
+    return bool(na) and na == nb
+
+
+def compare(documents: dict[str, dict[str, str]],
+            script_documents: dict[str, dict[str, str]] | None = None
+            ) -> ComparisonResult:
+    """documents: {doc_type: {field: raw_value_as_read}}.
+
+    script_documents (optional): the same shape, holding name reads
+    transcribed in their original script. For name fields only, a
+    Latin mismatch between two documents whose script reads agree is
+    reported as a variant, not a mismatch — see _script_pair_agrees.
+    """
     result = ComparisonResult()
     for field in SHARED_FIELDS:
         present = {
@@ -75,6 +107,7 @@ def compare(documents: dict[str, dict[str, str]]) -> ComparisonResult:
             continue
 
         canonical = {d: _canonical(field, v) for d, v in present.items()}
+        note = ""
         if any(v is None for v in canonical.values()):
             status = "unreadable"
         elif field in ("name", "father_name"):
@@ -83,6 +116,11 @@ def compare(documents: dict[str, dict[str, str]]) -> ComparisonResult:
             for i in range(len(docs)):
                 for j in range(i + 1, len(docs)):
                     pair = normalize.names_match(present[docs[i]], present[docs[j]])
+                    if pair == "mismatch" and _script_pair_agrees(
+                            script_documents, field, docs[i], docs[j]):
+                        pair = "variant"
+                        note = ("transliterations differ; "
+                                "original-script reads agree")
                     if pair == "mismatch":
                         status = "mismatch"
                     elif pair == "variant" and status == "match":
@@ -92,6 +130,7 @@ def compare(documents: dict[str, dict[str, str]]) -> ComparisonResult:
 
         result.findings.append(
             FieldFinding(field, status, dict(present),
-                         {d: v or "" for d, v in canonical.items()})
+                         {d: v or "" for d, v in canonical.items()},
+                         note=note)
         )
     return result

@@ -77,3 +77,74 @@ def test_id_written_in_bangla_digits_matches():
     }
     result = comparator.compare(docs)
     assert result.verdict == "CONSISTENT"
+
+
+def _finding(result, field):
+    return next(f for f in result.findings if f.field == field)
+
+
+def test_script_agreement_rescues_transliteration_mismatch():
+    # Latin reads disagree on a consonant (Rafiqul vs Rafikul — the
+    # skeleton rule does not fold q/k); the Bangla spelling on both
+    # documents is identical, so this is a variant, not a mismatch.
+    docs = {
+        "nid": {"father_name": "Rafiqul Islam"},
+        "bank_form": {"father_name": "Rafikul Islam"},
+    }
+    script = {
+        "nid": {"father_name": "রফিকুল ইসলাম"},
+        "bank_form": {"father_name": "রফিকুল ইসলাম"},
+    }
+    finding = _finding(comparator.compare(docs, script), "father_name")
+    assert finding.status == "variant"
+    assert "original-script" in finding.note
+
+
+def test_script_agreement_rescues_hindi_name():
+    # Same shape in Devanagari: Vijay vs Bijay (v/b) mismatches in
+    # Latin; विजय on both documents rescues it.
+    docs = {
+        "nid": {"name": "Vijay Kumar"},
+        "bank_form": {"name": "Bijay Kumar"},
+    }
+    script = {
+        "nid": {"name": "विजय कुमार"},
+        "bank_form": {"name": "विजय कुमार"},
+    }
+    finding = _finding(comparator.compare(docs, script), "name")
+    assert finding.status == "variant"
+
+
+def test_different_script_spelling_still_flags():
+    # A genuinely different father name differs in Bangla too —
+    # the rescue must not fire.
+    docs = {
+        "nid": {"father_name": "Abdul Karim"},
+        "bank_form": {"father_name": "Abdul Kamal"},
+    }
+    script = {
+        "nid": {"father_name": "আবদুল করিম"},
+        "bank_form": {"father_name": "আবদুল কামাল"},
+    }
+    finding = _finding(comparator.compare(docs, script), "father_name")
+    assert finding.status == "mismatch"
+
+
+def test_missing_script_read_on_one_side_still_flags():
+    docs = {
+        "nid": {"father_name": "Rafiqul Islam"},
+        "bank_form": {"father_name": "Rafikul Islam"},
+    }
+    script = {"nid": {"father_name": "রফিকুল ইসলাম"}}
+    finding = _finding(comparator.compare(docs, script), "father_name")
+    assert finding.status == "mismatch"
+
+
+def test_no_script_documents_behaves_as_before():
+    docs = {
+        "nid": {"father_name": "Rafiqul Islam"},
+        "bank_form": {"father_name": "Rafikul Islam"},
+    }
+    finding = _finding(comparator.compare(docs), "father_name")
+    assert finding.status == "mismatch"
+    assert finding.note == ""

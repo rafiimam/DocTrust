@@ -306,7 +306,8 @@ def test_meta_planner_posts_with_read_calibration_and_parses(
         _PLAN_ACTIONS)
 
     assert decision == {"action": "stamp_masked",
-                        "reason": "A stamp covers it."}
+                        "reason": "A stamp covers it.",
+                        "segment_prompt": ""}
     call = calls[0]
     assert call["url"] == META_URL
     assert call["headers"]["Authorization"] == "Bearer test-key-123"
@@ -359,9 +360,13 @@ def test_parse_plan_accepts_fenced_json_and_rejects_the_rest():
     from app.providers import _parse_plan
 
     assert _parse_plan('{"action": "zoom_tight", "reason": "faint"}') == \
-        {"action": "zoom_tight", "reason": "faint"}
+        {"action": "zoom_tight", "reason": "faint", "segment_prompt": ""}
     assert _parse_plan('```json\n{"action": "recapture"}\n```') == \
-        {"action": "recapture", "reason": ""}
+        {"action": "recapture", "reason": "", "segment_prompt": ""}
+    assert _parse_plan('{"action": "stamp_removed", "reason": "ink", '
+                       '"segment_prompt": "seal"}') == \
+        {"action": "stamp_removed", "reason": "ink",
+         "segment_prompt": "seal"}
     for bad in ("", "zoom in please", '{"reason": "no action"}',
                 '["stamp_masked"]'):
         with pytest.raises(ValueError):
@@ -381,6 +386,9 @@ def test_mock_reader_planner_scripting():
         RuntimeError("down")])
     got = reader.plan_investigation("x.png", "nid", "dob",
                                     _PLAN_READS, _PLAN_ACTIONS)
+    # The mock passes scripted decisions through untouched — adding
+    # "segment_prompt" is _parse_plan's job (live readers), and the
+    # agent's validator defaults a missing one to "stamp".
     assert got == {"action": "zoom_tight", "reason": "faint"}
     with pytest.raises(RuntimeError):
         reader.plan_investigation("x.png", "nid", "dob",
@@ -417,3 +425,22 @@ def test_resolve_reader_baseten_and_mock_unchanged(monkeypatch):
 
     monkeypatch.setenv("JUDGE_READER", "mock")
     assert isinstance(judge_module.resolve_reader(), MockReader)
+
+
+def test_parse_visual_accepts_caps_and_coerces():
+    from app.providers import _parse_visual
+
+    out = _parse_visual(
+        '{"concerns": [{"doc": "birth_certificate", "area": "dob", '
+        '"type": "stamp_overlap", "detail": "Stamp over the date."}, '
+        '{"doc": "nid", "area": "photo", "type": "weird", '
+        '"detail": "x"}], "summary": "One concern."}')
+    assert out["summary"] == "One concern."
+    assert out["concerns"][0]["type"] == "stamp_overlap"
+    assert out["concerns"][1]["type"] == "other_visual"  # unlisted coerced
+    assert _parse_visual('{"concerns": [], "summary": ""}') == \
+        {"concerns": [], "summary": ""}
+    with pytest.raises(ValueError):
+        _parse_visual('{"nope": true}')
+    with pytest.raises(ValueError):
+        _parse_visual("not json at all")

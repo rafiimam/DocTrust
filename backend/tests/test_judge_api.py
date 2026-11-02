@@ -212,7 +212,7 @@ def test_planner_decision_in_result_and_trace(generated):
         assert dob["investigation"] == [
             {"action": "stamp_masked",
              "reason": "The date sits under the stamp.",
-             "source": "planner"}]
+             "source": "planner", "segment_prompt": "stamp"}]
         # Untouched fields carry an empty investigation log.
         assert result["documents"]["nid"]["name"]["investigation"] == []
 
@@ -395,3 +395,44 @@ def test_jobstore_daily_cap_unit(monkeypatch):
     assert store.live_runs_today() == 2
     # Non-live creation is never blocked by the cap.
     assert store.create(live=False) is not None
+
+
+def test_script_rescue_fires_through_the_judge_wrapper(generated):
+    # The Latin father_name reads disagree across documents (q/k —
+    # the skeleton rule cannot fold it); the original-script reads
+    # agree. Through the API this must end Consistent with the
+    # finding downgraded to a variant — proving the tracing wrapper
+    # forwards script reads and the rescue is live in judge mode.
+    doc_dir = generated("clean")
+    script = _script_for("clean")
+    script[("nid", "father_name")] = ["Rafiqul Islam"]
+    script[("birth_certificate", "father_name")] = ["Rafikul Islam"]
+    script[("bank_form", "father_name")] = ["Rafikul Islam"]
+    reader = MockReader(script, script_reads={
+        ("nid", "father_name"): "রফিকুল ইসলাম",
+        ("birth_certificate", "father_name"): "রফিকুল ইসলাম",
+        ("bank_form", "father_name"): "রফিকুল ইসলাম",
+    })
+    with _client(reader) as client:
+        resp = _upload(client, doc_dir)
+        result = _wait_result(client, resp.json()["job_id"])
+        assert result["verdict"] == "CONSISTENT"
+        finding = next(f for f in result["findings"]
+                       if f["field"] == "father_name")
+        assert finding["status"] == "variant"
+        assert "original-script" in finding["note"]
+        assert reader.script_calls  # the rescue really read scripts
+
+
+def test_visual_review_in_judge_result(generated):
+    doc_dir = generated("clean")
+    visual = {"concerns": [{"doc": "birth_certificate", "area": "dob",
+                            "type": "stamp_overlap",
+                            "detail": "Stamp over the date."}],
+              "summary": "One visual concern."}
+    reader = MockReader(_script_for("clean"), visual=visual)
+    with _client(reader) as client:
+        resp = _upload(client, doc_dir)
+        result = _wait_result(client, resp.json()["job_id"])
+        assert result["verdict"] == "CONSISTENT"  # advisory only
+        assert result["visual_review"] == visual

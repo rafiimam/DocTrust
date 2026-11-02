@@ -602,6 +602,39 @@ class CountingReader:
         self._absorb_usage()
         return decision
 
+    def read_field_script(self, image_path: str, doc_type: str,
+                          field: str) -> str:
+        """Forward an original-script name read, counted like a read.
+
+        Same contract as the planner forward: a wrapped reader with
+        no script capability raises before the counter moves, and
+        the comparator's script-agreement rescue treats that as no
+        script read — the rescue simply cannot fire.
+        """
+        script_reader = getattr(self.inner, "read_field_script", None)
+        if script_reader is None:
+            raise RuntimeError(
+                "wrapped reader has no script reader")
+        self.calls += 1
+        value = script_reader(image_path, doc_type, field)
+        self._absorb_usage()
+        return value
+
+    def visual_cross_check(self, images: dict[str, str]) -> dict | None:
+        """Forward the advisory visual pass, counted like a read.
+
+        Same contract as the other forwards: a wrapped reader with
+        no visual capability raises before the counter moves, and
+        the agent treats that as no visual review."""
+        visual = getattr(self.inner, "visual_cross_check", None)
+        if visual is None:
+            raise RuntimeError(
+                "wrapped reader has no visual cross-check")
+        self.calls += 1
+        result = visual(images)
+        self._absorb_usage()
+        return result
+
 
 class PlannerSuppressingReader:
     """Reader wrapper for the --no-planner ablation: reads delegate
@@ -667,16 +700,29 @@ def exact_match_verdict(docs: dict[str, dict[str, str]]) -> tuple[str, list[str]
     return ("DISCREPANCY" if flagged else "CONSISTENT"), flagged
 
 
-def single_pass_verdict(docs: dict[str, dict[str, str]]) -> tuple[str, list[str]]:
+def single_pass_verdict(docs: dict[str, dict[str, str]],
+                        reader=None, images=None) -> tuple[str, list[str]]:
     """Configuration 2: the same reads through normalize + comparator.
     The UNREADABLE sentinel is mapped to None first, mirroring the
     agent loop's majority semantics, so an unreadable field is a
-    recapture, never a name mismatch."""
+    recapture, never a name mismatch.
+
+    When a reader and the set's images are supplied, the comparator's
+    script-agreement rescue runs exactly as it does for the agent
+    (agent.rescue_script_mismatches): a name that mismatches in Latin
+    transliteration gets original-script reads, and agreement there
+    downgrades it to a variant. The rescue lives in the shared
+    comparison layer, so both configurations inherit it identically;
+    the extra reads are the reader's own and are counted by the
+    caller's CountingReader."""
     cleaned = {
         doc: {f: (None if _is_unreadable(v) else v) for f, v in fields.items()}
         for doc, fields in docs.items()
     }
     result = comparator.compare(cleaned)
+    if reader is not None and images is not None:
+        result = agent.rescue_script_mismatches(reader, images, cleaned,
+                                                result)
     flagged = [f.field for f in result.findings if f.status == "mismatch"]
     return result.verdict, flagged
 
@@ -707,15 +753,28 @@ def _run_configs(images: dict[str, str], truth: dict, spec,
     start = time.perf_counter()
     docs = _single_pass_reads(single_reader, images)
     single_latency = time.perf_counter() - start
-    for name, fn in (("exact", exact_match_verdict),
-                     ("single", single_pass_verdict)):
-        verdict, flagged = fn(docs)
-        configs[name] = {
-            "verdict": verdict,
-            "flagged_fields": flagged,
-            "documents": docs,
-            **_usage_cells(single_reader, single_latency),
-        }
+    verdict, flagged = exact_match_verdict(docs)
+    configs["exact"] = {
+        "verdict": verdict,
+        "flagged_fields": flagged,
+        "documents": docs,
+        **_usage_cells(single_reader, single_latency),
+    }
+    # Configuration 2's scoring can spend extra reads of its own:
+    # the comparator's script-agreement rescue re-reads a mismatched
+    # name in its original script. Those reads (and their time)
+    # belong to this configuration, so the verdict call is timed and
+    # the shared reader's counter is read only afterwards.
+    start = time.perf_counter()
+    verdict, flagged = single_pass_verdict(docs, reader=single_reader,
+                                           images=images)
+    single_latency += time.perf_counter() - start
+    configs["single"] = {
+        "verdict": verdict,
+        "flagged_fields": flagged,
+        "documents": docs,
+        **_usage_cells(single_reader, single_latency),
+    }
 
     # Configuration 3: the full agent, its own reader.
     raw_agent_reader = reader_factory(spec, "agent", truth)
@@ -739,6 +798,12 @@ def _run_configs(images: dict[str, str], truth: dict, spec,
         "investigations": {
             f"{fr.doc_type}.{fr.field}": fr.investigation
             for fr in outcome.field_reads if fr.investigation},
+        # The advisory visual pass's concerns for this set (None
+        # when no pass ran). Advisory only — it never feeds the
+        # verdict; aggregate() reports how often it fired on
+        # discrepancy vs genuine sets.
+        "visual_concerns": (outcome.visual_review or {}).get("concerns")
+        if outcome.visual_review else None,
         **_usage_cells(agent_reader, agent_latency),
     }
     return configs
@@ -910,7 +975,41 @@ def aggregate(records: list[dict]) -> dict:
             c: _cells_for([r for r in hindi if r["category"] == c], config)
             for c in CATEGORIES
         }
+    summary["visual"] = _visual_cells(done)
     return summary
+
+
+def _visual_cells(records: list[dict]) -> dict:
+    """The advisory visual pass, measured: of the sets where a pass
+    ran (agent config, visual_concerns recorded), how many carried
+    at least one concern — split by whether the set actually holds
+    an injected discrepancy. The pass is advisory and never feeds a
+    verdict; these cells exist so its hit pattern is reported with
+    the same honesty as everything else, whatever it shows."""
+    measured = [r for r in records
+                if (r.get("configs", {}).get("agent") or {})
+                .get("visual_concerns") is not None]
+
+    def _split(subset):
+        return {
+            "sets": len(subset),
+            "with_concerns": sum(
+                1 for r in subset
+                if r["configs"]["agent"]["visual_concerns"]),
+            "concerns_total": sum(
+                len(r["configs"]["agent"]["visual_concerns"])
+                for r in subset),
+        }
+
+    return {
+        "measured_sets": len(measured),
+        "discrepancy": _split([r for r in measured
+                               if r["category"] == "discrepancy"]),
+        "genuine": _split([r for r in measured
+                           if r["category"] in GENUINE_CATEGORIES]),
+        "degraded": _split([r for r in measured
+                            if r["category"] == "degraded"]),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1059,6 +1158,23 @@ def render_markdown(summary: dict, meta: dict, records: list[dict]) -> str:
         pool = "genuine" if category in GENUINE_CATEGORIES else category
         lines.append(_split_row(category, bc[category], pool))
     lines += _planner_activity(records)
+    visual = summary.get("visual") or {}
+    if visual.get("measured_sets"):
+        d, g = visual["discrepancy"], visual["genuine"]
+        lines += [
+            "",
+            "### Advisory visual cross-examination (full agent)",
+            "",
+            f"- Sets with a visual pass: {visual['measured_sets']}",
+            f"- Discrepancy sets with ≥1 visual concern: "
+            f"{d['with_concerns']}/{d['sets']} "
+            f"({d['concerns_total']} concerns in total)",
+            f"- Genuine sets with ≥1 visual concern: "
+            f"{g['with_concerns']}/{g['sets']} "
+            f"({g['concerns_total']} concerns in total)",
+            "- Advisory only: the pass never feeds a verdict; these "
+            "counts measure how often it fires, nothing more.",
+        ]
     if any(r["category"] == "physical" for r in records):
         lines += [
             "",

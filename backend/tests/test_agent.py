@@ -207,7 +207,7 @@ def test_planner_chosen_view_settles_field_in_one_step():
     assert dob.investigation == [
         {"action": "stamp_masked",
          "reason": "A stamp appears to cover the date.",
-         "source": "planner"}]
+         "source": "planner", "segment_prompt": "stamp"}]
     assert len(reader.planner_calls) == 1
     # The planner saw the reads so far and the offered actions.
     call = reader.planner_calls[0]
@@ -335,3 +335,111 @@ def test_planner_reason_is_collapsed_and_capped_in_the_log():
     reason = _dob(outcome).investigation[0]["reason"]
     assert reason.startswith("a stamp covers it")
     assert len(reason) == agent.REASON_MAX_CHARS
+
+
+def test_run_review_script_rescue_clears_transliteration_flag():
+    # father_name reads settle on different Latin spellings per doc
+    # (skeleton rule cannot fold q/k); script reads agree, so the
+    # review ends Consistent and the rescue only read the one field.
+    script = _script()
+    script[("nid", "father_name")] = ["Rafiqul Islam"] * 3
+    script[("bank_form", "father_name")] = ["Rafikul Islam"] * 3
+    reader = MockReader(script, script_reads={
+        ("nid", "father_name"): "রফিকুল ইসলাম",
+        ("bank_form", "father_name"): "রফিকুল ইসলাম",
+    })
+    outcome = agent.run_review(reader, {"nid": "n.png", "bank_form": "b.png"})
+    assert outcome.verdict == "CONSISTENT"
+    assert reader.script_calls == [("nid", "father_name"),
+                                   ("bank_form", "father_name")]
+    finding = next(f for f in outcome.findings
+                   if f["field"] == "father_name")
+    assert finding["status"] == "variant"
+    assert "original-script" in finding["note"]
+
+
+def test_run_review_no_script_reads_without_name_mismatch():
+    reader = MockReader(_script(), script_reads={
+        ("nid", "father_name"): "আবদুল করিম",
+        ("bank_form", "father_name"): "আবদুল করিম",
+    })
+    outcome = agent.run_review(reader, {"nid": "n.png", "bank_form": "b.png"})
+    assert outcome.verdict == "CONSISTENT"
+    assert reader.script_calls == []
+
+
+def _tiny_png(tmp_path):
+    from PIL import Image
+
+    path = tmp_path / "bc.png"
+    Image.new("RGB", (80, 60), (240, 240, 230)).save(path)
+    return str(path)
+
+
+def _stamp_investigation_script():
+    script = _script()
+    script[("birth_certificate", "name")] = ["Mohammad Abdul Rahman"]
+    script[("birth_certificate", "father_name")] = ["Abdul Karim"]
+    script[("birth_certificate", "dob")] = [
+        "১২/০৩/১৯৯০", "১২/০৮/১৯৯০", "১২/০৩/১৯৯০", "১২/০৩/১৯৯০"]
+    return script
+
+
+def test_planner_segment_prompt_reaches_segmenter(tmp_path):
+    from app.segmenter import MockSegmenter
+
+    bc = _tiny_png(tmp_path)
+    reader = MockReader(_stamp_investigation_script(), planner=[
+        {"action": "stamp_removed", "reason": "Ink over the date.",
+         "segment_prompt": "circular ink stamp"}])
+    segmenter = MockSegmenter()
+    outcome = agent.run_review(
+        reader, {"nid": "n.png", "birth_certificate": bc,
+                 "bank_form": "f.png"}, segmenter=segmenter)
+    assert outcome.verdict == "CONSISTENT"
+    assert (bc, "circular ink stamp") in segmenter.calls
+    dob = next(fr for fr in outcome.field_reads
+               if fr.doc_type == "birth_certificate" and fr.field == "dob")
+    assert dob.investigation[0]["segment_prompt"] == "circular ink stamp"
+
+
+def test_unlisted_segment_prompt_defaults_to_stamp(tmp_path):
+    from app.segmenter import MockSegmenter
+
+    bc = _tiny_png(tmp_path)
+    reader = MockReader(_stamp_investigation_script(), planner=[
+        {"action": "stamp_masked", "reason": "Covered.",
+         "segment_prompt": "rubber stamp"}])  # not an offered phrase
+    segmenter = MockSegmenter()
+    agent.run_review(reader, {"nid": "n.png", "birth_certificate": bc,
+                              "bank_form": "f.png"}, segmenter=segmenter)
+    assert (bc, "stamp") in segmenter.calls
+    assert (bc, "rubber stamp") not in segmenter.calls
+
+
+def test_visual_review_attached_but_never_changes_verdict():
+    visual = {"concerns": [{"doc": "birth_certificate", "area": "dob",
+                            "type": "stamp_overlap",
+                            "detail": "Stamp over the date."}],
+              "summary": "Stamp overlap on the certificate."}
+    reader = MockReader(_script(), visual=visual)
+    outcome = agent.run_review(reader, {"nid": "n.png", "bank_form": "f.png"})
+    assert outcome.verdict == "CONSISTENT"  # advisory only
+    assert outcome.visual_review == visual
+    assert len(reader.visual_calls) == 1
+
+
+def test_visual_failure_means_no_visual_review():
+    reader = MockReader(_script(), visual=RuntimeError("down"))
+    outcome = agent.run_review(reader, {"nid": "n.png", "bank_form": "f.png"})
+    assert outcome.verdict == "CONSISTENT"
+    assert outcome.visual_review is None
+
+
+def test_reader_without_visual_capability_gets_none():
+    class BareReader:
+        def read_field(self, image_path, doc_type, field, perturbation):
+            return "UNREADABLE"
+
+    outcome = agent.run_review(BareReader(), {"nid": "n.png"})
+    assert outcome.visual_review is None

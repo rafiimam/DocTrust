@@ -32,7 +32,7 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from . import comparator
-from .providers import Reader
+from .providers import DEFAULT_SEGMENT_PROMPT, SEGMENT_PROMPTS, Reader
 from .schemas import FieldRead, ReviewOutcome
 from .segmenter import Segmenter
 
@@ -96,13 +96,16 @@ def _majority(values: list[str]) -> str | None:
 
 
 def _investigation_image(segmenter: Segmenter | None, image_path: str,
-                           view: str) -> str:
+                           view: str,
+                           prompt: str = DEFAULT_SEGMENT_PROMPT) -> str:
     """Image to read an investigation view from.
 
     Only the stamp views change the image, and only when a segmenter
-    is injected and actually produces a transformed copy. Any failure
-    returns the original path: transformation is an aid, never a gate
-    on the review.
+    is injected and actually produces a transformed copy. ``prompt``
+    is what the segmenter is asked to locate — chosen by the planner
+    for its stamp views (see _investigate), "stamp" by default. Any
+    failure returns the original path: transformation is an aid,
+    never a gate on the review.
     """
     if segmenter is None:
         return image_path
@@ -112,7 +115,7 @@ def _investigation_image(segmenter: Segmenter | None, image_path: str,
     if producer is None:
         return image_path
     try:
-        transformed = producer(image_path, "stamp")
+        transformed = producer(image_path, prompt)
     except Exception:
         return image_path
     return transformed or image_path
@@ -125,12 +128,16 @@ def _clean_reason(raw) -> str:
     return " ".join(str(raw or "").split())[:REASON_MAX_CHARS]
 
 
-def _validate_decision(decision) -> tuple[str, str]:
-    """Validate one planner decision; returns (action, clean reason).
+def _validate_decision(decision) -> tuple[str, str, str]:
+    """Validate one planner decision; returns (action, clean reason,
+    segment prompt).
 
     Anything else — a non-dict, a missing action, an action outside
     PLANNER_ACTIONS — raises ValueError, which the investigation loop
-    treats exactly like a failed planner call: fallback.
+    treats exactly like a failed planner call: fallback. The segment
+    prompt is softer: a missing or unlisted phrase is not a planner
+    failure, it just falls back to "stamp" — SAM is prompt-sensitive,
+    so the planner picks from SEGMENT_PROMPTS and only from those.
     """
     if not isinstance(decision, dict):
         raise ValueError(f"planner decision was not an object: "
@@ -138,7 +145,10 @@ def _validate_decision(decision) -> tuple[str, str]:
     action = decision.get("action")
     if action not in PLANNER_ACTIONS:
         raise ValueError(f"planner chose an unknown action: {action!r}")
-    return action, _clean_reason(decision.get("reason"))
+    prompt = str(decision.get("segment_prompt") or "").strip().lower()
+    if prompt not in SEGMENT_PROMPTS:
+        prompt = DEFAULT_SEGMENT_PROMPT
+    return action, _clean_reason(decision.get("reason")), prompt
 
 
 def _investigate(reader: Reader, image_path: str, doc_type: str,
@@ -166,8 +176,9 @@ def _investigate(reader: Reader, image_path: str, doc_type: str,
     consultations = 0
     fallback_idx = 0
 
-    def _do_view(view: str) -> None:
-        view_image = _investigation_image(segmenter, image_path, view)
+    def _do_view(view: str, prompt: str = DEFAULT_SEGMENT_PROMPT) -> None:
+        view_image = _investigation_image(segmenter, image_path, view,
+                                          prompt)
         reads.append(reader.read_field(view_image, doc_type, field, view))
         view_names.append(view)
 
@@ -182,15 +193,18 @@ def _investigate(reader: Reader, image_path: str, doc_type: str,
                     [{"view": v, "value": val}
                      for v, val in zip(view_names, reads)],
                     dict(PLANNER_ACTIONS))
-                action, reason = _validate_decision(decision)
+                action, reason, prompt = _validate_decision(decision)
             except Exception:
                 mode = "fallback"
                 continue
-            log.append({"action": action, "reason": reason,
-                        "source": "planner"})
+            entry = {"action": action, "reason": reason,
+                     "source": "planner"}
+            if action in ("stamp_masked", "stamp_removed"):
+                entry["segment_prompt"] = prompt
+            log.append(entry)
             if action == "recapture":
                 break
-            _do_view(action)
+            _do_view(action, prompt)
             if _majority(reads) is not None:
                 break
         else:
@@ -200,8 +214,11 @@ def _investigate(reader: Reader, image_path: str, doc_type: str,
             fallback_idx += 1
             if view in view_names:
                 continue
-            log.append({"action": view, "reason": FALLBACK_REASON,
-                        "source": "fallback"})
+            entry = {"action": view, "reason": FALLBACK_REASON,
+                     "source": "fallback"}
+            if view in ("stamp_masked", "stamp_removed"):
+                entry["segment_prompt"] = DEFAULT_SEGMENT_PROMPT
+            log.append(entry)
             _do_view(view)
     return log
 
@@ -240,6 +257,62 @@ def read_field_with_uncertainty(reader: Reader, image_path: str,
                      reads=reads, investigation=investigation)
 
 
+NAME_FIELDS = ("name", "father_name")
+
+
+def collect_script_reads(reader: Reader, images: dict[str, str],
+                         fields: list[str]) -> dict[str, dict[str, str]]:
+    """Original-script transcriptions of the given name fields.
+
+    Only collected when the reader offers read_field_script; every
+    failure or UNREADABLE answer is simply absent from the result —
+    a missing script read means the comparator's script-agreement
+    rule cannot fire for that pair, never an error.
+    """
+    script_reader = getattr(reader, "read_field_script", None)
+    if script_reader is None:
+        return {}
+    collected: dict[str, dict[str, str]] = {}
+    for doc_type, image_path in images.items():
+        for field in fields:
+            if field not in FIELDS_BY_DOC.get(doc_type, []):
+                continue
+            try:
+                value = script_reader(image_path, doc_type, field)
+            except Exception:
+                continue
+            if value and value != "UNREADABLE":
+                collected.setdefault(doc_type, {})[field] = value
+    return collected
+
+
+def rescue_script_mismatches(reader: Reader, images: dict[str, str],
+                             documents: dict[str, dict[str, str]],
+                             result) -> comparator.ComparisonResult:
+    """Second comparison pass for name fields that mismatched.
+
+    Transliteration variance is the known false-flag source on new
+    names (the Latin reads disagree on consonants the skeleton rule
+    does not fold). When a name field mismatches, the documents are
+    re-read in their original script and the comparison re-run with
+    those reads attached: where the script spellings agree, the
+    comparator reports a variant instead of a mismatch. Sets with no
+    name mismatch never pay for the extra reads, and a reader
+    without script support leaves the first result untouched. The
+    rule itself is deterministic and lives in the comparator, so
+    every configuration that compares through it inherits the same
+    behaviour.
+    """
+    mismatching = [f.field for f in result.findings
+                   if f.field in NAME_FIELDS and f.status == "mismatch"]
+    if not mismatching:
+        return result
+    script_documents = collect_script_reads(reader, images, mismatching)
+    if not script_documents:
+        return result
+    return comparator.compare(documents, script_documents=script_documents)
+
+
 def run_review(reader: Reader, images: dict[str, str],
                segmenter: Segmenter | None = None) -> ReviewOutcome:
     """images: {doc_type: image_path}. Returns verdict + full trace.
@@ -261,9 +334,31 @@ def run_review(reader: Reader, images: dict[str, str],
             documents[doc_type][field] = fr.value
 
     result = comparator.compare(documents)
+    result = rescue_script_mismatches(reader, images, documents, result)
     return ReviewOutcome(
         verdict=result.verdict,
         documents=documents,
         field_reads=field_reads,
         findings=[asdict(f) for f in result.findings],
+        visual_review=_visual_review(reader, images),
     )
+
+
+def _visual_review(reader: Reader, images: dict[str, str]) -> dict | None:
+    """The advisory visual cross-examination, when the reader
+    offers it. Fail-soft in both directions: a reader without the
+    capability, a failed call, or an unusable reply all mean no
+    visual review — and a produced one is attached to the outcome
+    as evidence for the human reviewer. It is computed AFTER the
+    verdict and is never an input to it."""
+    visual = getattr(reader, "visual_cross_check", None)
+    if visual is None:
+        return None
+    try:
+        result = visual(images)
+    except Exception:
+        return None
+    if not isinstance(result, dict) or \
+            not isinstance(result.get("concerns"), list):
+        return None
+    return result

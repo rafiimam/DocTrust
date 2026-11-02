@@ -27,3 +27,7 @@ class ReviewOutcome:
     documents: dict[str, dict[str, str]]  # values fed to the comparator
     field_reads: list[FieldRead]
     findings: list[dict]  # serialized comparator findings for the UI
+    # Advisory visual cross-examination: {"concerns": [...],
+    # "summary": str} from the reader's visual pass, or None when no
+    # pass ran. Never an input to the verdict — see providers.
+    visual_review: dict | None = None

@@ -430,6 +430,46 @@ class _TracingReader:
                 "configured reader has no investigation planner")
         return planner(image_path, doc_type, field, reads, actions)
 
+    def read_field_script(self, image_path: str, doc_type: str,
+                          field: str) -> str:
+        """Forward an original-script name read, traced like a read.
+
+        Without this passthrough the agent's getattr finds no script
+        capability on the wrapper and the comparator's script-
+        agreement rescue silently never fires in judge mode. A
+        wrapped reader without the capability raises here, which the
+        agent's collector treats as no script read — same contract
+        as the eval runner's counting wrapper.
+        """
+        if time.time() > self._deadline:
+            raise TimeoutError("judge job exceeded its time budget")
+        script_reader = getattr(self._inner, "read_field_script", None)
+        if script_reader is None:
+            raise RuntimeError(
+                "configured reader has no script reader")
+        value = script_reader(image_path, doc_type, field)
+        self._job.emit({
+            "type": "read", "phase": "Read · original script",
+            "doc_type": doc_type, "field": field, "view": "script",
+            "value": value,
+            "text": f"{doc_type} · {field} · original script → "
+                    f"{value if value else 'UNREADABLE'}",
+        })
+        return value
+
+    def visual_cross_check(self, images: dict[str, str]) -> dict | None:
+        """Forward the advisory visual pass. Same reasoning as the
+        script passthrough: without it the pass silently never runs
+        in judge mode. A wrapped reader without the capability
+        raises, which the agent treats as no visual review."""
+        if time.time() > self._deadline:
+            raise TimeoutError("judge job exceeded its time budget")
+        visual = getattr(self._inner, "visual_cross_check", None)
+        if visual is None:
+            raise RuntimeError(
+                "configured reader has no visual cross-check")
+        return visual(images)
+
 
 # ---------------------------------------------------------------------------
 # The job itself
@@ -556,6 +596,8 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
             verb = "chose" if entry["source"] == "planner" else "ran"
             text = (f"{fr.field} ({fr.doc_type}): {actor} {verb} "
                     f"{entry['action']}")
+            if entry.get("segment_prompt"):
+                text += f" (segment: {entry['segment_prompt']})"
             if entry.get("reason"):
                 text += f" — {entry['reason']}"
             job.emit({"type": "investigation", "phase": "Investigate",
@@ -566,6 +608,25 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
               "text": "Normalized every field (digits, dates, name "
                       "variants) and compared shared facts across the "
                       "uploaded documents."})
+
+    if outcome.visual_review:
+        concerns = outcome.visual_review.get("concerns") or []
+        if concerns:
+            detail = "; ".join(
+                f"{c.get('doc') or 'document'} · "
+                f"{c.get('area') or 'region'}: "
+                f"{c.get('detail') or c.get('type') or 'visual concern'}"
+                for c in concerns[:3])
+            text = (f"Visual cross-examination flagged "
+                    f"{len(concerns)} concern(s) for the reviewer "
+                    f"(advisory — the verdict is the comparator's): "
+                    f"{detail}")
+        else:
+            text = ("Visual cross-examination: nothing visual stood "
+                    "out (advisory — the verdict is the "
+                    "comparator's).")
+        job.emit({"type": "visual_review", "phase": "Cross-examine",
+                  "text": text})
 
     documents: dict[str, dict] = {}
     reads_by_key: dict[tuple[str, str], list[dict]] = {}
@@ -588,6 +649,7 @@ def _run(job: Job, uploads: dict[str, bytes], reader: Reader | None,
         "job_id": job.id, "state": "done", "verdict": outcome.verdict,
         "verdict_label": verdict_label, "message": None,
         "documents": documents, "findings": outcome.findings,
+        "visual_review": outcome.visual_review,
         "evidence": evidence,
         "evidence_gaps": build_evidence_gaps(present_doc_types,
                                              documents,
