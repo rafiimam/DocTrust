@@ -37,6 +37,13 @@
     unresolved_discrepancy: "Unresolved discrepancy"
   };
 
+  var VISUAL_TYPE_LABELS = {
+    stamp_overlap: "Stamp overlap",
+    print_inconsistency: "Print inconsistency",
+    edited_region: "Edited-looking region",
+    other_visual: "Visual concern"
+  };
+
   function backendUrl() {
     var v = (localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL)
       .replace(/\/+$/, "");
@@ -137,6 +144,8 @@
   var evidenceGrid = document.getElementById("evidenceGrid");
   var gapsPanel = document.getElementById("gapsPanel");
   var gapsList = document.getElementById("gapsList");
+  var visualPanel = document.getElementById("visualPanel");
+  var visualList = document.getElementById("visualList");
   // --- Pipeline stage tracker + live status ------------------------------
   var stageBar = document.getElementById("stageBarLive");
   var statusText = document.getElementById("agentStatusTextLive");
@@ -271,9 +280,11 @@
     fieldsPanel.hidden = true;
     evidencePanel.hidden = true;
     gapsPanel.hidden = true;
+    visualPanel.hidden = true;
     fieldsTable.innerHTML = "";
     evidenceGrid.innerHTML = "";
     gapsList.innerHTML = "";
+    visualList.innerHTML = "";
   }
   function addTrace(event) {
     if (event.type === "queued") { return; }
@@ -358,7 +369,9 @@
           // everything else from the result JSON.
           var inv = (fr.investigation || []).map(function (d) {
             return (d.source === "planner" ? "planner" : "fallback") +
-              " → " + d.action + (d.reason ? ": " + d.reason : "");
+              " → " + d.action +
+              (d.segment_prompt ? " (segment: " + d.segment_prompt + ")" : "") +
+              (d.reason ? ": " + d.reason : "");
           }).join(" · ");
           html += "<tr><td>" + escapeHtml(field) + (fr.uncertain
             ? " <span class='uncertain-tag'>uncertain</span>" : "") +
@@ -405,11 +418,41 @@
       }).join("");
       gapsPanel.hidden = false;
     }
+    // Visual cross-examination — advisory only. The pass's concerns
+    // are model output about uploaded images, hence untrusted text:
+    // escaped exactly like the gaps above. Absent from older results
+    // (and from cached replays), in which case no panel renders.
+    var visual = result.visual_review;
+    if (visual) {
+      var concerns = visual.concerns || [];
+      if (concerns.length) {
+        visualList.innerHTML = concerns.map(function (c) {
+          return "<div class='gap-item visual-item'>" +
+            "<span class='gap-kind'>" +
+            escapeHtml(VISUAL_TYPE_LABELS[c.type] || "Visual concern") +
+            "</span>" +
+            "<p class='gap-detail'>" +
+            escapeHtml((c.doc || "document") + " · " + (c.area || "region")) +
+            (c.detail ? " — " + escapeHtml(c.detail) : "") +
+            "</p></div>";
+        }).join("");
+      } else {
+        visualList.innerHTML = "<div class='gap-item visual-item'>" +
+          "<p class='gap-detail'>Nothing visual stood out in this " +
+          "set.</p></div>";
+      }
+      if (visual.summary) {
+        visualList.innerHTML += "<p class='gap-next'>" +
+          escapeHtml(visual.summary) + "</p>";
+      }
+      visualPanel.hidden = false;
+    }
     // Verdict
     if (result.verdict) {
       verdictTitle.textContent = result.verdict_label || result.verdict;
       var findings = (result.findings || []).map(function (f) {
-        return f.field + ": " + f.status;
+        return f.field + ": " + f.status +
+          (f.note ? " (" + f.note + ")" : "");
       }).join(" · ");
       verdictBody.textContent = findings ||
         "Every shared fact agreed across the set.";
@@ -763,7 +806,9 @@
         (fr.investigation || []).forEach(function (d) {
           row.appendChild(el("div", "lb-investigation",
             (d.source === "planner" ? "Agent decision" : "Fallback step") +
-            " → " + d.action + (d.reason ? " — " + d.reason : "")));
+            " → " + d.action +
+            (d.segment_prompt ? " (segment: " + d.segment_prompt + ")" : "") +
+            (d.reason ? " — " + d.reason : "")));
         });
         box.appendChild(row);
       });
