@@ -48,7 +48,7 @@ DocTrust never auto-approves or auto-rejects. It is decision support for a human
 
 - **See it (30 seconds):** open the [live demo](https://rafiimam.github.io/DocTrust/demo/) and press Play. Cases A–D replay real review traces — a discrepancy caught under a stamp, a degraded set asking for recapture, and a Hindi (Devanagari) set. Nothing to install, nothing uploaded.
 - **Run it live:** in the same page, switch to Judge mode and upload your own documents (synthetic only, please), or download a specimen case pack — including the Hindi pack — and run it through.
-- **Run it locally:** `pip install -r backend/requirements.txt`, set `MODEL_API_KEY` and `JUDGE_READER=meta`, then serve `backend/app/main.py` — full steps under [Judge mode](#judge-mode--run-it-yourself-live) below. The test suite is 152 tests: `python -m pytest backend/tests -q`.
+- **Run it locally:** `pip install -r backend/requirements.txt`, set `MODEL_API_KEY` and `JUDGE_READER=meta`, then serve `backend/app/main.py` — full steps under [Judge mode](#judge-mode--run-it-yourself-live) below. The test suite is 191 tests: `python -m pytest backend/tests -q`.
 
 ## Live demo
 
