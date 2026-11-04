@@ -1,7 +1,9 @@
 # SAM 3.1 vs. Pillow heuristic — stamp-masking comparison protocol
 
 > **Status: PROTOCOL FIXED IN ADVANCE; box-IoU stage run
-> 2026-10-27, remaining stages pending.**
+> 2026-10-27; read-recovery and verdict stages closed
+> 2026-11-04 as superseded (see the disposition under
+> Results).**
 > The cases, prompts and scoring below are specified before the
 > comparison run, so they cannot be tuned after seeing results. The
 > heuristic side can run offline today; the SAM side runs against
@@ -11,8 +13,12 @@
 > its GPU functions require. The first stage of the comparison —
 > bounding-box IoU against the ground-truth stamp box — was run on
 > 2026-10-27 and is recorded below. The recovered-read and
-> final-verdict stages have not been run yet; those cells still read
-> _pending_ and no claim is made from them either way.
+> final-verdict stages were not run as this standalone grid; the
+> question they were designed to answer — whether the segmenter
+> changes the agent's reads and verdicts — was measured inside the
+> full agent evaluation instead (EVALUATION.md, hard batch,
+> 2026-10-31: identical verdicts under both segmenters). No claim
+> in the README rests on the unrun cells of this grid.
 
 ## Question
 
@@ -90,31 +96,45 @@ against the stamp box.
 > generator cannot place one yet, the case is recorded as *blocked
 > on generator support* rather than quietly dropped.
 
-## Results — full protocol (pending)
+## Results — full protocol: disposition (closed 2026-11-04)
 
 The bounding-box IoU stage of this scoring was run separately on
 2026-10-27 — see the next section. The read-recovery and verdict
-columns below remain _pending_.
+columns of this grid were never run as a standalone matrix; this
+section records why, in place of the pending table that stood
+here until 2026-11-04:
 
-| Case | Segmenter | Prompt | Mask IoU | Occluded field read correctly | Verdict |
-|---|---|---|---|---|---|
-| A | Pillow heuristic | — (no prompt) | _ | _ | _ |
-| A | SAM 3.1 | stamp | _pending_ | _pending_ | _pending_ |
-| A | SAM 3.1 | circular ink stamp | _pending_ | _pending_ | _pending_ |
-| A | SAM 3.1 | rubber stamp | _pending_ | _pending_ | _pending_ |
-| B | Pillow heuristic | — | _ | _ | _ |
-| B | SAM 3.1 | (all three prompts) | _pending_ | _pending_ | _pending_ |
-| C | Pillow heuristic | — | _ | _ | _ |
-| C | SAM 3.1 | (all three prompts) | _pending_ | _pending_ | _pending_ |
+- **The verdict question was answered by a different run.** On
+  2026-10-31 the full agent was run over 18 stamp-over-field and
+  degraded sets (EVALUATION.md, "Hard batch") three ways: SAM 3.1
+  segmenter, Pillow fallback segmenter, and SAM with the planner
+  disabled. Verdicts were identical in all three: 7/10 discrepancy
+  sets caught, the same three black-stamp sets unreadable under
+  both segmenters, zero silent errors, 8/8 degraded sets
+  recovered. The multi-persona batch (EVALUATION.md, seed 303)
+  likewise caught 26/30 with SAM and 27/30 with the heuristic. On
+  these sets the segmenter is not what decides the outcome, and
+  no verdict-level claim is made for SAM.
+- **Recovered reads were probed, not gridded.** The probe log
+  below records single-set recovered-read runs through the full
+  agent loop (n = 1 per segmenter), including the tie-break bug
+  they exposed and its fix.
+- **Case C was never run.** The generator cannot place a
+  handwriting-style field near the stamp, so the case stands as
+  blocked on generator support — recorded, not quietly dropped.
 
-Generator support for the recovered-read stage now exists: the
+The per-prompt, per-case grid specified above is therefore closed
+as superseded: its detection stage stands as measured, its
+verdict question is answered in EVALUATION.md, and its remaining
+cells are unrun by decision, not by oversight.
+
+Generator support for the recovered-read stage exists: the
 generator accepts `stamp_position="over_dob"` (CLI
 `--stamp-position over_dob`), which centres the same stamp graphic
 on the birth certificate's Born-row value — ground-truth
 `stamp_box` `[298, 223, 448, 373]` — instead of the bottom margin,
 so the date of birth sits under the stamp and masking it is what
-makes the field readable again. Sets for this stage can be
-generated today; the stage itself has not been run yet.
+makes the field readable again. The probes below use it.
 
 For the demo video: one side-by-side overlay — heuristic mask vs.
 SAM mask — on Case A or Case C, whichever shows the clearer
@@ -125,9 +145,9 @@ difference, including if the difference favours the heuristic.
 Single-set live probes on one genuine set with a black stamp over
 the birth certificate's DOB (`stamp_position="over_dob"`), run
 through the full agent loop with the production reader. These are
-probes, not the multi-set comparison above — n = 1 per segmenter,
-and the verdict column of the full protocol is still pending the
-evaluation run.
+probes, not the multi-set comparison above — n = 1 per segmenter;
+the multi-set verdict comparison is recorded in the disposition
+above.
 
 1. **Pre-trigger-fix probe.** The birth-certificate DOB's first-pass
    reads were [UNREADABLE, value, UNREADABLE]. Partial unreadability
@@ -150,8 +170,10 @@ evaluation run.
    when it is the unique plurality winner; any tie for the top
    count returns no value, so read scatter of this shape ends in
    the recapture verdict rather than a coin-flip flag. The full
-   multi-set verdict comparison (heuristic vs. SAM, recovered-read
-   and verdict columns above) is still pending the evaluation run.
+   multi-set verdict comparison (heuristic vs. SAM) was later run
+   as the hard-batch ablation in EVALUATION.md (2026-10-31):
+   identical verdicts under both segmenters — see the disposition
+   above.
 
 ## Results — box IoU stage (2026-10-27)
 
@@ -192,11 +214,13 @@ Caveats, stated plainly:
   distribution; a different seed could move any of these numbers.
 - **Synthetic documents only**, rendered by the same generator that
   supplies the ground truth.
-- **The recovered-read and final-verdict columns of the protocol
-  are still pending.** They run through the full agent loop, so
-  this stage alone does not complete the protocol — and by the
-  protocol's own definition, higher IoU without a recovered read
-  is not yet a win.
+- **The recovered-read and final-verdict columns of this grid
+  were not run as specified.** The verdict question was answered
+  instead by the full-agent hard batch (EVALUATION.md,
+  2026-10-31), where both segmenters produced identical
+  verdicts — and by the protocol's own definition, higher IoU
+  without a recovered read is not a win, so none is claimed from
+  this stage.
 - **Case C (the false-positive trap) remains blocked** on
   generator support for a handwriting-style field near the stamp.
 
