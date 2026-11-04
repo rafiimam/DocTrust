@@ -42,7 +42,9 @@
   app also exists in the repo but was not used: the owner's Modal
   workspace cannot add the payment method its GPU functions require.)
 - Segmentation prompts: fixed in advance — "stamp" for the stamp-masking
-  investigation view.
+  investigation view — until 2026-11-02, when the planner began
+  choosing the phrase from a validated menu (see the re-run
+  section below).
 - Perturbation views per field: original, zoom, contrast; on
   disagreement, investigation views zoom_tight and stamp_masked,
   with the step order chosen by the model's investigation planner
@@ -552,11 +554,12 @@ either route.
   zero rate: 0 false flags in 22 genuine sets still allows a true
   false-flag rate up to roughly 3/22 ≈ 14% (rule of three, 95%
   bound). Silent errors can only occur on injected-discrepancy
-  sets, so their denominator is smaller: 0 observed in 74 pooled
-  completed discrepancy sets (development + held-out across both
-  rounds, the Hindi discrepancy sets, and the 30 multi-persona
-  sets) still allows a true silent-error rate up to roughly
-  3/74 ≈ 4%.
+  sets, so their denominator is smaller: 0 observed in 54 distinct
+  pooled discrepancy sets (development + held-out, the Hindi
+  discrepancy sets in both batches, and the 30 multi-persona
+  sets; the development and held-out batches were each run in
+  two rounds, 74 runs in total) still allows a true
+  silent-error rate up to roughly 3/54 ≈ 6%.
 - One document family (Bangladeshi NID / birth certificate / bank
   form, as synthetic approximations) and one base person record with
   variations, plus one Hindi persona. No claim extends beyond that.
