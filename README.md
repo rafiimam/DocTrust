@@ -20,11 +20,11 @@ The scale is not hypothetical. Bangladesh's Election Commission has received **6
 
 Three Meta models, one system — each doing what the others can't:
 
-- **Muse Spark — the reader.** Every field of every document, read in **Bangla, English and Hindi** — mixed digit systems, transliteration variants, stamps and glare. Each field is read several ways, and Spark's own uncertainty is estimated from how much those reads disagree.
+- **Muse Spark — the reader.** Every field of every document, read in **Bangla, English and Hindi** (Hindi preliminary — a small, separately reported batch) — mixed digit systems, transliteration variants, stamps and glare. Each field is read several ways, and Spark's own uncertainty is estimated from how much those reads disagree.
 - **Muse Spark — the planner.** The same model directs the investigation. When reads disagree, it chooses the next step — re-read, zoom, segment, recapture — logs its reason, and even **chooses SAM's segmentation prompt** from a validated menu ("circular ink stamp", "seal", "signature"). It never touches the verdict: deterministic code decides.
 - **SAM 3.1 — the hands.** Called mid-investigation as a tool, not preprocessing: it segments whatever blocks the view — **lifting an ink stamp so the reader can re-read the print underneath**. Box IoU 0.99 across four ink styles; a colour heuristic sees only purple (0.98) and nothing else (0.00).
-- **Muse Spark — the visual examiner.** A final advisory pass cross-examines the pages as images for what text reads can't see — stamp overlaps, print inconsistencies. In measurement it flagged 8 discrepancy sets and **0 of 88 genuine sets**, and it can never change a verdict.
-- **Muse Spark Open — the open-weights route.** The identical agent re-run end-to-end on Meta's open-weights model (served via Baseten): same code, same protocol, **the same safety profile on completed sets** — so the whole review can run inside a bank's own infrastructure.
+- **Muse Spark — the visual examiner.** A final advisory pass cross-examines the pages as images for what text reads can't see — stamp overlaps, print inconsistencies. In measurement it flagged **8 of 24 discrepancy sets** and **0 of 88 genuine sets**, and it can never change a verdict.
+- **Muse Spark Open — the open-weights route.** The identical agent re-run end-to-end on Meta's open-weights model (served via Baseten): same code, same protocol, **the same safety profile on completed sets** — and because the weights are open, a bank could self-host the whole review inside its own infrastructure (this build was measured on Baseten's cloud).
 
 ## Results at a glance
 
@@ -41,14 +41,16 @@ Full agent vs the baselines it has to beat — Meta route (muse-spark-1.3), 40 s
 
 Read this table honestly: the deterministic normalization is what removes the false flags — single-pass + normalization matches the full agent on almost every row, clears two more genuine sets, and costs a third of the reads. The agent layer's measured value is narrower and specific: it is an evidence-gathering and safe-escalation layer. It caught the one development discrepancy single-pass missed (a one-digit DOB difference under a stamp), it recovers degraded captures by re-reading instead of guessing, and across every batch its failures end as *Unreadable, request recapture* — never as a silent pass. Whether that is worth ~3× the reads is a deployment judgement; the numbers to make it are all here.
 
+**Generalization check — separate batch (genuine sets across ten personas, n=30).** The base persona's clean record does not generalize across names. First run (2026-10-31): single-pass cleared 23/30 (7 falsely flagged); the full agent cleared 23/30 (5 falsely flagged, 2 sent to recapture). Re-run after the review round (2026-11-02): single-pass cleared 24/30 (6 falsely flagged); the full agent cleared 20/30 (7 falsely flagged, 3 sent to recapture). Every flag in both runs is `father_name` transliteration variance in the reader ("Rafiqul" read as "Rafikul"). Full tables: [`eval/EVALUATION.md`](eval/EVALUATION.md).
+
 ## What DocTrust does
 
 DocTrust reviews a document set (national ID, birth certificate, bank form) the way a careful senior reviewer would:
 
-1. **Locates the stamp** with SAM 3.1, called as a tool by the agent: SAM finds the stamp region, which the `stamp_masked` investigation view (step 4) then masks out before a re-read.
+1. **Locates the stamp** with SAM 3.1, called as a tool by the agent: SAM finds the stamp region, which the `stamp_masked` investigation view (step 4) then masks out — or the `stamp_removed` view removes outright — before a re-read.
 2. **Reads** each named field from the document views with Muse Spark — print, handwriting, Bangla and English, both digit systems.
 3. **Estimates uncertainty by perturbation** — each field is read several times under changes (zoom, contrast, an occluding stamp masked out). Disagreement between reads marks a field as uncertain.
-4. **Investigates** uncertain fields — and the model chooses how. Before each step, the reviewing model is consulted as a planner: shown the document image, the field and the reads so far, it picks the next step — mask the stamp and re-read, re-read a tighter zoomed crop, or stop and request a recapture — and its reason is recorded with the field's evidence trail. The planner only chooses where to look, never the answer: the field's value still comes from the reads, and every verdict from the deterministic comparator (step 5). If the planner cannot be reached or returns nothing usable, a fixed mask-then-zoom sequence runs instead, so a review never fails because the planner did.
+4. **Investigates** uncertain fields — and the model chooses how. Before each step, the reviewing model is consulted as a planner: shown the document image, the field and the reads so far, it picks the next step — mask or remove the stamp and re-read (choosing the very phrase SAM segments by), re-read a tighter zoomed crop, or stop and request a recapture — and its reason is recorded with the field's evidence trail. The planner only chooses where to look, never the answer: the field's value still comes from the reads, and every verdict from the deterministic comparator (step 5). If the planner cannot be reached or returns nothing usable, a fixed mask-then-zoom sequence runs instead, so a review never fails because the planner did.
 5. **Normalizes and cross-examines** with deterministic code — digits, dates and name variants are canonicalized, then every shared fact is compared across documents.
 6. **Reports a verdict with evidence** — *Consistent* / *Discrepancy, needs human review* / *Unreadable, request recapture* — every flag linked to the exact regions on the exact documents.
 
