@@ -16,6 +16,16 @@ KYC and onboarding systems built around Latin names and clean scans fail people 
 
 The scale is not hypothetical. Bangladesh's Election Commission has received **6,570,842 applications to correct NID records** — 6,442,832 settled, 1,355,157 rejected after scrutiny, 128,010 still pending, and a further 80,000–90,000 arriving every month (National Identity Registration Wing figures to 18 Oct 2026, reported by the [Daily Observer](https://observerbd.com/news/601634) and [Sarabangla](https://en.sarabangla.net/election/post-44610/ec-settles-6-44-million-nid-correction-applications/)). These are applications to correct the record itself, and many are screened out as unjustified — but the volume is the point: errors in identity records are common enough that fixing them is a mass-scale public service, and the same errors plausibly surface downstream as mismatches whenever a person's documents are cross-checked against each other.
 
+## Built on Meta models
+
+Three Meta models, one system — each doing what the others can't:
+
+- **Muse Spark — the reader.** Every field of every document, read in **Bangla, English and Hindi** — mixed digit systems, transliteration variants, stamps and glare. Each field is read several ways, and Spark's own uncertainty is estimated from how much those reads disagree.
+- **Muse Spark — the planner.** The same model directs the investigation. When reads disagree, it chooses the next step — re-read, zoom, segment, recapture — logs its reason, and even **chooses SAM's segmentation prompt** from a validated menu ("circular ink stamp", "seal", "signature"). It never touches the verdict: deterministic code decides.
+- **SAM 3.1 — the hands.** Called mid-investigation as a tool, not preprocessing: it segments whatever blocks the view — **lifting an ink stamp so the reader can re-read the print underneath**. Box IoU 0.99 across four ink styles; a colour heuristic sees only purple (0.98) and nothing else (0.00).
+- **Muse Spark — the visual examiner.** A final advisory pass cross-examines the pages as images for what text reads can't see — stamp overlaps, print inconsistencies. In measurement it flagged 8 discrepancy sets and **0 of 88 genuine sets**, and it can never change a verdict.
+- **Muse Spark Open — the open-weights route.** The identical agent re-run end-to-end on Meta's open-weights model (served via Baseten): same code, same protocol, **the same safety profile on completed sets** — so the whole review can run inside a bank's own infrastructure.
+
 ## Results at a glance
 
 Full agent vs the baselines it has to beat — Meta route (muse-spark-1.3), 40 synthetic Bangla sets, post-fix system, 2026-10-30. Full tables, the second reader route, the Hindi sets, and every failure: [Results](#results) and [`eval/EVALUATION.md`](eval/EVALUATION.md).
